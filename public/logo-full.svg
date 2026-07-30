@@ -1,0 +1,26 @@
+<svg width="1400" height="400" viewBox="0 0 1400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brassFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f0c464"/>
+      <stop offset="100%" stop-color="#e4b343"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mark, scaled and positioned at left -->
+  <g transform="translate(-10,14) scale(0.62)">
+    <polygon points="300,20 520,150 520,450 300,580 80,450 80,150"
+             fill="#12151d" stroke="#e4b343" stroke-width="4" stroke-opacity="0.55"/>
+    <polygon points="185,165 260,165 260,435 185,435" fill="url(#brassFace)"/>
+    <polygon points="185,165 200,165 200,435 185,435" fill="#a5822f"/>
+    <polygon points="340,165 415,165 415,435 340,435" fill="url(#brassFace)"/>
+    <polygon points="399,165 415,165 415,435 399,435" fill="#a5822f"/>
+    <polygon points="260,165 320,165 415,330 415,435 340,435 260,270" fill="#e4b343"/>
+    <polygon points="260,165 282,165 372,330 350,330 260,190" fill="#c99a34"/>
+    <circle cx="320" cy="165" r="22" fill="#12151d"/>
+    <circle cx="320" cy="165" r="13" fill="#3ed6c4"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="380" y="195" font-family="Georgia, 'Times New Roman', serif" font-size="92" font-weight="600" fill="#f6f5f1" letter-spacing="2">NOBS AGENT</text>
+  <text x="382" y="245" font-family="Arial, Helvetica, sans-serif" font-size="28" letter-spacing="6" fill="#3ed6c4">DIGITAL INFRASTRUCTURE STUDIO</text>
+</svg>

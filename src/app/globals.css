@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  /* Color tokens */
+  --color-ink: #0b0d12;
+  --color-ink-2: #12151d;
+  --color-ink-3: #1b1f2a;
+  --color-paper: #f6f5f1;
+  --color-paper-2: #efece3;
+  --color-brass: #e4b343;
+  --color-brass-dim: #a5822f;
+  --color-teal: #3ed6c4;
+  --color-slate: #8b93a3;
+  --color-line: rgba(228, 179, 67, 0.16);
+
+  /* Type */
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-inter);
+  --font-mono: var(--font-jbmono);
+
+  --animate-drift: drift 18s ease-in-out infinite;
+  --animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate3d(0,0,0) rotate(0deg); }
+  50% { transform: translate3d(0,-14px,0) rotate(1.2deg); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-body);
+}
+
+.light body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-brass);
+  color: var(--color-ink);
+}
+
+/* blueprint grid backdrop */
+.blueprint-grid {
+  background-image:
+    linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.light .glass {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(11,13,18,0.08);
+}
+
+@keyframes trail-fade {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.4); }
+  30% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+}
+
+.cursor-trail-blob {
+  position: absolute;
+  border-radius: 9999px;
+  animation: trail-fade 0.9s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-trail-blob { display: none; }
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 3px;
+}

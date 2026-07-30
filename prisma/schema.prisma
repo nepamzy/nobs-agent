@@ -1,0 +1,417 @@
+// Prisma schema for NOBS AGENT
+// Run `npx prisma migrate dev --name init` after setting DATABASE_URL in .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL lives in prisma.config.ts, not here, Prisma 7 moved
+  // runtime connection settings out of schema.prisma. See that file.
+}
+
+// ---------- Auth & Users ----------
+
+enum Role {
+  ADMIN
+  STAFF
+  CLIENT
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(CLIENT)
+  twoFactorSecret String?
+  suspended     Boolean   @default(false)
+  emailNotifications Boolean @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  client        Client?
+  projects      Project[]      @relation("ProjectClient")
+  messagesSent      Message[] @relation("MessageSender")
+  messagesReceived  Message[] @relation("MessageRecipient")
+  bookings      Booking[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+// ---------- Site content (drives the Admin CMS) ----------
+
+// One row per editable text/image block. `page` + `key` together form a
+// stable address (e.g. page="home", key="hero.title") so no copy is ever
+// hardcoded in components, see src/lib/content.ts on the frontend, which
+// is the fallback shape this table mirrors.
+model SiteContent {
+  id        String   @id @default(cuid())
+  page      String
+  key       String
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@unique([page, key])
+  @@index([page])
+}
+
+model MediaAsset {
+  id         String   @id @default(cuid())
+  url        String
+  provider   String // "cloudinary" | "supabase"
+  publicId   String?
+  width      Int?
+  height     Int?
+  altText    String?
+  createdAt  DateTime @default(now())
+}
+
+// ---------- Portfolio ----------
+
+enum ProjectStatus {
+  SUBMITTED
+  IN_REVIEW
+  IN_PROGRESS
+  REVISION
+  DELIVERED
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  summary     String
+  problem     String   @db.Text
+  solution    String   @db.Text
+  results     String   @db.Text
+  industry    String
+  technologies String[]
+  durationWeeks Int?
+  coverImage  String
+  gallery     String[]
+  videoUrl    String?
+  liveUrl     String?
+  githubUrl   String?
+  featured    Boolean  @default(false)
+  hidden      Boolean  @default(false)
+  clientId    String?
+  client      Client?  @relation(fields: [clientId], references: [id])
+  clientUserId String?
+  clientUser  User?    @relation("ProjectClient", fields: [clientUserId], references: [id])
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ---- Client-facing lifecycle (portal) ----
+  status        ProjectStatus @default(SUBMITTED)
+  clientBrief   String?       @db.Text // what the client originally submitted via /dashboard/new-project
+
+  progress    ProjectProgress[]
+  files       ProjectFile[]
+  milestones  Milestone[]
+  messages    Message[]
+  testimonial Testimonial?
+}
+
+model Milestone {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model ProjectProgress {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  percentage Int
+  note       String?
+  createdAt  DateTime @default(now())
+}
+
+model ProjectFile {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url       String
+  fileName  String
+  uploadedByRole Role
+  createdAt DateTime @default(now())
+}
+
+// ---------- Clients & testimonials ----------
+
+model Client {
+  id           String   @id @default(cuid())
+  name         String
+  organization String?
+  sector       String?
+  logoUrl      String?
+  userId       String?  @unique
+  user         User?    @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+
+  projects     Project[]
+  testimonials Testimonial[]
+  bookings     Booking[]
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+  projectId String?  @unique // set when submitted via the post-delivery dashboard popup
+  project   Project? @relation(fields: [projectId], references: [id])
+  quote     String   @db.Text
+  rating    Int      @default(5)
+  featured  Boolean  @default(false)
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ---------- Blog ----------
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String   @db.Text
+  coverImage  String?
+  category    String?
+  metaTitle   String?
+  metaDescription String?
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ---------- Services & pricing ----------
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  category    String
+  description String
+  startingPrice Int?
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+}
+
+model PricingPlan {
+  id        String   @id @default(cuid())
+  name      String
+  description String?
+  price     Int
+  currency  String   @default("NGN")
+  interval  String? // "one-time" | "monthly" | "yearly"
+  features  String[]
+  highlighted Boolean @default(false)
+  order     Int      @default(0)
+}
+
+// ---------- Booking ----------
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  clientId      String?
+  client        Client?       @relation(fields: [clientId], references: [id])
+  fullName      String
+  email         String
+  serviceInterest String
+  budgetRange   String
+  meetingType   String // "video" | "phone" | "in-person"
+  scheduledFor  DateTime
+  briefUrl      String?
+  notes         String?       @db.Text
+  status        BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+
+  // ---- Deposit / payment (set when admin confirms with an agreed price) ----
+  // Amounts are stored in kobo (smallest NGN unit) to match Paystack's API
+  // directly, ₦1,000 is stored as 100000. Avoids unit-conversion bugs at
+  // the one place it actually matters, sending the number to Paystack.
+  agreedAmount      Int?     // total agreed project price, in kobo
+  depositPercentage Int?     // minimum 45, admin can set higher, validated in the action, not the DB
+  depositAmount     Int?     // agreedAmount * depositPercentage / 100, the required MINIMUM first payment
+  depositPaid       Boolean  @default(false) // true once the minimum first payment has cleared
+  amountPaid        Int      @default(0) // running total actually received across all installments, in kobo
+  paystackReference String?  @unique // kept for the first/deposit payment, for backward compatibility
+  depositPaidAt     DateTime?
+
+  payments BookingPayment[]
+}
+
+model BookingPayment {
+  id                String        @id @default(cuid())
+  bookingId         String
+  booking           Booking       @relation(fields: [bookingId], references: [id])
+  amount            Int           // this specific installment, in kobo
+  provider          String        @default("paystack") // "paystack" | "flutterwave"
+  reference         String        @unique
+  createdAt         DateTime      @default(now())
+}
+
+// ---------- Messaging & contact ----------
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  message   String   @db.Text
+  source    String   @default("contact_form") // "contact_form" | "whatsapp" | "email"
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  replies InquiryReply[]
+}
+
+model InquiryReply {
+  id              String         @id @default(cuid())
+  contactMessageId String
+  contactMessage  ContactMessage @relation(fields: [contactMessageId], references: [id])
+  fromAdmin       Boolean
+  body            String         @db.Text
+  createdAt       DateTime       @default(now())
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id])
+  // When set, this is a direct admin reply routed to a specific client's
+  // inbox. When null and the sender is a client, it's understood to go to
+  // "the studio" generally, any admin can see and answer it. This is what
+  // powers the private inbox, separate from the per-project comment
+  // threads (projectId below), which stay project-scoped.
+  recipientId String?
+  recipient   User?    @relation("MessageRecipient", fields: [recipientId], references: [id])
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+  body        String   @db.Text
+  deliveredAt DateTime? // set once the recipient's inbox has loaded this message
+  readAt      DateTime? // set once the recipient has actually opened the thread
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  body      String?
+  link      String?  // e.g. /pay/[bookingId], powers the "Continue" button in the inbox
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+// ---------- Careers ----------
+
+model Job {
+  id           String   @id @default(cuid())
+  title        String
+  department   String?
+  location     String   @default("Remote")
+  type         String   @default("Full-time") // "Full-time" | "Part-time" | "Contract"
+  description  String   @db.Text
+  requirements String?  @db.Text
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  applications JobApplication[]
+}
+
+enum ApplicationStatus {
+  RECEIVED
+  IN_REVIEW
+  INTERVIEWING
+  REJECTED
+  HIRED
+}
+
+model JobApplication {
+  id          String            @id @default(cuid())
+  jobId       String
+  job         Job               @relation(fields: [jobId], references: [id])
+  name        String
+  email       String
+  coverLetter String            @db.Text
+  resumeUrl   String?
+  status      ApplicationStatus @default(RECEIVED)
+  // No account needed to view or continue the conversation, this token is
+  // the applicant's private key, emailed to them, same pattern as the
+  // payment page's booking id.
+  accessToken String            @unique @default(cuid())
+  createdAt   DateTime          @default(now())
+
+  messages JobMessage[]
+}
+
+model JobMessage {
+  id            String         @id @default(cuid())
+  applicationId String
+  application   JobApplication @relation(fields: [applicationId], references: [id])
+  fromAdmin     Boolean // true = studio wrote this, false = applicant wrote this
+  body          String         @db.Text
+  readByAdmin   Boolean        @default(false)
+  readByApplicant Boolean      @default(false)
+  createdAt     DateTime       @default(now())
+}
+
+// ---------- Analytics & audit ----------
+
+model PageView {
+  id          String   @id @default(cuid())
+  path        String
+  country     String?
+  device      String?
+  referrer    String?
+  visitorHash String?
+  createdAt   DateTime @default(now())
+
+  @@index([path])
+  @@index([visitorHash])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}

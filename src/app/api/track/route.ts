@@ -57,12 +57,13 @@ export async function POST(req: NextRequest) {
   const visitorHash = computeVisitorHash(dedupInput);
 
   try {
-    await prisma.pageView.create({
+    const created = await prisma.pageView.create({
       data: { path: parsed.data.path, device, referrer, visitorHash },
+      select: { id: true },
     });
+    return NextResponse.json({ ok: true, tracked: true, id: created.id });
   } catch (err) {
     console.error("[track] failed", err);
+    return NextResponse.json({ ok: true, tracked: false });
   }
-
-  return NextResponse.json({ ok: true, tracked: true });
 }

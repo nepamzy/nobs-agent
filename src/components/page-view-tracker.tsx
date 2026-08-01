@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 const EXCLUDED_PREFIXES = ["/admin", "/dashboard", "/api"];
@@ -42,11 +42,27 @@ function getOrCreateVisitorId(): string {
   return id;
 }
 
+function reportDuration(pageViewId: string, startedAt: number) {
+  const durationMs = Date.now() - startedAt;
+  const payload = JSON.stringify({ id: pageViewId, durationMs });
+  // sendBeacon is the right tool here specifically, it's designed to
+  // reliably deliver a small payload even as the page is being torn
+  // down, which a normal fetch often can't guarantee.
+  if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
+    navigator.sendBeacon("/api/track/duration", payload);
+  }
+}
+
 export function PageViewTracker() {
   const pathname = usePathname();
+  const pageViewId = useRef<string | null>(null);
+  const startedAt = useRef<number>(0);
 
   useEffect(() => {
     if (EXCLUDED_PREFIXES.some((p) => pathname.startsWith(p))) return;
+
+    startedAt.current = Date.now();
+    pageViewId.current = null;
 
     const visitorId = getOrCreateVisitorId();
 
@@ -55,7 +71,26 @@ export function PageViewTracker() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path: pathname, visitorId }),
       keepalive: true,
-    }).catch(() => {});
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.id) pageViewId.current = data.id;
+      })
+      .catch(() => {});
+
+    function handlePageHide() {
+      if (pageViewId.current) reportDuration(pageViewId.current, startedAt.current);
+    }
+    window.addEventListener("pagehide", handlePageHide);
+
+    // Covers in-app navigation between pages, pagehide only fires on a
+    // real tab close or full page unload, not on Next.js client-side
+    // routing, so this cleanup is what actually catches "visitor moved
+    // from page A to page B."
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      if (pageViewId.current) reportDuration(pageViewId.current, startedAt.current);
+    };
   }, [pathname]);
 
   return null;

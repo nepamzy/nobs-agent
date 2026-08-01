@@ -47,6 +47,26 @@ async function getDailyTrend(days: number) {
   }));
 }
 
+async function getRevenueAndDuration() {
+  try {
+    const [payments, durationRows] = await Promise.all([
+      prisma.bookingPayment.findMany({ select: { amount: true } }),
+      prisma.pageView.findMany({
+        where: { durationMs: { not: null } },
+        select: { durationMs: true },
+      }),
+    ]);
+
+    const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+    const totalDurationMs = durationRows.reduce((sum, r) => sum + (r.durationMs ?? 0), 0);
+    const avgDurationMs = durationRows.length > 0 ? totalDurationMs / durationRows.length : 0;
+
+    return { totalRevenue, totalDurationMs, avgDurationMs, sampledVisits: durationRows.length };
+  } catch {
+    return { totalRevenue: 0, totalDurationMs: 0, avgDurationMs: 0, sampledVisits: 0 };
+  }
+}
+
 async function getAnalytics() {
   const now = new Date();
   const today = startOfDay(now);
@@ -197,8 +217,26 @@ function StatCard({
   );
 }
 
+function formatNaira(kobo: number) {
+  return `₦${(kobo / 100).toLocaleString("en-NG")}`;
+}
+
+function formatDuration(ms: number) {
+  const totalSeconds = Math.round(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  const seconds = totalSeconds % 60;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
 export default async function AdminAnalyticsPage() {
-  const [data, dailyTrend] = await Promise.all([getAnalytics(), getDailyTrend(30)]);
+  const [data, dailyTrend, revenueData] = await Promise.all([
+    getAnalytics(),
+    getDailyTrend(30),
+    getRevenueAndDuration(),
+  ]);
 
   const monthGrowth = growthPercent(data.thisMonthUnique, data.lastMonthUnique);
   const yearGrowth = growthPercent(data.thisYearUnique, data.lastYearUnique);
@@ -214,6 +252,44 @@ export default async function AdminAnalyticsPage() {
         counted. Each number is unique visitors, not raw page loads, so someone
         refreshing or browsing several pages only counts once.
       </p>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="glass rounded-2xl p-6">
+          <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
+            Total page views
+          </p>
+          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+            {data.allTimeCount.toLocaleString()}
+          </p>
+        </div>
+        <div className="glass rounded-2xl p-6">
+          <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
+            Total time on site
+          </p>
+          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+            {formatDuration(revenueData.totalDurationMs)}
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-slate)]">
+            avg {formatDuration(revenueData.avgDurationMs)} per visit
+          </p>
+        </div>
+        <div className="glass rounded-2xl p-6">
+          <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
+            Total revenue
+          </p>
+          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+            {formatNaira(revenueData.totalRevenue)}
+          </p>
+        </div>
+        <div className="glass rounded-2xl p-6">
+          <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
+            All-time unique visitors
+          </p>
+          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+            {data.allTimeUnique.toLocaleString()}
+          </p>
+        </div>
+      </div>
 
       {!data.connected && (
         <div className="glass mt-6 rounded-xl p-4 text-sm text-[var(--color-slate)]">

@@ -398,6 +398,7 @@ model PageView {
   device      String?
   referrer    String?
   visitorHash String?
+  durationMs  Int?
   createdAt   DateTime @default(now())
 
   @@index([path])

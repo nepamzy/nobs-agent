@@ -1,32 +1,57 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { SignupPromptModal } from "@/components/signup-prompt-modal";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
 export function ContactForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [showSignup, setShowSignup] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const pendingDataRef = useRef<Record<string, unknown> | null>(null);
+
+  async function submitContact(data: Record<string, unknown>) {
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (res.status === 401) {
+      pendingDataRef.current = data;
+      setShowSignup(true);
+      setStatus("idle");
+      return;
+    }
+    if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
+    setStatus("success");
+    formRef.current?.reset();
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("submitting");
     setError(null);
 
-    const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form).entries());
+    const data = Object.fromEntries(new FormData(e.currentTarget).entries());
 
     try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
-      setStatus("success");
-      form.reset();
+      await submitContact(data);
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
+
+  async function handleSignupSuccess() {
+    setShowSignup(false);
+    if (!pendingDataRef.current) return;
+    setStatus("submitting");
+    try {
+      await submitContact(pendingDataRef.current);
     } catch (err) {
       setStatus("error");
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -48,7 +73,13 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
+    <>
+    <SignupPromptModal
+      open={showSignup}
+      onClose={() => setShowSignup(false)}
+      onSuccess={handleSignupSuccess}
+    />
+    <form ref={formRef} onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Name" name="name" required />
         <Field label="Email" name="email" type="email" required />
@@ -86,6 +117,7 @@ export function ContactForm() {
         {status === "submitting" ? "Sending…" : "Send message"}
       </button>
     </form>
+    </>
   );
 }
 

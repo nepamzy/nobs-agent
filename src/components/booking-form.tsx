@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { SignupPromptModal } from "@/components/signup-prompt-modal";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -31,25 +32,51 @@ const budgets = ["Under ₦300k", "₦300k – ₦800k", "₦800k – ₦2m", "�
 export function BookingForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [showSignup, setShowSignup] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const pendingDataRef = useRef<Record<string, unknown> | null>(null);
+
+  async function submitBooking(data: Record<string, unknown>) {
+    const res = await fetch("/api/booking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (res.status === 401) {
+      // Not signed in: hold what they typed and show the signup pop-up
+      // instead of just an error, so they don't lose their place.
+      pendingDataRef.current = data;
+      setShowSignup(true);
+      setStatus("idle");
+      return;
+    }
+    if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
+    setStatus("success");
+    formRef.current?.reset();
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("submitting");
     setError(null);
 
-    const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form).entries());
+    const data = Object.fromEntries(new FormData(e.currentTarget).entries());
 
     try {
-      const res = await fetch("/api/booking", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
-      setStatus("success");
-      form.reset();
+      await submitBooking(data);
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
+
+  async function handleSignupSuccess() {
+    setShowSignup(false);
+    if (!pendingDataRef.current) return;
+    setStatus("submitting");
+    try {
+      await submitBooking(pendingDataRef.current);
     } catch (err) {
       setStatus("error");
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -72,7 +99,13 @@ export function BookingForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
+    <>
+    <SignupPromptModal
+      open={showSignup}
+      onClose={() => setShowSignup(false)}
+      onSuccess={handleSignupSuccess}
+    />
+    <form ref={formRef} onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
@@ -196,5 +229,6 @@ export function BookingForm() {
         {status === "submitting" ? "Sending…" : "Request consultation"}
       </button>
     </form>
+    </>
   );
 }

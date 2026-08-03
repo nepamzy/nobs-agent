@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import type { BookingStatus } from "@prisma/client";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 export const MAX_BOOKINGS_PER_DAY = 8;
@@ -7,7 +6,8 @@ export const MAX_BOOKINGS_PER_DAY = 8;
 // A booking still "holds" its slot until it's explicitly rejected or
 // cancelled, PENDING and CONFIRMED both count against the day's cap and
 // against 1-hour conflicts.
-const ACTIVE_STATUSES: BookingStatus[] = ["PENDING", "CONFIRMED"];
+const ACTIVE_STATUSES = ["PENDING", "CONFIRMED"];
+
 function formatTime(d: Date) {
   return d.toLocaleTimeString("en-NG", { hour: "numeric", minute: "2-digit" });
 }

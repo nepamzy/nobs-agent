@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AuthorizePaymentForm } from "./authorize-payment-form";
+import { DeleteBookingButton } from "./delete-booking-button";
 import { ArrowLeft, Mail, Calendar, Video, DollarSign } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -43,9 +44,12 @@ export default async function AdminBookingDetailPage({
               <Mail size={12} /> {booking.email}
             </p>
           </div>
-          <span className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-slate)]">
-            {booking.status}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-slate)]">
+              {booking.status}
+            </span>
+            <DeleteBookingButton bookingId={booking.id} />
+          </div>
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">

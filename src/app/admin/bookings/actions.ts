@@ -10,6 +10,28 @@ import { buildReceiptHtml } from "@/lib/receipt";
 import { sendPushToUser } from "@/lib/push";
 import type { BookingStatus } from "@prisma/client";
 
+export async function deleteBooking(formData: FormData) {
+  const session = await auth();
+  // Deletion is admin-only (not STAFF) since it's irreversible and wipes
+  // payment history along with it, unlike status changes.
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Not authorized.");
+  }
+
+  const id = formData.get("id");
+  if (typeof id !== "string") throw new Error("Missing booking id.");
+
+  // BookingPayment rows reference this booking without cascade delete, so
+  // they have to go first or the delete below fails on the foreign key.
+  await prisma.$transaction([
+    prisma.bookingPayment.deleteMany({ where: { bookingId: id } }),
+    prisma.booking.delete({ where: { id } }),
+  ]);
+
+  revalidatePath("/admin/bookings");
+  revalidatePath("/admin/payments");
+}
+
 export async function updateBookingStatus(formData: FormData) {
   const session = await auth();
   if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {

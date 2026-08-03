@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { AuthorizePaymentForm } from "./authorize-payment-form";
 import { ArrowLeft, Mail, Calendar, Video, DollarSign } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -87,14 +88,36 @@ export default async function AdminBookingDetailPage({
             </p>
             {booking.payments.length > 0 && (
               <ul className="mt-3 space-y-1.5">
-                {booking.payments.map((p: { id: string; createdAt: Date; provider: string; amount: number }) => (
-                  <li key={p.id} className="text-xs text-[var(--color-slate)]">
-                    {new Date(p.createdAt).toLocaleDateString()}, {p.provider}, {formatNaira(p.amount)}
-                  </li>
-                ))}
+                {booking.payments.map(
+                  (p: {
+                    id: string;
+                    createdAt: Date;
+                    provider: string;
+                    amount: number;
+                    note: string | null;
+                  }) => (
+                    <li key={p.id} className="text-xs text-[var(--color-slate)]">
+                      {new Date(p.createdAt).toLocaleDateString()}, {p.provider}, {formatNaira(p.amount)}
+                      {p.provider === "manual" && (
+                        <span className="ml-1 rounded-full border border-[var(--color-brass)]/40 px-1.5 py-0.5 text-[10px] uppercase text-[var(--color-brass)]">
+                          Admin override
+                        </span>
+                      )}
+                      {p.note && <span className="block italic">&ldquo;{p.note}&rdquo;</span>}
+                    </li>
+                  )
+                )}
               </ul>
             )}
           </div>
+        )}
+
+        {(booking.status === "PENDING" || booking.status === "CONFIRMED") && (
+          <AuthorizePaymentForm
+            bookingId={booking.id}
+            hasAgreedAmount={!!booking.agreedAmount}
+            priorStatus={booking.status}
+          />
         )}
 
         <p className="mt-6 text-xs text-[var(--color-slate)]">

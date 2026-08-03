@@ -39,6 +39,24 @@ model User {
   auditLogs     AuditLog[]
   notifications Notification[]
   passwordResetTokens PasswordResetToken[]
+  pushSubscriptions PushSubscription[]
+  paymentsAuthorized BookingPayment[] @relation("PaymentAuthorizedBy")
+}
+
+// Web Push subscription (one row per browser/device the user enabled
+// notifications on). Used to deliver OS-level pushes for new bookings and
+// inbox messages even when the site/app isn't open, mirrors what a
+// WhatsApp-style notification needs: an endpoint + keys to send to.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ---------- Site content (drives the Admin CMS) ----------
@@ -266,9 +284,18 @@ model BookingPayment {
   bookingId         String
   booking           Booking       @relation(fields: [bookingId], references: [id])
   amount            Int           // this specific installment, in kobo
-  provider          String        @default("paystack") // "paystack" | "flutterwave"
+  provider          String        @default("paystack") // "paystack" | "flutterwave" | "manual"
   reference         String        @unique
   createdAt         DateTime      @default(now())
+
+  // ---- Admin manual authorization (set only when provider = "manual") ----
+  // Admin can authorize a payment independent of gateway confirmation, this
+  // is the audit trail for that override: who did it, what the booking's
+  // status was beforehand, and any context note.
+  authorizedByUserId String?
+  authorizedBy       User?    @relation("PaymentAuthorizedBy", fields: [authorizedByUserId], references: [id])
+  priorGatewayStatus String?  // snapshot, e.g. "PENDING" or "no gateway confirmation"
+  note               String?  @db.Text
 }
 
 // ---------- Messaging & contact ----------

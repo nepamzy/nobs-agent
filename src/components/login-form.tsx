@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { PasswordInput } from "@/components/password-input";
 
 export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const router = useRouter();
@@ -53,13 +54,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
             Forgot password?
           </a>
         </div>
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-        />
+        <PasswordInput name="password" required minLength={8} />
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}

@@ -64,7 +64,17 @@ export async function deleteClient(formData: FormData) {
   const id = formData.get("id");
   if (typeof id !== "string") throw new Error("Missing client id.");
 
-  await prisma.client.delete({ where: { id } });
+  // A hard delete, but done safely: detach dependent records first so a
+  // foreign-key constraint doesn't silently block the delete. Testimonials
+  // belong to the client so they go too; projects and bookings are kept
+  // (they're real project/payment history) but unlinked from this client.
+  await prisma.$transaction([
+    prisma.testimonial.deleteMany({ where: { clientId: id } }),
+    prisma.project.updateMany({ where: { clientId: id }, data: { clientId: null } }),
+    prisma.booking.updateMany({ where: { clientId: id }, data: { clientId: null } }),
+    prisma.client.delete({ where: { id } }),
+  ]);
+
   revalidatePath("/admin/clients");
   revalidatePath("/clients");
 }

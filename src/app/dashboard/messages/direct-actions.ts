@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { notifyAdminsPush, sendPushToUser } from "@/lib/push";
 
 const bodySchema = z.object({ body: z.string().trim().min(1).max(3000) });
 
@@ -19,6 +20,12 @@ export async function sendDirectMessage(formData: FormData) {
 
   await prisma.message.create({
     data: { senderId: session.user.id, recipientId: null, body: parsed.data.body },
+  });
+
+  await notifyAdminsPush({
+    title: `New message from ${session.user.name ?? "a client"}`,
+    body: parsed.data.body.slice(0, 100),
+    url: "/admin/inbox",
   });
 
   revalidatePath("/dashboard/messages");
@@ -71,6 +78,12 @@ export async function sendAdminDirectReply(formData: FormData) {
       htmlContent: `<p>${body.replace(/\n/g, "<br>")}</p>`,
     });
   }
+
+  await sendPushToUser(clientUserId, {
+    title: "New message from NOBS AGENT",
+    body: body.length > 100 ? `${body.slice(0, 100)}...` : body,
+    url: "/dashboard/messages",
+  });
 
   revalidatePath(`/admin/messages/${clientUserId}`);
   revalidatePath("/admin/messages");

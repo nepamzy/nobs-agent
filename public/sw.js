@@ -18,6 +18,43 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Handles an incoming Web Push message and shows an OS-level notification,
+// this is what makes it appear "like WhatsApp" even when the site/app
+// isn't open. The payload is JSON set by src/lib/push.ts on the server.
+self.addEventListener("push", (event) => {
+  let data = { title: "NOBS AGENT", body: "You have a new notification.", url: "/admin" };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch {
+    // fall back to defaults above
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: data.url },
+    })
+  );
+});
+
+// Tapping the notification focuses an existing tab if one's open, or
+// opens a new one at the relevant link (e.g. the booking or inbox item).
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/admin";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(url) && "focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);

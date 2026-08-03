@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createClientAccount } from "@/app/signup/actions";
+import { PasswordInput } from "@/components/password-input";
 
 export function SignupForm() {
   const router = useRouter();
@@ -83,13 +84,7 @@ export function SignupForm() {
         <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Password
         </label>
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-        />
+        <PasswordInput name="password" required minLength={8} />
         <p className="mt-1.5 text-xs text-[var(--color-slate)]">At least 8 characters.</p>
       </div>
 

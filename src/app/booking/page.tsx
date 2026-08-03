@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { BookingForm } from "@/components/booking-form";
+import { AuthGate } from "@/components/auth-gate";
 
 export const metadata: Metadata = {
   title: "Book a Consultation",
@@ -16,7 +17,9 @@ export default function BookingPage() {
         description="A 30-minute call to scope what you're building and whether it's a fit, no pitch deck, no pressure."
       />
       <div className="mx-auto max-w-xl px-6 pb-24 pt-8">
-        <BookingForm />
+        <AuthGate>
+          <BookingForm />
+        </AuthGate>
       </div>
     </div>
   );

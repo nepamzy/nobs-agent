@@ -3,6 +3,9 @@ import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { auth } from "@/auth";
+import { checkBookingAvailability } from "@/lib/booking-availability";
+import { notifyAdminsPush } from "@/lib/push";
 
 const bookingSchema = z.object({
   fullName: z.string().trim().min(2).max(100),
@@ -18,6 +21,16 @@ const bookingSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Booking requires an account, this is enforced here (not just in the
+  // UI) so the API can't be hit directly to skip signup.
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Please create an account or sign in before booking." },
+      { status: 401 }
+    );
+  }
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const { success } = rateLimit(`booking:${ip}`, 5, 60_000);
   if (!success) {
@@ -45,19 +58,37 @@ export async function POST(req: NextRequest) {
   const { fullName, email, serviceInterest, budgetRange, meetingType, scheduledFor, notes } =
     parsed.data;
 
+  const scheduledDate = new Date(scheduledFor);
+
+  const availability = await checkBookingAvailability(scheduledDate);
+  if (!availability.ok) {
+    return NextResponse.json({ error: availability.error }, { status: 409 });
+  }
+
   try {
-    // Persist to `Booking` so it shows up in /admin → Bookings.
-    await prisma.booking.create({
+    // Persist to `Booking` so it shows up in /admin → Bookings. Tied to
+    // the signed-in account so it appears in their dashboard too.
+    const booking = await prisma.booking.create({
       data: {
+        userId: session.user.id,
+        clientId: (await prisma.client.findUnique({ where: { userId: session.user.id } }))?.id,
         fullName,
         email,
         serviceInterest,
         budgetRange,
         meetingType,
-        scheduledFor: new Date(scheduledFor),
+        scheduledFor: scheduledDate,
         notes: notes || null,
         status: "PENDING",
       },
+    });
+
+    // Push notification to admin devices, "like WhatsApp", even if no one
+    // has the site/app open right now.
+    await notifyAdminsPush({
+      title: "New booking request",
+      body: `${fullName} requested ${serviceInterest} for ${scheduledDate.toLocaleString()}`,
+      url: `/admin/bookings/${booking.id}`,
     });
 
     if (process.env.BREVO_API_KEY) {

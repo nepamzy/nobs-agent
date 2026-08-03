@@ -6,6 +6,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { getSiteUrl } from "@/lib/env";
+import { buildReceiptHtml } from "@/lib/receipt";
+import { sendPushToUser } from "@/lib/push";
 import type { BookingStatus } from "@prisma/client";
 
 export async function updateBookingStatus(formData: FormData) {
@@ -94,4 +96,162 @@ export async function confirmBookingWithDeposit(formData: FormData) {
   }
 
   revalidatePath("/admin/bookings");
+}
+
+// ---------- Admin manual payment authorization ----------
+// The admin's word overrides Paystack: this records a payment (full or
+// partial) as authorized directly by admin, independent of any gateway
+// confirmation, pending, unconfirmed, or even failed. Everything after
+// this point (receipt, email, dashboard update) follows the exact same
+// path as a normal Paystack-verified payment.
+
+const authorizeSchema = z
+  .object({
+    id: z.string().min(1),
+    mode: z.enum(["amount", "percentage"]),
+    value: z.coerce.number().positive("Enter an amount or percentage greater than zero."),
+    // Only required the first time, if the booking doesn't have an agreed
+    // price yet, admin can set it right here instead of a separate step.
+    agreedAmountNaira: z.coerce.number().positive().optional(),
+    note: z.string().trim().max(1000).optional().or(z.literal("")),
+  })
+  .refine((v) => v.mode !== "percentage" || v.value <= 100, {
+    message: "Percentage can't exceed 100.",
+    path: ["value"],
+  });
+
+export async function authorizeBookingPayment(formData: FormData) {
+  const session = await auth();
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {
+    throw new Error("Not authorized.");
+  }
+
+  const parsed = authorizeSchema.safeParse({
+    id: formData.get("id"),
+    mode: formData.get("mode"),
+    value: formData.get("value"),
+    agreedAmountNaira: formData.get("agreedAmountNaira") || undefined,
+    note: formData.get("note"),
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
+
+  const { id, mode, value, agreedAmountNaira, note } = parsed.data;
+
+  const booking = await prisma.booking.findUnique({ where: { id } });
+  if (!booking) throw new Error("Booking not found.");
+
+  let agreedAmount = booking.agreedAmount;
+  let depositPercentage = booking.depositPercentage;
+  let depositAmount = booking.depositAmount;
+
+  // Booking has no agreed price yet, admin is setting one right now as
+  // part of this authorization, defaulting the informational deposit
+  // floor to the studio's usual 45% (this doesn't gate the authorization
+  // itself, it's just kept consistent with the rest of the booking record).
+  if (!agreedAmount) {
+    if (!agreedAmountNaira) {
+      throw new Error("This booking has no agreed price yet, enter the total project cost.");
+    }
+    agreedAmount = Math.round(agreedAmountNaira * 100);
+    depositPercentage = depositPercentage ?? 45;
+    depositAmount = Math.round((agreedAmount * depositPercentage) / 100);
+  }
+
+  const priorStatus = booking.status;
+  const remaining = agreedAmount - booking.amountPaid;
+
+  const paidAmount =
+    mode === "percentage" ? Math.round((agreedAmount * value) / 100) : Math.round(value * 100);
+
+  if (paidAmount <= 0) throw new Error("Enter an amount greater than zero.");
+  if (paidAmount > remaining) {
+    throw new Error(
+      `That exceeds the remaining balance (${(remaining / 100).toLocaleString("en-NG")} naira left).`
+    );
+  }
+
+  const newTotalPaid = booking.amountPaid + paidAmount;
+  const reference = `manual-${crypto.randomUUID()}`;
+
+  await prisma.$transaction([
+    prisma.bookingPayment.create({
+      data: {
+        bookingId: booking.id,
+        amount: paidAmount,
+        provider: "manual",
+        reference,
+        authorizedByUserId: session.user.id,
+        priorGatewayStatus: priorStatus,
+        note: note || null,
+      },
+    }),
+    prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: "CONFIRMED",
+        agreedAmount,
+        depositPercentage,
+        depositAmount,
+        amountPaid: newTotalPaid,
+        depositPaid: true,
+        depositPaidAt: booking.depositPaidAt ?? new Date(),
+      },
+    }),
+  ]);
+
+  // Everything downstream matches the normal Paystack-verified flow
+  // exactly: same receipt builder, same emails, same dashboard notification.
+  if (process.env.BREVO_API_KEY) {
+    const receiptHtml = buildReceiptHtml({
+      clientName: booking.fullName,
+      serviceInterest: booking.serviceInterest,
+      reference,
+      paidThisTransaction: paidAmount,
+      totalPaid: newTotalPaid,
+      agreedAmount,
+      paidAt: new Date(),
+    });
+
+    await Promise.all([
+      sendBrevoEmail({
+        to: [{ email: booking.email, name: booking.fullName }],
+        subject: newTotalPaid >= agreedAmount ? "Paid in full, thank you" : "Payment received",
+        htmlContent: receiptHtml,
+      }),
+      sendBrevoEmail({
+        to: [{ email: process.env.STUDIO_NOTIFICATION_EMAIL || "hello@nobsagent.com" }],
+        subject: `Payment authorized (manual): ${booking.fullName}`,
+        htmlContent: receiptHtml,
+      }),
+    ]);
+  }
+
+  const matchingUser = await prisma.user.findUnique({ where: { email: booking.email } });
+  if (matchingUser) {
+    const remainingAfter = agreedAmount - newTotalPaid;
+    await prisma.notification.create({
+      data: {
+        userId: matchingUser.id,
+        title: remainingAfter <= 0 ? "Payment received, paid in full" : "Payment received",
+        body:
+          remainingAfter <= 0
+            ? `Your payment of ₦${(paidAmount / 100).toLocaleString("en-NG")} was received, you're paid in full.`
+            : `Your payment of ₦${(paidAmount / 100).toLocaleString("en-NG")} was received. ₦${(
+                remainingAfter / 100
+              ).toLocaleString("en-NG")} remaining.`,
+        link: `/pay/${booking.id}`,
+      },
+    });
+
+    await sendPushToUser(matchingUser.id, {
+      title: "Payment received",
+      body: `₦${(paidAmount / 100).toLocaleString("en-NG")} recorded on your project.`,
+      url: "/dashboard/payments",
+    });
+  }
+
+  revalidatePath("/admin/bookings");
+  revalidatePath(`/admin/bookings/${id}`);
+  revalidatePath("/admin/payments");
+  revalidatePath("/dashboard/payments");
 }

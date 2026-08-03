@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { SignOutButton } from "@/components/sign-out-button";
+import { PushSubscribeButton } from "@/components/push-subscribe-button";
 import {
   LayoutDashboard,
   FileText,
@@ -42,6 +43,14 @@ async function getUnreadInboxCount() {
   }
 }
 
+async function getPendingBookingCount() {
+  try {
+    return await prisma.booking.count({ where: { status: "PENDING" } });
+  } catch {
+    return 0;
+  }
+}
+
 export default async function AdminLayout({
   children,
 }: {
@@ -56,6 +65,7 @@ export default async function AdminLayout({
   }
 
   const unreadInbox = await getUnreadInboxCount();
+  const pendingBookings = await getPendingBookingCount();
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-7xl gap-8 px-6 py-12">
@@ -78,11 +88,19 @@ export default async function AdminLayout({
                   {unreadInbox}
                 </span>
               )}
+              {item.href === "/admin/bookings" && pendingBookings > 0 && (
+                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-brass)] text-[10px] font-bold text-[var(--color-ink)]">
+                  {pendingBookings}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
         <div className="mt-8 border-t border-[var(--color-line)] pt-4">
-          <SignOutButton />
+          <PushSubscribeButton />
+          <div className="mt-1">
+            <SignOutButton />
+          </div>
         </div>
       </aside>
       <div className="min-w-0 flex-1">{children}</div>

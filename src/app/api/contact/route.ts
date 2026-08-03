@@ -3,6 +3,8 @@ import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { auth } from "@/auth";
+import { notifyAdminsPush } from "@/lib/push";
 
 const contactSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -15,6 +17,16 @@ const contactSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Inquiries require an account too, enforced server-side, not just by
+  // the signup-gate UI.
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Please create an account or sign in before sending an inquiry." },
+      { status: 401 }
+    );
+  }
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const { success } = rateLimit(`contact:${ip}`, 5, 60_000);
   if (!success) {
@@ -58,6 +70,14 @@ export async function POST(req: NextRequest) {
         replyTo: email,
       });
     }
+
+    // 3. Push notification to admin devices, same "even when the app/site
+    //    isn't open" behavior as new bookings.
+    await notifyAdminsPush({
+      title: "New inquiry",
+      body: `${name}${company ? ` (${company})` : ""}: ${message.slice(0, 80)}`,
+      url: "/admin/inbox",
+    });
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { markDeliveredForViewer } from "@/lib/messaging";
 import { auth } from "@/auth";
 import { InboxTabs } from "@/components/admin/inbox-tabs";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, CalendarClock } from "lucide-react";
 
 async function getClientThreads() {
   try {
@@ -65,6 +65,18 @@ async function getApplications() {
   }
 }
 
+async function getPendingBookings() {
+  try {
+    return await prisma.booking.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "desc" },
+      take: 15,
+    });
+  } catch {
+    return [];
+  }
+}
+
 export default async function AdminInboxPage() {
   const session = await auth();
   if (session) await markDeliveredForViewer(session.user.id);
@@ -74,6 +86,7 @@ export default async function AdminInboxPage() {
     getInquiries(),
     getApplications(),
   ]);
+  const pendingBookings = await getPendingBookings();
 
   const messagesTab = (
     <div className="space-y-2">
@@ -155,18 +168,49 @@ export default async function AdminInboxPage() {
     </div>
   );
 
+  const bookingsTab = (
+    <div className="space-y-2">
+      {pendingBookings.length === 0 && (
+        <p className="text-sm text-[var(--color-slate)]">No new booking requests.</p>
+      )}
+      {pendingBookings.map((b) => (
+        <Link
+          key={b.id}
+          href={`/admin/bookings/${b.id}`}
+          className="glass group relative flex items-center justify-between gap-4 rounded-xl p-4 transition hover:border-[var(--color-brass)]/50"
+        >
+          <div>
+            <p className="font-medium">{b.fullName}</p>
+            <p className="text-xs text-[var(--color-slate)]">
+              {b.serviceInterest} · {new Date(b.scheduledFor).toLocaleString()}
+            </p>
+          </div>
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-brass)] text-[10px] font-bold text-[var(--color-ink)]">
+            <CalendarClock size={12} />
+          </span>
+        </Link>
+      ))}
+    </div>
+  );
+
   return (
     <div>
       <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">
         Inbox
       </h1>
       <p className="mt-2 max-w-lg text-sm text-[var(--color-slate)]">
-        Every conversation, client messages, inquiries, and job applications, in one
-        place. Pick a tab, then open a conversation to reply.
+        Every conversation, client messages, bookings, inquiries, and job applications,
+        in one place. Pick a tab, then open a conversation to reply.
       </p>
 
       <div className="mt-6">
-        <InboxTabs messages={messagesTab} inquiries={inquiriesTab} applications={applicationsTab} />
+        <InboxTabs
+          messages={messagesTab}
+          inquiries={inquiriesTab}
+          applications={applicationsTab}
+          bookings={bookingsTab}
+          bookingsCount={pendingBookings.length}
+        />
       </div>
     </div>
   );

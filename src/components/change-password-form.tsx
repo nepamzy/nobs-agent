@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { changePassword } from "@/app/dashboard/settings/actions";
+import { PasswordInput } from "@/components/password-input";
 
 export function ChangePasswordForm() {
   const [loading, setLoading] = useState(false);
@@ -33,35 +34,32 @@ export function ChangePasswordForm() {
         <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Current password
         </label>
-        <input
+        <PasswordInput
           name="currentPassword"
-          type="password"
           required
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 pr-11 text-sm outline-none transition focus:border-[var(--color-brass)]"
         />
       </div>
       <div>
         <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           New password
         </label>
-        <input
+        <PasswordInput
           name="newPassword"
-          type="password"
           required
           minLength={8}
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 pr-11 text-sm outline-none transition focus:border-[var(--color-brass)]"
         />
       </div>
       <div>
         <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Confirm new password
         </label>
-        <input
+        <PasswordInput
           name="confirmPassword"
-          type="password"
           required
           minLength={8}
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 pr-11 text-sm outline-none transition focus:border-[var(--color-brass)]"
         />
       </div>
 

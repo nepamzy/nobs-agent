@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact-form";
+import { AuthGate } from "@/components/auth-gate";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -65,7 +66,9 @@ export default function ContactPage() {
         </div>
 
         <div className="lg:col-span-3">
-          <ContactForm />
+          <AuthGate>
+            <ContactForm />
+          </AuthGate>
         </div>
       </div>
     </div>

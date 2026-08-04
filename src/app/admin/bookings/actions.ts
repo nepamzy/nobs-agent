@@ -234,7 +234,11 @@ export async function authorizeBookingPayment(formData: FormData) {
       paidAt: new Date(),
     });
 
-    await Promise.all([
+    // The payment record is already committed above, an email hiccup
+    // (bad sender domain, rate limit, etc.) shouldn't be able to make
+    // this whole action look like it failed when the money was in fact
+    // recorded, so failures here are logged, not thrown.
+    await Promise.allSettled([
       sendBrevoEmail({
         to: [{ email: booking.email, name: booking.fullName }],
         subject: newTotalPaid >= agreedAmount ? "Paid in full, thank you" : "Payment received",
@@ -245,7 +249,11 @@ export async function authorizeBookingPayment(formData: FormData) {
         subject: `Payment authorized (manual): ${booking.fullName}`,
         htmlContent: receiptHtml,
       }),
-    ]);
+    ]).then((results) => {
+      results.forEach((r) => {
+        if (r.status === "rejected") console.error("[authorizeBookingPayment] email failed", r.reason);
+      });
+    });
   }
 
   const matchingUser = await prisma.user.findUnique({ where: { email: booking.email } });

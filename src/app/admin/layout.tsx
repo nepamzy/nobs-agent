@@ -68,18 +68,18 @@ export default async function AdminLayout({
   const pendingBookings = await getPendingBookingCount();
 
   return (
-    <div className="mx-auto flex min-h-[80vh] max-w-7xl gap-8 px-6 py-12">
-      <aside className="w-56 shrink-0">
+    <div className="mx-auto flex min-h-[80vh] max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12 md:flex-row md:gap-8">
+      <aside className="w-full shrink-0 md:w-56">
         <p className="mb-1 font-[family-name:var(--font-display)] text-lg font-medium">
           Admin
         </p>
-        <p className="mb-6 text-xs text-[var(--color-slate)]">{session.user.email}</p>
-        <nav className="space-y-1">
+        <p className="mb-4 text-xs text-[var(--color-slate)] md:mb-6">{session.user.email}</p>
+        <nav className="flex gap-1 overflow-x-auto pb-2 md:block md:space-y-1 md:overflow-visible md:pb-0">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[var(--color-slate)] transition hover:bg-white/5 hover:text-[var(--color-paper)]"
+              className="flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm text-[var(--color-slate)] transition hover:bg-white/5 hover:text-[var(--color-paper)] md:shrink md:whitespace-normal"
             >
               <item.icon size={16} />
               {item.label}
@@ -96,11 +96,9 @@ export default async function AdminLayout({
             </Link>
           ))}
         </nav>
-        <div className="mt-8 border-t border-[var(--color-line)] pt-4">
+        <div className="mt-4 flex items-center gap-3 border-t border-[var(--color-line)] pt-4 md:mt-8 md:flex-col md:items-start md:gap-2">
           <PushSubscribeButton />
-          <div className="mt-1">
-            <SignOutButton />
-          </div>
+          <SignOutButton />
         </div>
       </aside>
       <div className="min-w-0 flex-1">{children}</div>

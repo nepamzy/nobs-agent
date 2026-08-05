@@ -86,3 +86,37 @@ export async function cancelProjectBrief(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/admin/bookings");
 }
+
+const bookingFileSchema = z.object({
+  bookingId: z.string().min(1),
+  url: z.string().trim().url(),
+  fileName: z.string().trim().min(1).max(200),
+});
+
+export async function uploadBookingFile(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Not authorized.");
+
+  const parsed = bookingFileSchema.safeParse({
+    bookingId: formData.get("bookingId"),
+    url: formData.get("url"),
+    fileName: formData.get("fileName"),
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
+
+  const { bookingId, url, fileName } = parsed.data;
+
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+  if (!booking) throw new Error("Booking not found.");
+
+  const isOwner = booking.userId === session.user.id;
+  const isStaff = session.user.role === "ADMIN" || session.user.role === "STAFF";
+  if (!isOwner && !isStaff) throw new Error("Not authorized.");
+
+  await prisma.bookingFile.create({
+    data: { bookingId, url, fileName, uploadedByRole: session.user.role },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/admin/bookings/${bookingId}`);
+}

@@ -87,7 +87,23 @@ export async function deleteJob(formData: FormData) {
   const id = formData.get("id");
   if (typeof id !== "string") throw new Error("Missing job id.");
 
-  await prisma.job.delete({ where: { id } });
+  // A job with any applications attached hits a foreign-key wall on a
+  // plain delete, JobMessage requires an applicationId, JobApplication
+  // requires a jobId. Same safe-cascade pattern already used for client
+  // deletion: clear the dependent chain first, then the job itself, all
+  // inside one transaction so it's all-or-nothing.
+  const applications = await prisma.jobApplication.findMany({
+    where: { jobId: id },
+    select: { id: true },
+  });
+  const applicationIds = applications.map((a) => a.id);
+
+  await prisma.$transaction([
+    prisma.jobMessage.deleteMany({ where: { applicationId: { in: applicationIds } } }),
+    prisma.jobApplication.deleteMany({ where: { jobId: id } }),
+    prisma.job.delete({ where: { id } }),
+  ]);
+
   revalidatePath("/admin/careers");
   revalidatePath("/careers");
 }

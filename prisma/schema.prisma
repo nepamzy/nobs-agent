@@ -23,6 +23,7 @@ model User {
   id            String    @id @default(cuid())
   name          String
   email         String    @unique
+  phone         String?
   passwordHash  String
   role          Role      @default(CLIENT)
   twoFactorSecret String?
@@ -277,6 +278,7 @@ model Booking {
   depositPaidAt     DateTime?
 
   payments BookingPayment[]
+  files    BookingFile[]
 }
 
 model BookingPayment {
@@ -296,6 +298,16 @@ model BookingPayment {
   authorizedBy       User?    @relation("PaymentAuthorizedBy", fields: [authorizedByUserId], references: [id])
   priorGatewayStatus String?  // snapshot, e.g. "PENDING" or "no gateway confirmation"
   note               String?  @db.Text
+}
+
+model BookingFile {
+  id             String   @id @default(cuid())
+  bookingId      String
+  booking        Booking  @relation(fields: [bookingId], references: [id])
+  url            String
+  fileName       String
+  uploadedByRole Role
+  createdAt      DateTime @default(now())
 }
 
 // ---------- Messaging & contact ----------
@@ -319,6 +331,8 @@ model InquiryReply {
   contactMessage  ContactMessage @relation(fields: [contactMessageId], references: [id])
   fromAdmin       Boolean
   body            String         @db.Text
+  attachmentUrl   String?
+  attachmentName  String?
   createdAt       DateTime       @default(now())
 }
 
@@ -336,6 +350,8 @@ model Message {
   projectId   String?
   project     Project? @relation(fields: [projectId], references: [id])
   body        String   @db.Text
+  attachmentUrl  String?
+  attachmentName String?
   deliveredAt DateTime? // set once the recipient's inbox has loaded this message
   readAt      DateTime? // set once the recipient has actually opened the thread
   createdAt   DateTime @default(now())
@@ -411,6 +427,8 @@ model JobMessage {
   application   JobApplication @relation(fields: [applicationId], references: [id])
   fromAdmin     Boolean // true = studio wrote this, false = applicant wrote this
   body          String         @db.Text
+  attachmentUrl String?
+  attachmentName String?
   readByAdmin   Boolean        @default(false)
   readByApplicant Boolean      @default(false)
   createdAt     DateTime       @default(now())

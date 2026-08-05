@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { markInquiryHandled, postAdminInquiryReply } from "../actions";
+import { MessageAttachmentInput } from "@/components/message-attachment-input";
+import { MessageAttachment } from "@/components/message-attachment";
 import { ArrowLeft, Mail, Building2, Check, CheckCircle2 } from "lucide-react";
 
 export default async function AdminInquiryDetailPage({
@@ -81,7 +83,7 @@ export default async function AdminInquiryDetailPage({
 
         {inquiry.replies.length > 0 && (
           <div className="mb-4 space-y-3">
-            {inquiry.replies.map((r: { id: string; fromAdmin: boolean; body: string; createdAt: Date }) => (
+            {inquiry.replies.map((r: { id: string; fromAdmin: boolean; body: string; attachmentUrl: string | null; attachmentName: string | null; createdAt: Date }) => (
               <div
                 key={r.id}
                 className={`max-w-[85%] rounded-lg p-3 text-sm ${
@@ -91,6 +93,9 @@ export default async function AdminInquiryDetailPage({
                 }`}
               >
                 <p>{r.body}</p>
+                {r.attachmentUrl && r.attachmentName && (
+                  <MessageAttachment url={r.attachmentUrl} name={r.attachmentName} />
+                )}
                 <p className="mt-1 text-[10px] text-[var(--color-slate)]">
                   {r.fromAdmin ? "You" : inquiry.name}, {new Date(r.createdAt).toLocaleString()}
                 </p>
@@ -99,20 +104,22 @@ export default async function AdminInquiryDetailPage({
           </div>
         )}
 
-        <form action={postAdminInquiryReply} className="flex gap-2">
+        <form action={postAdminInquiryReply}>
           <input type="hidden" name="contactMessageId" value={inquiry.id} />
-          <input
-            name="body"
-            required
-            placeholder="Reply..."
-            className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-          >
-            Send
-          </button>
+          <MessageAttachmentInput />
+          <div className="flex gap-2">
+            <input
+              name="body"
+              placeholder="Reply..."
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+            >
+              Send
+            </button>
+          </div>
         </form>
         <p className="mt-3 text-xs text-[var(--color-slate)]">
           Sent to {inquiry.email} by email. If this address has a client account, it

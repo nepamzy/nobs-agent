@@ -7,10 +7,12 @@ export function StatCounter({
   value,
   suffix = "",
   label,
+  rawText,
 }: {
   value: number;
   suffix?: string;
   label: string;
+  rawText?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -39,8 +41,12 @@ export function StatCounter({
       transition={{ duration: 0.5 }}
     >
       <p className="font-[family-name:var(--font-mono)] text-3xl font-medium text-[var(--color-brass)] sm:text-4xl">
-        {display}
-        {suffix}
+        {rawText ?? (
+          <>
+            {display}
+            {suffix}
+          </>
+        )}
       </p>
       <p className="mt-1 text-sm text-[var(--color-slate)]">{label}</p>
     </motion.div>

@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { postClientInquiryReply } from "./actions";
+import { MessageAttachmentInput } from "@/components/message-attachment-input";
+import { MessageAttachment } from "@/components/message-attachment";
 import { CheckCircle2, Clock } from "lucide-react";
 
 async function getMyInquiries(email: string) {
@@ -55,36 +57,50 @@ export default async function DashboardInquiriesPage() {
 
               {inq.replies.length > 0 && (
                 <div className="mt-4 space-y-2 border-t border-[var(--color-line)] pt-4">
-                  {inq.replies.map((r: { id: string; fromAdmin: boolean; body: string; createdAt: Date }) => (
-                    <div
-                      key={r.id}
-                      className={`max-w-[85%] rounded-lg p-3 text-sm ${
-                        r.fromAdmin ? "bg-white/5" : "ml-auto border border-[var(--color-brass)]/30 bg-[var(--color-brass)]/10"
-                      }`}
-                    >
-                      <p>{r.body}</p>
-                      <p className="mt-1 text-[10px] text-[var(--color-slate)]">
-                        {r.fromAdmin ? "NOBS AGENT" : "You"}, {new Date(r.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
+                  {inq.replies.map(
+                    (r: {
+                      id: string;
+                      fromAdmin: boolean;
+                      body: string;
+                      attachmentUrl: string | null;
+                      attachmentName: string | null;
+                      createdAt: Date;
+                    }) => (
+                      <div
+                        key={r.id}
+                        className={`max-w-[85%] rounded-lg p-3 text-sm ${
+                          r.fromAdmin ? "bg-white/5" : "ml-auto border border-[var(--color-brass)]/30 bg-[var(--color-brass)]/10"
+                        }`}
+                      >
+                        <p>{r.body}</p>
+                        {r.attachmentUrl && r.attachmentName && (
+                          <MessageAttachment url={r.attachmentUrl} name={r.attachmentName} />
+                        )}
+                        <p className="mt-1 text-[10px] text-[var(--color-slate)]">
+                          {r.fromAdmin ? "NOBS AGENT" : "You"}, {new Date(r.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    )
+                  )}
                 </div>
               )}
 
-              <form action={postClientInquiryReply} className="mt-4 flex gap-2">
+              <form action={postClientInquiryReply} className="mt-4">
                 <input type="hidden" name="contactMessageId" value={inq.id} />
-                <input
-                  name="body"
-                  required
-                  placeholder="Reply..."
-                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm outline-none transition focus:border-[var(--color-brass)]"
-                />
-                <button
-                  type="submit"
-                  className="rounded-lg bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-                >
-                  Send
-                </button>
+                <MessageAttachmentInput />
+                <div className="flex gap-2">
+                  <input
+                    name="body"
+                    placeholder="Reply..."
+                    className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm outline-none transition focus:border-[var(--color-brass)]"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+                  >
+                    Send
+                  </button>
+                </div>
               </form>
             </div>
           ))}

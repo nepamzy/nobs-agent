@@ -2,6 +2,8 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendDirectMessage } from "./direct-actions";
+import { MessageAttachmentInput } from "@/components/message-attachment-input";
+import { MessageAttachment } from "@/components/message-attachment";
 import { markDeliveredForViewer, markThreadReadForClient } from "@/lib/messaging";
 import { MessageTicks } from "@/components/message-ticks";
 import { MessageSquare, ArrowUpRight } from "lucide-react";
@@ -83,6 +85,9 @@ export default async function MessagesPage() {
                     }`}
                   >
                     <p>{m.body}</p>
+                    {m.attachmentUrl && m.attachmentName && (
+                      <MessageAttachment url={m.attachmentUrl} name={m.attachmentName} />
+                    )}
                     <div className="mt-1 flex items-center justify-end gap-1.5 text-[10px] text-[var(--color-slate)]">
                       <span>{new Date(m.createdAt).toLocaleString()}</span>
                       {isMine && <MessageTicks deliveredAt={m.deliveredAt} readAt={m.readAt} />}
@@ -92,19 +97,21 @@ export default async function MessagesPage() {
               })}
             </div>
 
-            <form action={sendDirectMessage} className="mt-4 flex gap-2">
-              <input
-                name="body"
-                required
-                placeholder="Message the studio..."
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
-              />
-              <button
-                type="submit"
-                className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-              >
+            <form action={sendDirectMessage} className="mt-4">
+              <MessageAttachmentInput />
+              <div className="flex gap-2">
+                <input
+                  name="body"
+                  placeholder="Message the studio..."
+                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+                />
+                <button
+                  type="submit"
+                  className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+                >
                 Send
               </button>
+              </div>
             </form>
           </>
         )}

@@ -35,10 +35,16 @@ export async function markInquiryHandled(formData: FormData) {
   revalidatePath("/admin/inbox");
 }
 
-const replySchema = z.object({
-  contactMessageId: z.string().min(1),
-  body: z.string().trim().min(1).max(3000),
-});
+const replySchema = z
+  .object({
+    contactMessageId: z.string().min(1),
+    body: z.string().trim().max(3000),
+    attachmentUrl: z.string().trim().url().optional().or(z.literal("")),
+    attachmentName: z.string().trim().max(200).optional().or(z.literal("")),
+  })
+  .refine((d) => d.body.length > 0 || !!d.attachmentUrl, {
+    message: "Write something or attach a file.",
+  });
 
 export async function postAdminInquiryReply(formData: FormData) {
   const session = await auth();
@@ -48,17 +54,26 @@ export async function postAdminInquiryReply(formData: FormData) {
 
   const parsed = replySchema.safeParse({
     contactMessageId: formData.get("contactMessageId"),
-    body: formData.get("body"),
+    body: formData.get("body") ?? "",
+    attachmentUrl: formData.get("attachmentUrl") ?? "",
+    attachmentName: formData.get("attachmentName") ?? "",
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
 
-  const { contactMessageId, body } = parsed.data;
+  const { contactMessageId, attachmentUrl, attachmentName } = parsed.data;
+  const body = parsed.data.body || "(attachment)";
 
   const inquiry = await prisma.contactMessage.findUnique({ where: { id: contactMessageId } });
   if (!inquiry) throw new Error("Inquiry not found.");
 
   await prisma.inquiryReply.create({
-    data: { contactMessageId, fromAdmin: true, body },
+    data: {
+      contactMessageId,
+      fromAdmin: true,
+      body,
+      attachmentUrl: attachmentUrl || null,
+      attachmentName: attachmentName || null,
+    },
   });
 
   // Reply reaches the inquirer by email regardless of whether they have

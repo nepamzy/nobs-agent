@@ -2,24 +2,37 @@
 
 import { useState, type FormEvent } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
-import { authorizeBookingPayment } from "./actions";
+import { authorizeBookingPayment } from "../actions";
 
 const inputClass =
   "rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[var(--color-brass)]";
+
+function formatNaira(kobo: number) {
+  return `₦${(kobo / 100).toLocaleString("en-NG")}`;
+}
 
 export function AuthorizePaymentForm({
   bookingId,
   hasAgreedAmount,
   priorStatus,
+  agreedAmount,
+  amountPaid,
 }: {
   bookingId: string;
   hasAgreedAmount: boolean;
   priorStatus: string;
+  agreedAmount: number | null;
+  amountPaid: number;
 }) {
   const [mode, setMode] = useState<"amount" | "percentage">("amount");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const remainingKobo = agreedAmount ? Math.max(0, agreedAmount - amountPaid) : null;
+  const percentPaid = agreedAmount && agreedAmount > 0 ? Math.round((amountPaid / agreedAmount) * 100) : 0;
+  const remainingPercent = 100 - percentPaid;
+  const remainingNaira = remainingKobo !== null ? remainingKobo / 100 : undefined;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,6 +41,23 @@ export function AuthorizePaymentForm({
     setSuccess(false);
 
     const formData = new FormData(e.currentTarget);
+
+    // Client-side guard against overpaying past what's actually owed,
+    // the server enforces this too, this just gives faster feedback.
+    if (hasAgreedAmount && remainingKobo !== null) {
+      const rawValue = Number(formData.get("value"));
+      const attemptedKobo = mode === "amount" ? rawValue * 100 : (rawValue / 100) * (agreedAmount ?? 0);
+      if (attemptedKobo > remainingKobo + 1) {
+        setError(
+          mode === "amount"
+            ? `This can't exceed the remaining balance of ${formatNaira(remainingKobo)}.`
+            : `This can't exceed the remaining ${remainingPercent}%.`
+        );
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       await authorizeBookingPayment(formData);
       setSuccess(true);
@@ -54,6 +84,29 @@ export function AuthorizePaymentForm({
         Records a payment on your authority, independent of Paystack confirmation.
         {priorStatus === "FAILED" && " This booking's last known gateway status was FAILED."}
       </p>
+
+      {hasAgreedAmount && agreedAmount && (
+        <div className="rounded-lg bg-white/5 p-3 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[var(--color-slate)]">Paid</span>
+            <span className="font-medium">
+              {formatNaira(amountPaid)} ({percentPaid}%)
+            </span>
+          </div>
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-[var(--color-slate)]">Remaining</span>
+            <span className="font-medium text-[var(--color-brass)]">
+              {formatNaira(remainingKobo ?? 0)} ({remainingPercent}%)
+            </span>
+          </div>
+          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-[var(--color-brass)] transition-all"
+              style={{ width: `${Math.min(100, percentPaid)}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {!hasAgreedAmount && (
         <div>
@@ -100,12 +153,24 @@ export function AuthorizePaymentForm({
       <div>
         <label className="mb-1 block text-[11px] text-[var(--color-slate)]">
           {mode === "amount" ? "Amount paid this transaction (₦)" : "Percentage paid (%)"}
+          {hasAgreedAmount &&
+            (mode === "amount"
+              ? `, max ${formatNaira(remainingKobo ?? 0)}`
+              : `, max ${remainingPercent}%`)}
         </label>
         <input
           name="value"
           type="number"
           min={mode === "amount" ? 1 : 0.01}
-          max={mode === "percentage" ? 100 : undefined}
+          max={
+            hasAgreedAmount
+              ? mode === "percentage"
+                ? remainingPercent
+                : remainingNaira
+              : mode === "percentage"
+                ? 100
+                : undefined
+          }
           step="0.01"
           required
           className={`${inputClass} w-full`}

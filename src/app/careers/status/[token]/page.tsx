@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { postApplicantMessage } from "./actions";
+import { MessageAttachmentInput } from "@/components/message-attachment-input";
+import { MessageAttachment } from "@/components/message-attachment";
 import { CheckCircle2, Circle } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -109,7 +111,7 @@ export default async function ApplicationStatusPage({
           Conversation
         </h2>
         <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
-          {application.messages.map((m: { id: string; fromAdmin: boolean; body: string; createdAt: Date }) => (
+          {application.messages.map((m: { id: string; fromAdmin: boolean; body: string; attachmentUrl: string | null; attachmentName: string | null; createdAt: Date }) => (
             <div
               key={m.id}
               className={`max-w-[85%] rounded-lg p-3 text-sm ${
@@ -119,6 +121,9 @@ export default async function ApplicationStatusPage({
               }`}
             >
               <p>{m.body}</p>
+              {m.attachmentUrl && m.attachmentName && (
+                <MessageAttachment url={m.attachmentUrl} name={m.attachmentName} />
+              )}
               <p className="mt-1 text-[10px] text-[var(--color-slate)]">
                 {m.fromAdmin ? "NOBS AGENT" : "You"} · {new Date(m.createdAt).toLocaleString()}
               </p>
@@ -126,20 +131,22 @@ export default async function ApplicationStatusPage({
           ))}
         </div>
 
-        <form action={postApplicantMessage} className="mt-4 flex gap-2">
+        <form action={postApplicantMessage} className="mt-4">
           <input type="hidden" name="token" value={token} />
-          <input
-            name="body"
-            required
-            placeholder="Ask a question or add anything..."
-            className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-          >
-            Send
-          </button>
+          <MessageAttachmentInput signEndpoint="/api/cloudinary/sign-applicant-attachment" />
+          <div className="flex gap-2">
+            <input
+              name="body"
+              placeholder="Ask a question or add anything..."
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+            >
+              Send
+            </button>
+          </div>
         </form>
       </div>
 

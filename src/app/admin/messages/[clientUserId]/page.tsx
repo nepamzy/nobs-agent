@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { sendAdminDirectReply } from "@/app/dashboard/messages/direct-actions";
 import { markThreadReadForAdmin } from "@/lib/messaging";
 import { MessageTicks } from "@/components/message-ticks";
+import { MessageAttachmentInput } from "@/components/message-attachment-input";
+import { MessageAttachment } from "@/components/message-attachment";
 import { ArrowLeft } from "lucide-react";
 
 async function getThread(clientUserId: string) {
@@ -67,6 +69,9 @@ export default async function AdminClientThreadPage({
                 }`}
               >
                 <p>{m.body}</p>
+                {m.attachmentUrl && m.attachmentName && (
+                  <MessageAttachment url={m.attachmentUrl} name={m.attachmentName} />
+                )}
                 <div className="mt-1 flex items-center justify-end gap-1.5 text-[10px] text-[var(--color-slate)]">
                   <span>{new Date(m.createdAt).toLocaleString()}</span>
                   {isFromAdmin && <MessageTicks deliveredAt={m.deliveredAt} readAt={m.readAt} />}
@@ -76,20 +81,22 @@ export default async function AdminClientThreadPage({
           })}
         </div>
 
-        <form action={sendAdminDirectReply} className="mt-4 flex gap-2">
+        <form action={sendAdminDirectReply} className="mt-4">
           <input type="hidden" name="clientUserId" value={clientUserId} />
-          <input
-            name="body"
-            required
-            placeholder="Reply..."
-            className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-          >
-            Send
-          </button>
+          <MessageAttachmentInput />
+          <div className="flex gap-2">
+            <input
+              name="body"
+              placeholder="Reply..."
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+            >
+              Send
+            </button>
+          </div>
         </form>
       </div>
     </div>

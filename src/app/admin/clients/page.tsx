@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import {
   createClient,
@@ -9,7 +8,8 @@ import {
   deleteTestimonial,
 } from "./actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
-import { Plus, Save, Trash2, Star, Eye } from "lucide-react";
+import { ClientSearchList } from "@/components/admin/client-search-list";
+import { Plus, Trash2, Star } from "lucide-react";
 
 function fetchTestimonials() {
   return prisma.testimonial.findMany({ orderBy: { createdAt: "desc" }, include: { client: true } });
@@ -66,56 +66,7 @@ export default async function AdminClientsPage() {
         </form>
       </div>
 
-      <div className="mt-6 space-y-3">
-        {clients.map((c) => (
-          <div key={c.id} className="glass flex flex-col gap-2 rounded-xl p-4 sm:flex-row sm:items-center">
-            <form action={updateClient} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-              <input type="hidden" name="id" value={c.id} />
-              <input name="name" defaultValue={c.name} className={`${inputClass} sm:w-48`} />
-              <input
-                name="organization"
-                defaultValue={c.organization ?? ""}
-                placeholder="Organization"
-                className={`${inputClass} flex-1`}
-              />
-              <input
-                name="sector"
-                defaultValue={c.sector ?? ""}
-                placeholder="Sector"
-                className={`${inputClass} sm:w-40`}
-              />
-              <input
-                name="logoUrl"
-                defaultValue={c.logoUrl ?? ""}
-                placeholder="Logo URL"
-                className={`${inputClass} flex-1`}
-              />
-              <button
-                type="submit"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--color-brass)]"
-              >
-                <Save size={13} /> Save
-              </button>
-            </form>
-            <Link
-              href={`/admin/clients/${c.id}`}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--color-brass)]"
-            >
-              <Eye size={13} /> View
-            </Link>
-            <form action={deleteClient}>
-              <input type="hidden" name="id" value={c.id} />
-              <ConfirmSubmit
-                message={`Delete "${c.name}"? This can't be undone.`}
-                title="Delete"
-                className="rounded-lg border border-[var(--color-line)] p-2 transition hover:border-red-500/50 hover:text-red-400"
-              >
-                <Trash2 size={14} />
-              </ConfirmSubmit>
-            </form>
-          </div>
-        ))}
-      </div>
+      <ClientSearchList clients={clients} updateClient={updateClient} deleteClient={deleteClient} />
 
       {connected && clients.length === 0 && (
         <p className="mt-6 text-sm text-[var(--color-slate)]">No clients yet.</p>

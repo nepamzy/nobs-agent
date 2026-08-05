@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { submitProjectBrief, cancelProjectBrief } from "./actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
+import { BookingFileUpload } from "@/components/booking-file-upload";
 import { CheckCircle2, ArrowUpRight, X } from "lucide-react";
 
 const NEW_STATUSES = ["SUBMITTED", "IN_REVIEW"];
@@ -56,6 +57,7 @@ async function getPendingBriefs(userId: string) {
     return await prisma.booking.findMany({
       where: { userId, status: "PENDING" },
       orderBy: { createdAt: "desc" },
+      include: { files: { orderBy: { createdAt: "desc" } } },
     });
   } catch {
     return [];
@@ -135,23 +137,42 @@ export default async function ProjectsPage({
           </h2>
           <div className="space-y-2">
             {pendingBriefs.map((b) => (
-              <div key={b.id} className="glass flex items-center justify-between rounded-xl p-4 text-sm">
-                <div>
-                  <p className="font-medium">{b.serviceInterest}</p>
-                  <p className="text-xs text-[var(--color-slate)]">
-                    Submitted {new Date(b.createdAt).toLocaleDateString()}, not yet reviewed
-                  </p>
+              <div key={b.id} className="glass rounded-xl p-4 text-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{b.serviceInterest}</p>
+                    <p className="text-xs text-[var(--color-slate)]">
+                      Submitted {new Date(b.createdAt).toLocaleDateString()}, not yet reviewed
+                    </p>
+                  </div>
+                  <form action={cancelProjectBrief}>
+                    <input type="hidden" name="bookingId" value={b.id} />
+                    <ConfirmSubmit
+                      message="Cancel this brief? You can always submit a new one."
+                      title="Cancel"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs transition hover:border-red-500/50 hover:text-red-400"
+                    >
+                      <X size={12} /> Cancel
+                    </ConfirmSubmit>
+                  </form>
                 </div>
-                <form action={cancelProjectBrief}>
-                  <input type="hidden" name="bookingId" value={b.id} />
-                  <ConfirmSubmit
-                    message="Cancel this brief? You can always submit a new one."
-                    title="Cancel"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs transition hover:border-red-500/50 hover:text-red-400"
-                  >
-                    <X size={12} /> Cancel
-                  </ConfirmSubmit>
-                </form>
+                {b.files.length > 0 && (
+                  <ul className="mt-3 space-y-1 border-t border-[var(--color-line)] pt-3">
+                    {b.files.map((f: { id: string; url: string; fileName: string }) => (
+                      <li key={f.id}>
+                        <a
+                          href={f.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[var(--color-brass)] underline underline-offset-4"
+                        >
+                          {f.fileName}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <BookingFileUpload bookingId={b.id} />
               </div>
             ))}
           </div>

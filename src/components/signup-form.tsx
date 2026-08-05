@@ -82,6 +82,18 @@ export function SignupForm() {
       </div>
       <div>
         <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          Phone number (WhatsApp preferred)
+        </label>
+        <input
+          name="phone"
+          type="tel"
+          required
+          placeholder="+234..."
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+        />
+      </div>
+      <div>
+        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Password
         </label>
         <PasswordInput name="password" required minLength={8} />

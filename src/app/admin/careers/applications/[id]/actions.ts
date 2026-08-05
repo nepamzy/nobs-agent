@@ -15,21 +15,30 @@ async function requireAdmin() {
   return session;
 }
 
-const replySchema = z.object({
-  applicationId: z.string().min(1),
-  body: z.string().trim().min(1).max(3000),
-});
+const replySchema = z
+  .object({
+    applicationId: z.string().min(1),
+    body: z.string().trim().max(3000),
+    attachmentUrl: z.string().trim().url().optional().or(z.literal("")),
+    attachmentName: z.string().trim().max(200).optional().or(z.literal("")),
+  })
+  .refine((d) => d.body.length > 0 || !!d.attachmentUrl, {
+    message: "Write something or attach a file.",
+  });
 
 export async function postAdminReply(formData: FormData) {
   await requireAdmin();
 
   const parsed = replySchema.safeParse({
     applicationId: formData.get("applicationId"),
-    body: formData.get("body"),
+    body: formData.get("body") ?? "",
+    attachmentUrl: formData.get("attachmentUrl") ?? "",
+    attachmentName: formData.get("attachmentName") ?? "",
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
 
-  const { applicationId, body } = parsed.data;
+  const { applicationId, attachmentUrl, attachmentName } = parsed.data;
+  const body = parsed.data.body || "(attachment)";
 
   const application = await prisma.jobApplication.findUnique({
     where: { id: applicationId },
@@ -38,7 +47,14 @@ export async function postAdminReply(formData: FormData) {
   if (!application) throw new Error("Application not found.");
 
   await prisma.jobMessage.create({
-    data: { applicationId, fromAdmin: true, body, readByAdmin: true },
+    data: {
+      applicationId,
+      fromAdmin: true,
+      body,
+      attachmentUrl: attachmentUrl || null,
+      attachmentName: attachmentName || null,
+      readByAdmin: true,
+    },
   });
 
   const statusUrl = `${getSiteUrl()}/careers/status/${application.accessToken}`;

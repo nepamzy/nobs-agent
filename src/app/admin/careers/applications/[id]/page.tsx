@@ -4,6 +4,8 @@ import { ArrowLeft, FileText } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { postAdminReply, markApplicationMessagesRead } from "./actions";
 import { ApplicationStatusSelect } from "@/components/admin/application-status-select";
+import { MessageAttachmentInput } from "@/components/message-attachment-input";
+import { MessageAttachment } from "@/components/message-attachment";
 
 export default async function AdminApplicationDetailPage({
   params,
@@ -76,7 +78,7 @@ export default async function AdminApplicationDetailPage({
         </div>
 
         <div className="mt-4 max-h-[28rem] space-y-3 overflow-y-auto pr-1">
-          {application.messages.map((m: { id: string; fromAdmin: boolean; body: string; createdAt: Date }) => (
+          {application.messages.map((m: { id: string; fromAdmin: boolean; body: string; attachmentUrl: string | null; attachmentName: string | null; createdAt: Date }) => (
             <div
               key={m.id}
               className={`max-w-[85%] rounded-lg p-3 text-sm ${
@@ -86,6 +88,9 @@ export default async function AdminApplicationDetailPage({
               }`}
             >
               <p>{m.body}</p>
+              {m.attachmentUrl && m.attachmentName && (
+                <MessageAttachment url={m.attachmentUrl} name={m.attachmentName} />
+              )}
               <p className="mt-1 text-[10px] text-[var(--color-slate)]">
                 {m.fromAdmin ? "You" : application.name} · {new Date(m.createdAt).toLocaleString()}
               </p>
@@ -93,20 +98,22 @@ export default async function AdminApplicationDetailPage({
           ))}
         </div>
 
-        <form action={postAdminReply} className="mt-4 flex gap-2">
+        <form action={postAdminReply} className="mt-4">
           <input type="hidden" name="applicationId" value={application.id} />
-          <input
-            name="body"
-            required
-            placeholder="Reply..."
-            className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-          >
-            Send
-          </button>
+          <MessageAttachmentInput />
+          <div className="flex gap-2">
+            <input
+              name="body"
+              placeholder="Reply..."
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+            >
+              Send
+            </button>
+          </div>
         </form>
       </div>
     </div>

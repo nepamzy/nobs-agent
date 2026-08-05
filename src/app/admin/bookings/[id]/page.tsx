@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AuthorizePaymentForm } from "./authorize-payment-form";
-import { DeleteBookingButton } from "./delete-booking-button";
+import { BookingFileUpload } from "@/components/booking-file-upload";
 import { ArrowLeft, Mail, Calendar, Video, DollarSign } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -18,7 +18,10 @@ export default async function AdminBookingDetailPage({
 
   let booking;
   try {
-    booking = await prisma.booking.findUnique({ where: { id }, include: { payments: true } });
+    booking = await prisma.booking.findUnique({
+      where: { id },
+      include: { payments: true, files: { orderBy: { createdAt: "desc" } } },
+    });
   } catch {
     booking = null;
   }
@@ -44,12 +47,9 @@ export default async function AdminBookingDetailPage({
               <Mail size={12} /> {booking.email}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-slate)]">
-              {booking.status}
-            </span>
-            <DeleteBookingButton bookingId={booking.id} />
-          </div>
+          <span className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-slate)]">
+            {booking.status}
+          </span>
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -81,6 +81,32 @@ export default async function AdminBookingDetailPage({
             <div className="rounded-lg bg-white/5 p-4 text-sm leading-relaxed">{booking.notes}</div>
           </div>
         )}
+
+        <div className="mt-6">
+          <p className="mb-2 text-xs text-[var(--color-slate)]">Attachments</p>
+          {booking.files.length > 0 ? (
+            <ul className="mb-3 space-y-1.5">
+              {booking.files.map((f: { id: string; url: string; fileName: string; uploadedByRole: string }) => (
+                <li key={f.id} className="flex items-center gap-2">
+                  <a
+                    href={f.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[var(--color-brass)] underline underline-offset-4"
+                  >
+                    {f.fileName}
+                  </a>
+                  <span className="text-[10px] text-[var(--color-slate)]">
+                    {f.uploadedByRole === "CLIENT" ? "client" : "you"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-3 text-sm text-[var(--color-slate)]">No files attached yet.</p>
+          )}
+          <BookingFileUpload bookingId={booking.id} />
+        </div>
 
         {booking.agreedAmount && (
           <div className="mt-6 border-t border-[var(--color-line)] pt-6">
@@ -121,6 +147,8 @@ export default async function AdminBookingDetailPage({
             bookingId={booking.id}
             hasAgreedAmount={!!booking.agreedAmount}
             priorStatus={booking.status}
+            agreedAmount={booking.agreedAmount}
+            amountPaid={booking.amountPaid}
           />
         )}
 

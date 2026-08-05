@@ -8,6 +8,7 @@ const signupSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name.").max(150),
   organization: z.string().trim().max(150).optional().or(z.literal("")),
   email: z.string().trim().email("Enter a valid email."),
+  phone: z.string().trim().min(7, "Enter a valid phone number.").max(20),
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
 
@@ -18,6 +19,7 @@ export async function createClientAccount(formData: FormData): Promise<SignupRes
     name: formData.get("name"),
     organization: formData.get("organization"),
     email: formData.get("email"),
+    phone: formData.get("phone"),
     password: formData.get("password"),
   });
 
@@ -25,7 +27,7 @@ export async function createClientAccount(formData: FormData): Promise<SignupRes
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { name, organization, email, password } = parsed.data;
+  const { name, organization, email, phone, password } = parsed.data;
 
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -39,6 +41,7 @@ export async function createClientAccount(formData: FormData): Promise<SignupRes
       data: {
         name,
         email,
+        phone,
         passwordHash,
         role: "CLIENT",
       },

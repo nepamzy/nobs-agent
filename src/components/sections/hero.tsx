@@ -78,7 +78,7 @@ export function Hero() {
 
           <div className="mx-auto mt-16 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-4">
             {hero.stats.map((s) => (
-              <StatCounter key={s.label} value={s.value} suffix={s.suffix} label={s.label} />
+              <StatCounter key={s.label} value={s.value} suffix={s.suffix} label={s.label} rawText={s.rawText} />
             ))}
           </div>
         </div>

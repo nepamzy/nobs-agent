@@ -20,6 +20,7 @@ export function PushSubscribeButton() {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSupported(true);
 
     navigator.serviceWorker.ready.then(async (reg) => {

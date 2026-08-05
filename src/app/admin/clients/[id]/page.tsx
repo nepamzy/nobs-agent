@@ -97,6 +97,7 @@ export default async function AdminClientDetailPage({
       {client.user ? (
         <p className="mt-2 flex items-center gap-1.5 text-xs text-[var(--color-slate)]">
           <Mail size={13} /> {client.user.email} · Has a portal account
+          {client.user.phone && ` · ${client.user.phone}`}
         </p>
       ) : (
         <p className="mt-2 text-xs text-[var(--color-slate)]">No linked portal account yet</p>

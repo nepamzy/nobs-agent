@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deleteProject, toggleFeatured, toggleHidden } from "./actions";
-import { ConfirmSubmit } from "@/components/admin/confirm-submit";
-import { Plus, Star, EyeOff, Eye, Trash2, Pencil } from "lucide-react";
+import { PortfolioSearchList } from "@/components/admin/portfolio-search-list";
+import { Plus } from "lucide-react";
 
 type ProjectRow = Awaited<ReturnType<typeof prisma.project.findMany>>[number];
 
@@ -46,72 +46,12 @@ export default async function AdminPortfolioPage() {
         </p>
       )}
 
-      <div className="mt-6 space-y-3">
-        {rows.map((row) => (
-          <div key={row.id} className="glass flex flex-wrap items-center justify-between gap-3 rounded-xl p-5">
-            <div>
-              <p className="font-medium">
-                {row.title}
-                {row.hidden && (
-                  <span className="ml-2 rounded-full border border-[var(--color-line)] px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--color-slate)]">
-                    Hidden
-                  </span>
-                )}
-                {row.featured && (
-                  <span className="ml-2 rounded-full border border-[var(--color-brass)]/50 px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--color-brass)]">
-                    Featured
-                  </span>
-                )}
-              </p>
-              <p className="text-xs text-[var(--color-slate)]">
-                {row.industry} · /portfolio/{row.slug}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <form action={toggleFeatured}>
-                <input type="hidden" name="id" value={row.id} />
-                <input type="hidden" name="featured" value={String(row.featured)} />
-                <button
-                  type="submit"
-                  title={row.featured ? "Unfeature" : "Feature"}
-                  className="rounded-lg border border-[var(--color-line)] p-2 transition hover:border-[var(--color-brass)]"
-                >
-                  <Star size={14} className={row.featured ? "fill-[var(--color-brass)] text-[var(--color-brass)]" : ""} />
-                </button>
-              </form>
-              <form action={toggleHidden}>
-                <input type="hidden" name="id" value={row.id} />
-                <input type="hidden" name="hidden" value={String(row.hidden)} />
-                <button
-                  type="submit"
-                  title={row.hidden ? "Show on site" : "Hide from site"}
-                  className="rounded-lg border border-[var(--color-line)] p-2 transition hover:border-[var(--color-brass)]"
-                >
-                  {row.hidden ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </form>
-              <Link
-                href={`/admin/portfolio/${row.id}/edit`}
-                className="rounded-lg border border-[var(--color-line)] p-2 transition hover:border-[var(--color-brass)]"
-                title="Edit"
-              >
-                <Pencil size={14} />
-              </Link>
-              <form action={deleteProject}>
-                <input type="hidden" name="id" value={row.id} />
-                <ConfirmSubmit
-                  message={`Delete "${row.title}"? This can't be undone.`}
-                  title="Delete"
-                  className="rounded-lg border border-[var(--color-line)] p-2 transition hover:border-red-500/50 hover:text-red-400"
-                >
-                  <Trash2 size={14} />
-                </ConfirmSubmit>
-              </form>
-            </div>
-          </div>
-        ))}
-      </div>
+      <PortfolioSearchList
+        rows={rows}
+        toggleFeatured={toggleFeatured}
+        toggleHidden={toggleHidden}
+        deleteProject={deleteProject}
+      />
     </div>
   );
 }

@@ -37,9 +37,9 @@ function HeroTab({
   return (
     <Link
       href={href}
-      className="glass flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-[var(--color-paper)] transition hover:border-[var(--color-brass)]/60 hover:text-[var(--color-brass)]"
+      className="flex items-center gap-2.5 rounded-full border border-[var(--color-brass)]/40 bg-[var(--color-brass)]/10 px-6 py-3.5 text-base font-medium text-[var(--color-brass)] transition hover:border-[var(--color-brass)] hover:bg-[var(--color-brass)]/20"
     >
-      <Icon size={15} />
+      <Icon size={19} />
       {label}
     </Link>
   );
@@ -59,18 +59,18 @@ export function Hero() {
   const startProjectTab = session ? (
     <Link
       href="/booking"
-      className="glass flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-[var(--color-paper)] transition hover:border-[var(--color-brass)]/60 hover:text-[var(--color-brass)]"
+      className="flex items-center gap-2.5 rounded-full border border-[var(--color-brass)]/40 bg-[var(--color-brass)]/10 px-6 py-3.5 text-base font-medium text-[var(--color-brass)] transition hover:border-[var(--color-brass)] hover:bg-[var(--color-brass)]/20"
     >
-      <Rocket size={15} />
+      <Rocket size={19} />
       Start a Project
     </Link>
   ) : (
     <button
       type="button"
       onClick={() => setSignupOpen(true)}
-      className="glass flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-[var(--color-paper)] transition hover:border-[var(--color-brass)]/60 hover:text-[var(--color-brass)]"
+      className="flex items-center gap-2.5 rounded-full border border-[var(--color-brass)]/40 bg-[var(--color-brass)]/10 px-6 py-3.5 text-base font-medium text-[var(--color-brass)] transition hover:border-[var(--color-brass)] hover:bg-[var(--color-brass)]/20"
     >
-      <Rocket size={15} />
+      <Rocket size={19} />
       Start a Project
     </button>
   );
@@ -147,7 +147,7 @@ export function Hero() {
         </div>
 
         <div className="mt-16 grid items-center gap-6 lg:grid-cols-[auto_1fr_auto]">
-          <div className="order-2 flex flex-row flex-wrap justify-center gap-3 lg:order-1 lg:flex-col lg:items-stretch">
+          <div className="order-2 flex flex-row flex-wrap justify-center gap-4 lg:order-1 lg:flex-col lg:items-stretch">
             <HeroTab {...leftTabs[0]} />
             <HeroTab {...leftTabs[1]} />
             <HeroTab {...leftTabs[2]} />
@@ -171,15 +171,15 @@ export function Hero() {
             <div className="mt-4 flex justify-center">
               <Link
                 href="/pricing"
-                className="glass flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-[var(--color-brass)] transition hover:border-[var(--color-brass)]/60"
+                className="flex items-center gap-2.5 rounded-full border border-[var(--color-brass)]/40 bg-[var(--color-brass)]/10 px-6 py-3.5 text-base font-medium text-[var(--color-brass)] transition hover:border-[var(--color-brass)] hover:bg-[var(--color-brass)]/20"
               >
-                <Tags size={15} />
+                <Tags size={19} />
                 Pricing
               </Link>
             </div>
           </div>
 
-          <div className="order-3 flex flex-row flex-wrap justify-center gap-3 lg:flex-col lg:items-stretch">
+          <div className="order-3 flex flex-row flex-wrap justify-center gap-4 lg:flex-col lg:items-stretch">
             <HeroTab {...rightTabs[0]} />
             <HeroTab {...rightTabs[1]} />
             {startProjectTab}

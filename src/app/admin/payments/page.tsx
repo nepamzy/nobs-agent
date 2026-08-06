@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { clearAllPaymentData } from "./actions";
+import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { CheckCircle2, CreditCard, Banknote, FileDown } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -29,13 +31,26 @@ export default async function AdminPaymentsPage() {
 
   return (
     <div>
-      <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">
-        Payments
-      </h1>
-      <p className="mt-2 max-w-xl text-sm text-[var(--color-slate)]">
-        Every payment, deposit and installments alike, collected via Paystack. Clients
-        can pay in parts, this reflects the running total across all of them.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">
+            Payments
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-[var(--color-slate)]">
+            Every payment, deposit and installments alike, collected via Paystack. Clients
+            can pay in parts, this reflects the running total across all of them.
+          </p>
+        </div>
+        <form action={clearAllPaymentData}>
+          <ConfirmSubmit
+            message='This permanently deletes every payment record and resets every "amount paid" figure across the entire site back to zero, including analytics revenue, client totals, and invoices. This cannot be undone. Only do this if every payment currently on file is test data. Continue?'
+            title="Clear all payment data"
+            className="shrink-0 rounded-full border border-red-500/40 px-4 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/10"
+          >
+            Clear all payment data
+          </ConfirmSubmit>
+        </form>
+      </div>
 
       {!connected && (
         <div className="glass mt-6 rounded-xl p-4 text-sm text-[var(--color-slate)]">

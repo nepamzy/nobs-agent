@@ -304,3 +304,56 @@ export async function authorizeBookingPayment(formData: FormData) {
   revalidatePath("/admin/payments");
   revalidatePath("/dashboard/payments");
 }
+
+export async function removeBookingPayment(formData: FormData) {
+  const session = await auth();
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Not authorized.");
+  }
+
+  const id = formData.get("id");
+  const mode = formData.get("mode"); // "reset" | "remove"
+  if (typeof id !== "string") throw new Error("Missing booking id.");
+
+  const booking = await prisma.booking.findUnique({ where: { id } });
+  if (!booking) throw new Error("Booking not found.");
+
+  if (mode === "remove") {
+    // Removed entirely: clears the price too, not just what's paid,
+    // reverting the booking back to pending, undoing the confirmation as
+    // if it had never been priced.
+    await prisma.$transaction([
+      prisma.bookingPayment.deleteMany({ where: { bookingId: id } }),
+      prisma.booking.update({
+        where: { id },
+        data: {
+          amountPaid: 0,
+          depositPaid: false,
+          depositPaidAt: null,
+          agreedAmount: null,
+          depositPercentage: null,
+          depositAmount: null,
+          status: "PENDING",
+        },
+      }),
+    ]);
+  } else {
+    // Reset to zero: keeps the agreed price and confirmed status, just
+    // marks it unpaid again, for when the price itself is real but a
+    // specific payment needs undoing.
+    await prisma.$transaction([
+      prisma.bookingPayment.deleteMany({ where: { bookingId: id } }),
+      prisma.booking.update({
+        where: { id },
+        data: { amountPaid: 0, depositPaid: false, depositPaidAt: null },
+      }),
+    ]);
+  }
+
+  revalidatePath("/admin/bookings");
+  revalidatePath(`/admin/bookings/${id}`);
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin/analytics");
+  revalidatePath("/admin/clients");
+  revalidatePath("/dashboard/payments");
+}

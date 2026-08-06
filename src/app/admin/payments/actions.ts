@@ -16,7 +16,19 @@ export async function clearAllPaymentData() {
   await prisma.$transaction([
     prisma.bookingPayment.deleteMany({}),
     prisma.booking.updateMany({
-      data: { amountPaid: 0, depositPaid: false, depositPaidAt: null },
+      data: {
+        amountPaid: 0,
+        depositPaid: false,
+        depositPaidAt: null,
+        // Clearing the agreed price too, not just what's paid, is what
+        // actually makes the number disappear rather than reappear as
+        // "outstanding." A confirmed booking with no price reverts to
+        // pending, the same state it was in before it was ever priced.
+        agreedAmount: null,
+        depositPercentage: null,
+        depositAmount: null,
+        status: "PENDING",
+      },
     }),
   ]);
 

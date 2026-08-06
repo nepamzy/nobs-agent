@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AuthorizePaymentForm } from "./authorize-payment-form";
+import { DeleteBookingButton } from "./delete-booking-button";
+import { removeBookingPayment } from "../actions";
+import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { BookingFileUpload } from "@/components/booking-file-upload";
 import { toDownloadUrl } from "@/lib/cloudinary-download";
 import { ArrowLeft, Mail, Calendar, Video, DollarSign } from "lucide-react";
@@ -48,9 +51,12 @@ export default async function AdminBookingDetailPage({
               <Mail size={12} /> {booking.email}
             </p>
           </div>
-          <span className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-slate)]">
-            {booking.status}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-slate)]">
+              {booking.status}
+            </span>
+            <DeleteBookingButton bookingId={booking.id} />
+          </div>
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -137,6 +143,31 @@ export default async function AdminBookingDetailPage({
                   )
                 )}
               </ul>
+            )}
+
+            {booking.amountPaid > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <form action={removeBookingPayment}>
+                  <input type="hidden" name="id" value={booking.id} />
+                  <input type="hidden" name="mode" value="reset" />
+                  <ConfirmSubmit
+                    message="Reset this booking's payment to zero? The agreed price stays, it just shows as unpaid again. This can't be undone."
+                    className="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs transition hover:border-[var(--color-brass)] hover:text-[var(--color-brass)]"
+                  >
+                    Reset payment to zero
+                  </ConfirmSubmit>
+                </form>
+                <form action={removeBookingPayment}>
+                  <input type="hidden" name="id" value={booking.id} />
+                  <input type="hidden" name="mode" value="remove" />
+                  <ConfirmSubmit
+                    message="Remove this payment entirely? This also clears the agreed price and puts the booking back to pending, as if it had never been priced. This can't be undone."
+                    className="rounded-full border border-red-500/40 px-3 py-1.5 text-xs text-red-400 transition hover:bg-red-500/10"
+                  >
+                    Remove payment entirely
+                  </ConfirmSubmit>
+                </form>
+              </div>
             )}
           </div>
         )}

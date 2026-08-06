@@ -22,10 +22,9 @@ export const siteContent = {
     primaryCta: { label: "Start a project", href: "/booking" },
     secondaryCta: { label: "View the work", href: "/portfolio" },
     stats: [
-      { value: 1, suffix: "", label: "Platforms shipped" },
       { value: 11, suffix: "", label: "Sectors served" },
       { value: 99, suffix: ".9%", label: "Uptime across live client systems" },
-      { value: 2, suffix: " wks", label: "Median time to first launch", rawText: "2 wks - 1 month" },
+      { value: 1, suffix: " month", label: "Typical time to launch", note: "depending on the project" },
     ],
   },
   servicesPreview: {

@@ -2,24 +2,81 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, FolderKanban, Rocket, User, Wrench, Mail, Briefcase, Tags } from "lucide-react";
 import { siteContent } from "@/lib/content";
 import { StatCounter } from "@/components/stat-counter";
 import { usePointerTracking } from "@/lib/use-pointer-tracking";
 import { CursorTrail } from "@/components/cursor-trail";
+import { SignupPromptModal } from "@/components/signup-prompt-modal";
 
 const RobotScene = dynamic(
   () => import("@/components/three/robot-scene").then((m) => m.RobotScene),
   { ssr: false }
 );
 
+const flankingTabs = [
+  { label: "View Projects", href: "/portfolio", icon: FolderKanban },
+  { label: "About", href: "/about", icon: User },
+  { label: "Skills", href: "/skills", icon: Wrench },
+  { label: "Contact", href: "/contact", icon: Mail },
+  { label: "Case Studies", href: "/case-studies", icon: Briefcase },
+] as const;
+
+function HeroTab({
+  label,
+  href,
+  icon: Icon,
+}: {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ size?: number }>;
+}) {
+  return (
+    <Link
+      href={href}
+      className="glass flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-[var(--color-paper)] transition hover:border-[var(--color-brass)]/60 hover:text-[var(--color-brass)]"
+    >
+      <Icon size={15} />
+      {label}
+    </Link>
+  );
+}
+
 export function Hero() {
   const { hero } = siteContent;
+  const { data: session } = useSession();
+  const [signupOpen, setSignupOpen] = useState(false);
   const robotContainerRef = useRef<HTMLDivElement>(null);
   const { pointer, handlePointerDown, handlePointerMove, handlePointerUp } =
     usePointerTracking(robotContainerRef);
+
+  // "Start a Project" gates through signup first if there's no account
+  // yet, exactly the same rule already enforced on the booking form
+  // itself, this button just gets a head start on that same check.
+  const startProjectTab = session ? (
+    <Link
+      href="/booking"
+      className="glass flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-[var(--color-paper)] transition hover:border-[var(--color-brass)]/60 hover:text-[var(--color-brass)]"
+    >
+      <Rocket size={15} />
+      Start a Project
+    </Link>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setSignupOpen(true)}
+      className="glass flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-[var(--color-paper)] transition hover:border-[var(--color-brass)]/60 hover:text-[var(--color-brass)]"
+    >
+      <Rocket size={15} />
+      Start a Project
+    </button>
+  );
+
+  const leftTabs = [flankingTabs[0], flankingTabs[1], flankingTabs[2]];
+  const rightTabs = [flankingTabs[3], flankingTabs[4]];
 
   return (
     <section className="relative overflow-hidden">
@@ -76,28 +133,68 @@ export function Hero() {
             </Link>
           </motion.div>
 
-          <div className="mx-auto mt-16 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-4">
+          <div className="mx-auto mt-16 grid max-w-xl grid-cols-1 gap-6 sm:grid-cols-3">
             {hero.stats.map((s) => (
-              <StatCounter key={s.label} value={s.value} suffix={s.suffix} label={s.label} rawText={s.rawText} />
+              <StatCounter
+                key={s.label}
+                value={s.value}
+                suffix={s.suffix}
+                label={s.label}
+                note={s.note}
+              />
             ))}
           </div>
         </div>
 
-        <div
-          ref={robotContainerRef}
-          className="relative mt-16 h-[420px] touch-none sm:h-[560px] md:h-[680px] lg:h-[780px]"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-        >
-          <RobotScene pointer={pointer} />
-          <CursorTrail containerRef={robotContainerRef} />
-          <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-slate)]/70">
-            Drag to rotate
-          </p>
+        <div className="mt-16 grid items-center gap-6 lg:grid-cols-[auto_1fr_auto]">
+          <div className="order-2 flex flex-row flex-wrap justify-center gap-3 lg:order-1 lg:flex-col lg:items-stretch">
+            <HeroTab {...leftTabs[0]} />
+            <HeroTab {...leftTabs[1]} />
+            <HeroTab {...leftTabs[2]} />
+          </div>
+
+          <div className="order-1 lg:order-2">
+            <div
+              ref={robotContainerRef}
+              className="relative h-[420px] touch-none sm:h-[560px] md:h-[680px] lg:h-[780px]"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+            >
+              <RobotScene pointer={pointer} />
+              <CursorTrail containerRef={robotContainerRef} />
+              <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-slate)]/70">
+                Drag to rotate
+              </p>
+            </div>
+            <div className="mt-4 flex justify-center">
+              <Link
+                href="/pricing"
+                className="glass flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-[var(--color-brass)] transition hover:border-[var(--color-brass)]/60"
+              >
+                <Tags size={15} />
+                Pricing
+              </Link>
+            </div>
+          </div>
+
+          <div className="order-3 flex flex-row flex-wrap justify-center gap-3 lg:flex-col lg:items-stretch">
+            <HeroTab {...rightTabs[0]} />
+            <HeroTab {...rightTabs[1]} />
+            {startProjectTab}
+          </div>
         </div>
       </div>
+
+      <SignupPromptModal
+        open={signupOpen}
+        onClose={() => setSignupOpen(false)}
+        onSuccess={() => {
+          setSignupOpen(false);
+          window.location.href = "/booking";
+        }}
+      />
     </section>
   );
 }

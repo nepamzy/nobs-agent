@@ -18,7 +18,7 @@ export default async function CaseStudiesPage() {
       <PageHeader
         eyebrow="Case Studies"
         title="A closer look at how these were built"
-        description="The problem, the solution, and the measured result behind every project."
+        description="The problem, the solution, and the measured result behind every project. Some recent projects are under NDA and cannot be shared."
       />
 
       {projects.length === 0 ? (

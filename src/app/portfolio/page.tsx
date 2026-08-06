@@ -18,7 +18,7 @@ export default async function PortfolioPage() {
       <PageHeader
         eyebrow="Portfolio"
         title="Work built for real institutions"
-        description="Every project below is live, in production, running real payments or real operations, not a mockup."
+        description="Every project below is live, in production, running real payments or real operations, not a mockup. Some recent projects are under NDA and cannot be shared."
       />
 
       {projects.length === 0 ? (

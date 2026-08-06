@@ -7,9 +7,10 @@ type SendEmailArgs = {
   subject: string;
   htmlContent: string;
   replyTo?: string;
+  attachment?: { name: string; content: string }[]; // content is base64
 };
 
-export async function sendBrevoEmail({ to, subject, htmlContent, replyTo }: SendEmailArgs) {
+export async function sendBrevoEmail({ to, subject, htmlContent, replyTo, attachment }: SendEmailArgs) {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
     console.warn("[brevo] BREVO_API_KEY not set, skipping email send.");
@@ -31,6 +32,7 @@ export async function sendBrevoEmail({ to, subject, htmlContent, replyTo }: Send
       subject,
       htmlContent,
       ...(replyTo ? { replyTo: { email: replyTo } } : {}),
+      ...(attachment ? { attachment } : {}),
     }),
   });
 

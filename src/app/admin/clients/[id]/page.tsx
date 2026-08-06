@@ -65,6 +65,7 @@ export default async function AdminClientDetailPage({
 
   if (!data) notFound();
   const { client, projects, testimonials, bookings, messages } = data;
+  const totalPaid = bookings.reduce((sum, b) => sum + b.amountPaid, 0);
 
   return (
     <div>
@@ -75,33 +76,61 @@ export default async function AdminClientDetailPage({
         <ArrowLeft size={15} /> Back to clients
       </Link>
 
-      <div className="mt-4 flex items-center justify-between">
-        <div>
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">
-            {client.name}
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-slate)]">
-            {client.organization ?? "No organization on file"} · {client.sector ?? "No sector on file"}
-          </p>
+      <div className="glass mt-4 rounded-2xl p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">
+              {client.name}
+            </h1>
+            <p className="mt-1 text-sm text-[var(--color-slate)]">
+              {client.organization ?? "No organization on file"} · {client.sector ?? "No sector on file"}
+            </p>
+          </div>
+          {client.user && (
+            <Link
+              href={`/admin/messages/${client.user.id}`}
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+            >
+              <MessageSquare size={14} /> Message
+            </Link>
+          )}
         </div>
-        {client.user && (
-          <Link
-            href={`/admin/messages/${client.user.id}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-          >
-            <MessageSquare size={14} /> Message
-          </Link>
-        )}
-      </div>
 
-      {client.user ? (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-[var(--color-slate)]">
-          <Mail size={13} /> {client.user.email} · Has a portal account
-          {client.user.phone && ` · ${client.user.phone}`}
-        </p>
-      ) : (
-        <p className="mt-2 text-xs text-[var(--color-slate)]">No linked portal account yet</p>
-      )}
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-[var(--color-slate)]">
+          {client.user ? (
+            <span className="flex items-center gap-1.5">
+              <Mail size={13} /> {client.user.email} · Has a portal account
+            </span>
+          ) : (
+            <span>No linked portal account yet</span>
+          )}
+          {client.user?.phone && <span>{client.user.phone}</span>}
+          <span className="flex items-center gap-1.5">
+            <CalendarClock size={13} /> Client on file since {new Date(client.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-4 border-t border-[var(--color-line)] pt-5">
+          <div>
+            <p className="text-xs text-[var(--color-slate)]">Projects</p>
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-xl text-[var(--color-brass)]">
+              {projects.length}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-[var(--color-slate)]">Bookings</p>
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-xl text-[var(--color-brass)]">
+              {bookings.length}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-[var(--color-slate)]">Total paid</p>
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-xl text-[var(--color-brass)]">
+              {formatNaira(totalPaid)}
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         {/* Projects */}
@@ -222,10 +251,6 @@ export default async function AdminClientDetailPage({
           )}
         </div>
       </div>
-
-      <p className="mt-6 flex items-center gap-1.5 text-xs text-[var(--color-slate)]">
-        <CalendarClock size={13} /> Client on file since {new Date(client.createdAt).toLocaleDateString()}
-      </p>
     </div>
   );
 }

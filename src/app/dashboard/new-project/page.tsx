@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { submitProjectBrief, cancelProjectBrief } from "./actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { BookingFileUpload } from "@/components/booking-file-upload";
+import { toDownloadUrl } from "@/lib/cloudinary-download";
 import { CheckCircle2, ArrowUpRight, X } from "lucide-react";
 
 const NEW_STATUSES = ["SUBMITTED", "IN_REVIEW"];
@@ -161,9 +162,7 @@ export default async function ProjectsPage({
                     {b.files.map((f: { id: string; url: string; fileName: string }) => (
                       <li key={f.id}>
                         <a
-                          href={f.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href={toDownloadUrl(f.url, f.fileName)}
                           className="text-xs text-[var(--color-brass)] underline underline-offset-4"
                         >
                           {f.fileName}

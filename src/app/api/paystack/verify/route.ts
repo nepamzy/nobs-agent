@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { rateLimit } from "@/lib/rate-limit";
 import { buildReceiptHtml } from "@/lib/receipt";
+import { generateInvoicePdf } from "@/lib/invoice-pdf";
 
 const verifySchema = z.object({
   reference: z.string().min(1),
@@ -114,16 +115,34 @@ export async function POST(req: NextRequest) {
         paidAt: new Date(),
       });
 
+      const allPayments = await prisma.bookingPayment.findMany({
+        where: { bookingId: booking.id },
+        orderBy: { createdAt: "asc" },
+      });
+      const pdfBytes = await generateInvoicePdf({
+        id: booking.id,
+        fullName: booking.fullName,
+        email: booking.email,
+        serviceInterest: booking.serviceInterest,
+        agreedAmount: booking.agreedAmount,
+        amountPaid: newTotalPaid,
+        payments: allPayments,
+      });
+      const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
+      const attachment = [{ name: `receipt-${booking.id}.pdf`, content: pdfBase64 }];
+
       await Promise.all([
         sendBrevoEmail({
           to: [{ email: booking.email, name: booking.fullName }],
           subject: newTotalPaid >= booking.agreedAmount ? "Paid in full, thank you" : "Payment received",
           htmlContent: receiptHtml,
+          attachment,
         }),
         sendBrevoEmail({
           to: [{ email: process.env.STUDIO_NOTIFICATION_EMAIL || "hello@nobsagent.com" }],
           subject: `Payment received: ${booking.fullName}`,
           htmlContent: receiptHtml,
+          attachment,
         }),
       ]);
     }

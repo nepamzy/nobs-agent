@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { LogoTripleTap } from "@/components/logo-triple-tap";
 import { useLanguage } from "@/lib/i18n/language-context";
-import { Menu, X } from "lucide-react";
+import { Menu, X, UserRound } from "lucide-react";
 
 const navKeyByHref: Record<string, string> = {
   "/portfolio": "nav_work",
@@ -60,9 +60,15 @@ export function SiteHeader() {
           <LanguageSwitcher />
           <Link
             href={session ? dashboardHref : "/login"}
-            className="hidden text-sm font-bold tracking-tight text-[var(--color-paper)] transition hover:text-[var(--color-brass)] sm:inline-block"
+            aria-label={session ? "Go to your portal" : "Sign in"}
+            title={session ? "Your portal" : "Sign in"}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-sm font-semibold text-[var(--color-paper)] transition hover:border-[var(--color-brass)] hover:text-[var(--color-brass)]"
           >
-            {session ? t("dashboard") : t("sign_in")}
+            {session?.user.name ? (
+              session.user.name.trim().charAt(0).toUpperCase()
+            ) : (
+              <UserRound size={16} />
+            )}
           </Link>
           <ThemeToggle />
           <Link

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AuthorizePaymentForm } from "./authorize-payment-form";
 import { BookingFileUpload } from "@/components/booking-file-upload";
+import { toDownloadUrl } from "@/lib/cloudinary-download";
 import { ArrowLeft, Mail, Calendar, Video, DollarSign } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -89,9 +90,7 @@ export default async function AdminBookingDetailPage({
               {booking.files.map((f: { id: string; url: string; fileName: string; uploadedByRole: string }) => (
                 <li key={f.id} className="flex items-center gap-2">
                   <a
-                    href={f.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={toDownloadUrl(f.url, f.fileName)}
                     className="text-sm text-[var(--color-brass)] underline underline-offset-4"
                   >
                     {f.fileName}

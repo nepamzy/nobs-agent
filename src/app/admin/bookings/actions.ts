@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { getSiteUrl } from "@/lib/env";
 import { buildReceiptHtml } from "@/lib/receipt";
+import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToUser } from "@/lib/push";
 import type { BookingStatus } from "@prisma/client";
 
@@ -234,6 +235,22 @@ export async function authorizeBookingPayment(formData: FormData) {
       paidAt: new Date(),
     });
 
+    const allPayments = await prisma.bookingPayment.findMany({
+      where: { bookingId: booking.id },
+      orderBy: { createdAt: "asc" },
+    });
+    const pdfBytes = await generateInvoicePdf({
+      id: booking.id,
+      fullName: booking.fullName,
+      email: booking.email,
+      serviceInterest: booking.serviceInterest,
+      agreedAmount,
+      amountPaid: newTotalPaid,
+      payments: allPayments,
+    });
+    const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
+    const attachment = [{ name: `receipt-${booking.id}.pdf`, content: pdfBase64 }];
+
     // The payment record is already committed above, an email hiccup
     // (bad sender domain, rate limit, etc.) shouldn't be able to make
     // this whole action look like it failed when the money was in fact
@@ -243,11 +260,13 @@ export async function authorizeBookingPayment(formData: FormData) {
         to: [{ email: booking.email, name: booking.fullName }],
         subject: newTotalPaid >= agreedAmount ? "Paid in full, thank you" : "Payment received",
         htmlContent: receiptHtml,
+        attachment,
       }),
       sendBrevoEmail({
         to: [{ email: process.env.STUDIO_NOTIFICATION_EMAIL || "hello@nobsagent.com" }],
         subject: `Payment authorized (manual): ${booking.fullName}`,
         htmlContent: receiptHtml,
+        attachment,
       }),
     ]).then((results) => {
       results.forEach((r) => {

@@ -6,6 +6,7 @@ import { postAdminReply, markApplicationMessagesRead } from "./actions";
 import { ApplicationStatusSelect } from "@/components/admin/application-status-select";
 import { MessageAttachmentInput } from "@/components/message-attachment-input";
 import { MessageAttachment } from "@/components/message-attachment";
+import { toDownloadUrl } from "@/lib/cloudinary-download";
 
 export default async function AdminApplicationDetailPage({
   params,
@@ -49,9 +50,7 @@ export default async function AdminApplicationDetailPage({
           </p>
           {application.resumeUrl && (
             <a
-              href={application.resumeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={toDownloadUrl(application.resumeUrl, "resume.pdf")}
               className="mt-2 inline-flex items-center gap-1.5 text-sm text-[var(--color-brass)] underline underline-offset-4"
             >
               <FileText size={14} /> View resume

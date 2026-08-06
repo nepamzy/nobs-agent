@@ -4,6 +4,7 @@ import { ArrowLeft, FileText, Trash2 } from "lucide-react";
 import { ProjectForm } from "@/components/admin/project-form";
 import { ProjectFileUpload } from "@/components/admin/project-file-upload";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
+import { toDownloadUrl } from "@/lib/cloudinary-download";
 import { updateProject, addProjectFile, deleteProjectFile } from "../../actions";
 import { prisma } from "@/lib/prisma";
 
@@ -58,8 +59,7 @@ export default async function EditProjectPage({
             {files.map((f) => (
               <li key={f.id} className="flex items-center justify-between rounded-lg border border-[var(--color-line)] px-3 py-2 text-sm">
                 <a
-                  href={f.url}
-                  target="_blank"
+                  href={toDownloadUrl(f.url, f.fileName)}
                   className="truncate text-[var(--color-brass)] underline underline-offset-4"
                 >
                   {f.fileName}

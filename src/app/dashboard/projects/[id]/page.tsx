@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { postProjectComment } from "./actions";
 import { ClientFileUpload } from "@/components/client-file-upload";
+import { toDownloadUrl } from "@/lib/cloudinary-download";
 import { FileText, CheckCircle2, Circle } from "lucide-react";
 
 const STATUS_ORDER = ["SUBMITTED", "IN_REVIEW", "IN_PROGRESS", "REVISION", "DELIVERED"] as const;
@@ -159,9 +160,7 @@ export default async function ProjectDetailPage({
               {project.files.map((f: { id: string; url: string; fileName: string; uploadedByRole: string }) => (
                 <li key={f.id} className="flex items-center gap-2">
                   <a
-                    href={f.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={toDownloadUrl(f.url, f.fileName)}
                     className="text-sm text-[var(--color-brass)] underline underline-offset-4"
                   >
                     {f.fileName}

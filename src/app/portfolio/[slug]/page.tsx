@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { getAllProjectSlugs, getProjectBySlug } from "@/lib/data/projects";
+import { getServerLanguage, translateFields } from "@/lib/translate-content";
 import { ProjectCover } from "@/components/project-cover";
 
 export async function generateStaticParams() {
@@ -33,6 +34,12 @@ export default async function ProjectDetailPage({
   const project = await getProjectBySlug(slug);
   if (!project) notFound();
 
+  const language = await getServerLanguage();
+  const { title, summary } = await translateFields(
+    { title: project.title, summary: project.summary },
+    language
+  );
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-24">
       <Link
@@ -46,9 +53,9 @@ export default async function ProjectDetailPage({
         {project.industry} · {project.durationWeeks} weeks
       </p>
       <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-medium tracking-tight sm:text-5xl">
-        {project.title}
+        {title}
       </h1>
-      <p className="mt-4 max-w-2xl text-[var(--color-slate)]">{project.summary}</p>
+      <p className="mt-4 max-w-2xl text-[var(--color-slate)]">{summary}</p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <span className="text-sm text-[var(--color-slate)]">Client: {project.clientName}</span>

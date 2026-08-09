@@ -11,6 +11,7 @@ import { StatCounter } from "@/components/stat-counter";
 import { usePointerTracking } from "@/lib/use-pointer-tracking";
 import { CursorTrail } from "@/components/cursor-trail";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 const RobotScene = dynamic(
   () => import("@/components/three/robot-scene").then((m) => m.RobotScene),
@@ -47,6 +48,7 @@ function HeroTab({
 
 export function Hero() {
   const { hero } = siteContent;
+  const { t } = useLanguage();
   const { data: session } = useSession();
   const [signupOpen, setSignupOpen] = useState(false);
   const robotContainerRef = useRef<HTMLDivElement>(null);
@@ -91,7 +93,7 @@ export function Hero() {
             transition={{ duration: 0.5 }}
             className="mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] px-3 py-1 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]"
           >
-            {hero.eyebrow}
+            {t("hero_eyebrow")}
           </motion.p>
 
           <motion.h1
@@ -100,7 +102,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-[family-name:var(--font-display)] text-4xl font-medium leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
           >
-            {hero.title}
+            {t("hero_title")}
           </motion.h1>
 
           <motion.p
@@ -109,7 +111,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mx-auto mt-6 max-w-lg text-base text-[var(--color-slate)] sm:text-lg"
           >
-            {hero.subtitle}
+            {t("hero_subtitle")}
           </motion.p>
 
           <motion.div
@@ -122,27 +124,21 @@ export function Hero() {
               href={hero.primaryCta.href}
               className="group inline-flex items-center gap-2 rounded-full bg-[var(--color-brass)] px-6 py-3 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
             >
-              {hero.primaryCta.label}
+              {t("hero_primary_cta")}
               <ArrowRight size={16} className="transition group-hover:translate-x-0.5" />
             </Link>
             <Link
               href={hero.secondaryCta.href}
               className="text-sm font-medium text-[var(--color-paper)] underline decoration-[var(--color-line)] underline-offset-4 transition hover:decoration-[var(--color-brass)]"
             >
-              {hero.secondaryCta.label}
+              {t("hero_secondary_cta")}
             </Link>
           </motion.div>
 
           <div className="mx-auto mt-16 grid max-w-xl grid-cols-1 gap-6 sm:grid-cols-3">
-            {hero.stats.map((s) => (
-              <StatCounter
-                key={s.label}
-                value={s.value}
-                suffix={s.suffix}
-                label={s.label}
-                note={s.note}
-              />
-            ))}
+            <StatCounter value={11} suffix="" label={t("stat_sectors")} />
+            <StatCounter value={99} suffix=".9%" label={t("stat_uptime")} />
+            <StatCounter value={1} suffix=" month" label={t("stat_launch")} note={t("stat_launch_note")} />
           </div>
         </div>
 

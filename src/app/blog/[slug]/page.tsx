@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getAllBlogSlugs, getBlogPostBySlug } from "@/lib/data/blog";
+import { getServerLanguage, translateFields, translateList } from "@/lib/translate-content";
 
 export async function generateStaticParams() {
   const slugs = await getAllBlogSlugs();
@@ -37,6 +38,10 @@ export default async function BlogPostPage({
   const post = await getBlogPostBySlug(slug);
   if (!post) notFound();
 
+  const language = await getServerLanguage();
+  const { title } = await translateFields({ title: post.title }, language);
+  const content = await translateList(post.content, language);
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-24">
       <Link
@@ -50,11 +55,11 @@ export default async function BlogPostPage({
         {post.category} · {formatDate(post.publishedAt)}
       </p>
       <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-medium tracking-tight sm:text-4xl">
-        {post.title}
+        {title}
       </h1>
 
       <div className="mt-8 space-y-5 text-[var(--color-slate)]">
-        {post.content.map((para, i) => (
+        {content.map((para, i) => (
           <p key={i} className="leading-relaxed">
             {para}
           </p>

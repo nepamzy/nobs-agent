@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json({ ok: true, bookingId: booking.id }, { status: 200 });
   } catch (err) {
     console.error("[booking] failed to process submission", err);
     return NextResponse.json(

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, type FormEvent } from "react";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
+import { Loader2, CheckCircle2, Paperclip, X } from "lucide-react";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
+import { uploadBookingFile } from "@/app/dashboard/new-project/actions";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -33,8 +34,56 @@ export function BookingForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [showSignup, setShowSignup] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const pendingDataRef = useRef<Record<string, unknown> | null>(null);
+
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    setSelectedFile(e.target.files?.[0] ?? null);
+  }
+
+  // Runs after a booking is genuinely created, this is the piece that
+  // makes attaching a file to a brand-new booking possible at all, the
+  // booking doesn't exist yet at the moment someone picks a file, so the
+  // actual upload has to happen right after the ID comes back, not
+  // alongside the form fields themselves.
+  async function attachFileToBooking(bookingId: string, file: File) {
+    setUploadingFile(true);
+    try {
+      const sigRes = await fetch("/api/cloudinary/sign-client-upload", { method: "POST" });
+      const sigJson = await sigRes.json();
+      if (!sigRes.ok) throw new Error(sigJson.error ?? "Could not prepare the upload.");
+
+      const { signature, timestamp, apiKey, cloudName, folder } = sigJson;
+
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+      uploadData.append("api_key", apiKey);
+      uploadData.append("timestamp", String(timestamp));
+      uploadData.append("signature", signature);
+      uploadData.append("folder", folder);
+
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+        method: "POST",
+        body: uploadData,
+      });
+      const uploadJson = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadJson.error?.message ?? "Upload failed.");
+
+      const attachData = new FormData();
+      attachData.set("bookingId", bookingId);
+      attachData.set("url", uploadJson.secure_url);
+      attachData.set("fileName", file.name);
+      await uploadBookingFile(attachData);
+    } catch {
+      // The booking itself already succeeded, a failed attachment
+      // shouldn't be reported as the whole request failing, the person
+      // can always add the file afterward from their dashboard.
+    } finally {
+      setUploadingFile(false);
+    }
+  }
 
   async function submitBooking(data: Record<string, unknown>) {
     const res = await fetch("/api/booking", {
@@ -52,8 +101,14 @@ export function BookingForm() {
       return;
     }
     if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
+
+    if (selectedFile && json.bookingId) {
+      await attachFileToBooking(json.bookingId, selectedFile);
+    }
+
     setStatus("success");
     formRef.current?.reset();
+    setSelectedFile(null);
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -206,6 +261,32 @@ export function BookingForm() {
 
       <div>
         <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          Attach a file, photo, or video (optional)
+        </label>
+        {selectedFile ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-brass)]/40 bg-[var(--color-brass)]/10 px-3 py-1.5 text-xs">
+            <Paperclip size={13} className="text-[var(--color-brass)]" />
+            {selectedFile.name.length > 30 ? `${selectedFile.name.slice(0, 30)}...` : selectedFile.name}
+            <button
+              type="button"
+              onClick={() => setSelectedFile(null)}
+              aria-label="Remove attachment"
+              className="text-[var(--color-slate)] hover:text-red-400"
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ) : (
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs transition hover:border-[var(--color-brass)]">
+            <Paperclip size={13} />
+            Choose a file
+            <input type="file" className="hidden" onChange={handleFileChange} />
+          </label>
+        )}
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Anything I should know beforehand? (optional)
         </label>
         <textarea
@@ -222,11 +303,11 @@ export function BookingForm() {
 
       <button
         type="submit"
-        disabled={status === "submitting"}
+        disabled={status === "submitting" || uploadingFile}
         className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brass)] px-6 py-3 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90 disabled:opacity-60"
       >
-        {status === "submitting" && <Loader2 size={16} className="animate-spin" />}
-        {status === "submitting" ? "Sending…" : "Request consultation"}
+        {(status === "submitting" || uploadingFile) && <Loader2 size={16} className="animate-spin" />}
+        {status === "submitting" ? "Sending…" : uploadingFile ? "Uploading attachment…" : "Request consultation"}
       </button>
     </form>
     </>

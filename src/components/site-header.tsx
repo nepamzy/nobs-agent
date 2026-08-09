@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { siteContent } from "@/lib/content";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { CurrencySwitcher } from "@/components/currency-switcher";
 import { LogoTripleTap } from "@/components/logo-triple-tap";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { Menu, X, UserRound } from "lucide-react";
@@ -58,6 +59,7 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
+          <CurrencySwitcher />
           <Link
             href={session ? dashboardHref : "/login"}
             aria-label={session ? "Go to your portal" : "Sign in"}

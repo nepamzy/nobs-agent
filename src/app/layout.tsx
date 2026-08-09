@@ -3,6 +3,7 @@ import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/lib/i18n/language-context";
+import { CurrencyProvider } from "@/lib/currency-context";
 import { AuthSessionProvider } from "@/components/auth-session-provider";
 import { SiteHeader } from "@/components/site-header";
 import { AnnouncementBanner } from "@/components/announcement-banner";
@@ -10,6 +11,7 @@ import { GoogleAnalytics } from "@/components/google-analytics";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { PageViewTracker } from "@/components/page-view-tracker";
 import { CookieConsentBanner } from "@/components/cookie-consent-banner";
+import { InstallPromptModal } from "@/components/install-prompt-modal";
 import { SiteFooter } from "@/components/site-footer";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { OrganizationJsonLd } from "@/components/organization-json-ld";
@@ -80,14 +82,17 @@ export default function RootLayout({
         <PageViewTracker />
         <AuthSessionProvider>
           <LanguageProvider>
-            <ThemeProvider>
-              <AnnouncementBanner />
-              <SiteHeader />
-              <main className="flex-1">{children}</main>
-              <SiteFooter />
-              <WhatsAppButton />
-              <CookieConsentBanner />
-            </ThemeProvider>
+            <CurrencyProvider>
+              <ThemeProvider>
+                <AnnouncementBanner />
+                <SiteHeader />
+                <main className="flex-1">{children}</main>
+                <SiteFooter />
+                <WhatsAppButton />
+                <CookieConsentBanner />
+                <InstallPromptModal />
+              </ThemeProvider>
+            </CurrencyProvider>
           </LanguageProvider>
         </AuthSessionProvider>
       </body>

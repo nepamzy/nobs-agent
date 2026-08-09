@@ -137,8 +137,8 @@ export const pricingGroups: PricingGroup[] = [
       {
         name: "Business Websites",
         tier: "Starter",
-        standardPrice: 380000,
-        launchPrice: 230000,
+        standardPrice: 247000,
+        launchPrice: 380000,
         bullets: [
           "Up to 5 pages",
           "Mobile-responsive",
@@ -150,8 +150,8 @@ export const pricingGroups: PricingGroup[] = [
       {
         name: "Corporate Websites",
         tier: "Growth",
-        standardPrice: 620000,
-        launchPrice: 380000,
+        standardPrice: 403000,
+        launchPrice: 620000,
         bullets: [
           "Larger page count",
           "Leadership/team structure",
@@ -163,8 +163,8 @@ export const pricingGroups: PricingGroup[] = [
       {
         name: "Landing Pages",
         tier: "Starter",
-        standardPrice: 150000,
-        launchPrice: 95000,
+        standardPrice: 97500,
+        launchPrice: 150000,
         bullets: [
           "Single-purpose page",
           "Fast turnaround",
@@ -176,8 +176,8 @@ export const pricingGroups: PricingGroup[] = [
       {
         name: "Real Estate Platforms",
         tier: "Growth",
-        standardPrice: 480000,
-        launchPrice: 290000,
+        standardPrice: 312000,
+        launchPrice: 480000,
         bullets: [
           "Property listings",
           "Search and filter",

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { PriceDisplay } from "@/components/price-display";
 import { pricingGroups, type PricingTier } from "@/lib/data/pricing-detailed";
 import { Check, ArrowUpRight } from "lucide-react";
 
@@ -8,14 +9,6 @@ export const metadata: Metadata = {
   title: "Pricing",
   description: "Transparent pricing by category, with current launch rates.",
 };
-
-function formatNaira(amount: number) {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 const tierStyles: Record<PricingTier, string> = {
   Starter: "border-[var(--color-line)] text-[var(--color-slate)]",
@@ -73,12 +66,12 @@ export default function PricingPage() {
 
                   <div className="mt-4 flex items-baseline gap-2">
                     <span className="font-[family-name:var(--font-mono)] text-sm text-red-500 line-through decoration-2">
-                      {formatNaira(item.standardPrice)}
+                      <PriceDisplay ngnAmount={item.standardPrice} />
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1">
                     <span className="font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)]">
-                      {formatNaira(item.launchPrice)}
+                      <PriceDisplay ngnAmount={item.launchPrice} />
                     </span>
                     {item.unit && (
                       <span className="text-xs text-[var(--color-slate)]">{item.unit}</span>

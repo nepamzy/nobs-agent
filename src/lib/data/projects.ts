@@ -18,6 +18,11 @@ export type Project = {
   problem: string;
   solution: string;
   results: string;
+  constraints?: string;
+  architecture?: string;
+  keyEngineeringDecisions?: string;
+  security?: string;
+  performance?: string;
   clientName: string;
   liveUrl?: string;
   featured: boolean;
@@ -51,6 +56,11 @@ async function fetchFromDb(): Promise<Project[] | null> {
       problem: r.problem,
       solution: r.solution,
       results: r.results,
+      constraints: r.constraints ?? undefined,
+      architecture: r.architecture ?? undefined,
+      keyEngineeringDecisions: r.keyEngineeringDecisions ?? undefined,
+      security: r.security ?? undefined,
+      performance: r.performance ?? undefined,
       clientName: r.client?.name ?? "Confidential",
       liveUrl: r.liveUrl ?? undefined,
       featured: r.featured,

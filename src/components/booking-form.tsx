@@ -163,20 +163,28 @@ export function BookingForm() {
     <form ref={formRef} onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          <label
+            htmlFor="booking-fullName"
+            className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+          >
             Full name
           </label>
           <input
+            id="booking-fullName"
             name="fullName"
             required
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          <label
+            htmlFor="booking-email"
+            className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+          >
             Email
           </label>
           <input
+            id="booking-email"
             name="email"
             type="email"
             required
@@ -186,10 +194,14 @@ export function BookingForm() {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label
+          htmlFor="booking-serviceInterest"
+          className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+        >
           What are you looking to build?
         </label>
         <select
+          id="booking-serviceInterest"
           name="serviceInterest"
           required
           defaultValue=""
@@ -208,10 +220,14 @@ export function BookingForm() {
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          <label
+            htmlFor="booking-budgetRange"
+            className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+          >
             Budget range
           </label>
           <select
+            id="booking-budgetRange"
             name="budgetRange"
             required
             defaultValue=""
@@ -228,10 +244,14 @@ export function BookingForm() {
           </select>
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          <label
+            htmlFor="booking-meetingType"
+            className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+          >
             Meeting type
           </label>
           <select
+            id="booking-meetingType"
             name="meetingType"
             required
             defaultValue=""
@@ -248,10 +268,14 @@ export function BookingForm() {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label
+          htmlFor="booking-scheduledFor"
+          className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+        >
           Preferred date & time
         </label>
         <input
+          id="booking-scheduledFor"
           name="scheduledFor"
           type="datetime-local"
           required
@@ -260,7 +284,10 @@ export function BookingForm() {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label
+          htmlFor="booking-file"
+          className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+        >
           Attach a file, photo, or video (optional)
         </label>
         {selectedFile ? (
@@ -277,19 +304,26 @@ export function BookingForm() {
             </button>
           </span>
         ) : (
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs transition hover:border-[var(--color-brass)]">
+          <label
+            htmlFor="booking-file"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs transition hover:border-[var(--color-brass)]"
+          >
             <Paperclip size={13} />
             Choose a file
-            <input type="file" className="hidden" onChange={handleFileChange} />
+            <input id="booking-file" type="file" className="hidden" onChange={handleFileChange} />
           </label>
         )}
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label
+          htmlFor="booking-notes"
+          className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+        >
           Anything I should know beforehand? (optional)
         </label>
         <textarea
+          id="booking-notes"
           name="notes"
           rows={4}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"

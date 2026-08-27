@@ -37,6 +37,11 @@ const projectSchema = z.object({
   problem: z.string().trim().min(2),
   solution: z.string().trim().min(2),
   results: z.string().trim().min(2),
+  constraints: z.string().trim().optional().or(z.literal("")),
+  architecture: z.string().trim().optional().or(z.literal("")),
+  keyEngineeringDecisions: z.string().trim().optional().or(z.literal("")),
+  security: z.string().trim().optional().or(z.literal("")),
+  performance: z.string().trim().optional().or(z.literal("")),
   durationWeeks: z.coerce.number().int().positive().optional(),
   liveUrl: z.string().trim().url().optional().or(z.literal("")),
   githubUrl: z.string().trim().url().optional().or(z.literal("")),
@@ -73,6 +78,11 @@ export async function createProject(formData: FormData) {
       coverImage: data.coverImage || "",
       liveUrl: data.liveUrl || null,
       githubUrl: data.githubUrl || null,
+      constraints: data.constraints || null,
+      architecture: data.architecture || null,
+      keyEngineeringDecisions: data.keyEngineeringDecisions || null,
+      security: data.security || null,
+      performance: data.performance || null,
       technologies: splitList(formData.get("technologies")),
       gallery: formData.getAll("gallery").map(String).filter(Boolean),
       featured: formData.get("featured") === "on",
@@ -83,6 +93,8 @@ export async function createProject(formData: FormData) {
 
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
+  revalidatePath(`/portfolio/${slug}`);
+  revalidatePath("/case-studies");
   redirect("/admin/portfolio");
 }
 
@@ -98,13 +110,18 @@ export async function updateProject(formData: FormData) {
   const { clientName, ...data } = parsed.data;
   const clientId = await resolveClientId(clientName);
 
-  await prisma.project.update({
+  const updated = await prisma.project.update({
     where: { id },
     data: {
       ...data,
       coverImage: data.coverImage || "",
       liveUrl: data.liveUrl || null,
       githubUrl: data.githubUrl || null,
+      constraints: data.constraints || null,
+      architecture: data.architecture || null,
+      keyEngineeringDecisions: data.keyEngineeringDecisions || null,
+      security: data.security || null,
+      performance: data.performance || null,
       technologies: splitList(formData.get("technologies")),
       gallery: formData.getAll("gallery").map(String).filter(Boolean),
       featured: formData.get("featured") === "on",
@@ -115,6 +132,8 @@ export async function updateProject(formData: FormData) {
 
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
+  revalidatePath(`/portfolio/${updated.slug}`);
+  revalidatePath("/case-studies");
   redirect("/admin/portfolio");
 }
 
@@ -124,9 +143,11 @@ export async function deleteProject(formData: FormData) {
   const id = formData.get("id");
   if (typeof id !== "string") throw new Error("Missing project id.");
 
-  await prisma.project.delete({ where: { id } });
+  const deleted = await prisma.project.delete({ where: { id } });
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
+  revalidatePath(`/portfolio/${deleted.slug}`);
+  revalidatePath("/case-studies");
 }
 
 export async function toggleFeatured(formData: FormData) {
@@ -138,6 +159,7 @@ export async function toggleFeatured(formData: FormData) {
   await prisma.project.update({ where: { id }, data: { featured: !featured } });
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
+  revalidatePath("/case-studies");
 }
 
 export async function toggleHidden(formData: FormData) {
@@ -146,9 +168,11 @@ export async function toggleHidden(formData: FormData) {
   const hidden = formData.get("hidden") === "true";
   if (typeof id !== "string") throw new Error("Missing project id.");
 
-  await prisma.project.update({ where: { id }, data: { hidden: !hidden } });
+  const toggled = await prisma.project.update({ where: { id }, data: { hidden: !hidden } });
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
+  revalidatePath(`/portfolio/${toggled.slug}`);
+  revalidatePath("/case-studies");
 }
 
 export async function addProjectFile(formData: FormData) {

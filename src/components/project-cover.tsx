@@ -4,11 +4,13 @@ export function ProjectCover({
   slug,
   industry,
   coverImage,
+  title,
   className = "",
 }: {
   slug: string;
   industry: string;
   coverImage?: string;
+  title?: string;
   className?: string;
 }) {
   if (coverImage) {
@@ -16,7 +18,7 @@ export function ProjectCover({
       // eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL, dimensions vary per upload
       <img
         src={coverImage}
-        alt=""
+        alt={title ? `${title} — cover` : ""}
         className={`rounded-2xl border border-[var(--color-line)] object-cover ${className}`}
       />
     );

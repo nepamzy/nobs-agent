@@ -142,7 +142,13 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="mt-16 grid items-center gap-6 lg:grid-cols-[auto_1fr_auto]">
+        <div className="mt-16 text-center">
+          <span className="inline-flex items-center gap-2 font-[family-name:var(--font-mono)] text-xs font-medium uppercase tracking-[0.2em] text-[var(--color-brass)]">
+            Explore NOBS
+          </span>
+        </div>
+
+        <div className="mt-6 grid items-center gap-6 lg:grid-cols-[auto_1fr_auto]">
           <div className="order-2 flex flex-row flex-wrap justify-center gap-4 lg:order-1 lg:flex-col lg:items-stretch">
             <HeroTab {...leftTabs[0]} />
             <HeroTab {...leftTabs[1]} />

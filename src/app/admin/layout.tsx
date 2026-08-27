@@ -15,12 +15,14 @@ import {
   CalendarClock,
   Briefcase,
   BarChart3,
+  UserCircle,
 } from "lucide-react";
 
 const navItems = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Site Content", href: "/admin/content", icon: FileText },
   { label: "Portfolio", href: "/admin/portfolio", icon: FolderKanban },
+  { label: "Founder Profile", href: "/admin/founder", icon: UserCircle },
   { label: "Blog", href: "/admin/blog", icon: Newspaper },
   { label: "Clients", href: "/admin/clients", icon: Users },
   { label: "Careers", href: "/admin/careers", icon: Briefcase },

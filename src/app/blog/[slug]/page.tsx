@@ -51,7 +51,12 @@ export default async function BlogPostPage({
         <ArrowLeft size={15} /> Back to blog
       </Link>
 
-      <p className="mt-8 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
+      <p className="mt-8 flex items-center gap-2 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
+        {post.postType === "build_log" && (
+          <span className="rounded-full border border-[var(--color-brass)]/50 px-2 py-0.5">
+            Build Log
+          </span>
+        )}
         {post.category} · {formatDate(post.publishedAt)}
       </p>
       <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-medium tracking-tight sm:text-4xl">

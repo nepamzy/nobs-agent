@@ -9,6 +9,7 @@ type PostFormValues = {
   excerpt: string;
   content: string;
   category: string | null;
+  postType: string;
   coverImage: string | null;
   metaTitle: string | null;
   metaDescription: string | null;
@@ -69,6 +70,21 @@ export function BlogPostForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
+          <label className={labelClass}>Content type</label>
+          <select
+            name="postType"
+            defaultValue={defaultValues?.postType ?? "ARTICLE"}
+            className={inputClass}
+          >
+            <option value="ARTICLE">Article</option>
+            <option value="BUILD_LOG">Build Log / Engineering Note</option>
+          </select>
+          <p className="mt-1.5 text-[11px] text-[var(--color-slate)]">
+            Build Logs are technical, project-specific write-ups (e.g. how a feature was
+            architected or built). Shown with their own filter/badge on the public blog.
+          </p>
+        </div>
+        <div>
           <label className={labelClass}>Category</label>
           <input
             name="category"
@@ -76,13 +92,14 @@ export function BlogPostForm({
             className={inputClass}
           />
         </div>
-        <ImageUpload
-          name="coverImage"
-          label="Cover image"
-          defaultValue={defaultValues?.coverImage}
-          folder="nobs-agent/blog"
-        />
       </div>
+
+      <ImageUpload
+        name="coverImage"
+        label="Cover image"
+        defaultValue={defaultValues?.coverImage}
+        folder="nobs-agent/blog"
+      />
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>

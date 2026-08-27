@@ -3,16 +3,34 @@
 
 import { prisma } from "@/lib/prisma";
 
+export type PostType = "article" | "build_log";
+
 export type BlogPost = {
   slug: string;
   title: string;
   excerpt: string;
   content: string[]; // paragraphs
   category: string;
+  postType: PostType;
   publishedAt: string; // ISO date
 };
 
-const fallbackPosts: BlogPost[] = [
+const fallbackPostsRaw: (Omit<BlogPost, "postType"> & { postType?: PostType })[] = [
+  {
+    slug: "nobs-is-a-production-system-built-to-run-nobs",
+    title: "NOBS is a production system built to run NOBS",
+    excerpt:
+      "This site isn't a static front door with a contact form bolted on. It runs on the same authentication, database, and payment infrastructure built for every client project, aimed inward.",
+    category: "Product Engineering",
+    postType: "build_log",
+    publishedAt: "2026-08-27",
+    content: [
+      "It's easy for a studio to talk about building \"real systems\" while its own website is a handful of static pages and a contact form. NOBS doesn't have that gap. The site is a full Next.js application backed by a real Postgres database, and the business itself runs on it day to day, not just the marketing pages in front of it.",
+      "Underneath the pages a visitor sees, there's an authenticated client portal separate from the public site: clients log in to see their own project's progress, milestones, uploaded files, and a message thread with direct back-and-forth, no shared inbox, no lost email threads. Authentication is role-based, so a client account and an admin account see entirely different surfaces of the same application.",
+      "The admin side is a working operations dashboard, not a CMS demo: portfolio and blog content, client records, bookings, incoming inquiries, and payments all get managed from inside the same system that's serving the public site. Payments for bookings and invoices run through the same Paystack and Flutterwave integrations built into client projects, because there's no reason the business behind NOBS should trust a worse payment flow than its clients get.",
+      "None of this is exposed publicly in a way that risks client data, and it isn't meant to be a tour of the codebase. It's mentioned here because it's the most honest kind of proof available: the discipline that goes into a client's admin dashboard, database design, and ongoing operation is the same discipline running this business, because it's the same application.",
+    ],
+  },
   {
     slug: "why-school-portals-fail-in-year-two",
     title: "Why most school portals fail in year two",
@@ -184,6 +202,14 @@ const fallbackPosts: BlogPost[] = [
   },
 ];
 
+// All fallback content is written as regular articles. Real build logs get
+// added the same way any real post does, via /admin/blog, with "Build Log"
+// selected as the content type.
+const fallbackPosts: BlogPost[] = fallbackPostsRaw.map((p) => ({
+  ...p,
+  postType: p.postType ?? "article",
+}));
+
 function toIsoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
@@ -201,6 +227,7 @@ async function fetchFromDb(): Promise<BlogPost[] | null> {
       excerpt: r.excerpt,
       content: r.content.split("\n\n").filter(Boolean),
       category: r.category ?? "General",
+      postType: r.postType === "BUILD_LOG" ? "build_log" : "article",
       publishedAt: toIsoDate(r.publishedAt ?? r.createdAt),
     }));
   } catch {

@@ -107,6 +107,11 @@ model Project {
   problem     String   @db.Text
   solution    String   @db.Text
   results     String   @db.Text
+  constraints String?  @db.Text
+  architecture String? @db.Text
+  keyEngineeringDecisions String? @db.Text
+  security    String?  @db.Text
+  performance String?  @db.Text
   industry    String
   technologies String[]
   durationWeeks Int?
@@ -195,7 +200,27 @@ model Testimonial {
   createdAt DateTime @default(now())
 }
 
+// ---------- About page: engineer/founder profile ----------
+// Singleton row (there's only ever one). Read/written by src/lib/data/founder.ts
+// and /admin/founder.
+
+model Founder {
+  id          String   @id @default(cuid())
+  name        String
+  role        String
+  bio         String   @db.Text
+  photoUrl    String?
+  githubUrl   String?
+  linkedinUrl String?
+  updatedAt   DateTime @updatedAt
+}
+
 // ---------- Blog ----------
+
+enum PostType {
+  ARTICLE
+  BUILD_LOG
+}
 
 model BlogPost {
   id          String   @id @default(cuid())
@@ -205,6 +230,7 @@ model BlogPost {
   content     String   @db.Text
   coverImage  String?
   category    String?
+  postType    PostType @default(ARTICLE)
   metaTitle   String?
   metaDescription String?
   published   Boolean  @default(false)

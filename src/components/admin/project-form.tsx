@@ -12,6 +12,11 @@ type ProjectFormValues = {
   problem: string;
   solution: string;
   results: string;
+  constraints?: string | null;
+  architecture?: string | null;
+  keyEngineeringDecisions?: string | null;
+  security?: string | null;
+  performance?: string | null;
   durationWeeks: number | null;
   liveUrl: string | null;
   githubUrl: string | null;
@@ -142,6 +147,63 @@ export function ProjectForm({
             defaultValue={defaultValues?.results}
             className={inputClass}
           />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-1 font-[family-name:var(--font-display)] text-sm font-medium text-[var(--color-paper)]">
+          Engineering deep dive
+        </h3>
+        <p className="mb-4 text-[11px] text-[var(--color-slate)]">
+          All optional. Fill in what applies to this project — shown on the case study/detail page
+          when present, hidden entirely when left blank.
+        </p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className={labelClass}>Constraints</label>
+            <textarea
+              name="constraints"
+              rows={4}
+              defaultValue={defaultValues?.constraints ?? undefined}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Architecture</label>
+            <textarea
+              name="architecture"
+              rows={4}
+              defaultValue={defaultValues?.architecture ?? undefined}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Key engineering decisions</label>
+            <textarea
+              name="keyEngineeringDecisions"
+              rows={4}
+              defaultValue={defaultValues?.keyEngineeringDecisions ?? undefined}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Security</label>
+            <textarea
+              name="security"
+              rows={4}
+              defaultValue={defaultValues?.security ?? undefined}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Performance</label>
+            <textarea
+              name="performance"
+              rows={4}
+              defaultValue={defaultValues?.performance ?? undefined}
+              className={inputClass}
+            />
+          </div>
         </div>
       </div>
 

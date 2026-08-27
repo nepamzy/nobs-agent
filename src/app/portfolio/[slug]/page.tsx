@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { getAllProjectSlugs, getProjectBySlug } from "@/lib/data/projects";
 import { getServerLanguage, translateFields } from "@/lib/translate-content";
 import { ProjectCover } from "@/components/project-cover";
+import { ProjectGallery } from "@/components/project-gallery";
 
 export async function generateStaticParams() {
   const slugs = await getAllProjectSlugs();
@@ -57,15 +58,16 @@ export default async function ProjectDetailPage({
       </h1>
       <p className="mt-4 max-w-2xl text-[var(--color-slate)]">{summary}</p>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-6 flex flex-wrap items-center gap-4">
         <span className="text-sm text-[var(--color-slate)]">Client: {project.clientName}</span>
         {project.liveUrl && (
           <Link
             href={project.liveUrl}
             target="_blank"
-            className="inline-flex items-center gap-1 text-sm text-[var(--color-brass)]"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
           >
-            View live <ArrowUpRight size={14} />
+            Visit live site <ArrowUpRight size={15} />
           </Link>
         )}
       </div>
@@ -74,7 +76,8 @@ export default async function ProjectDetailPage({
         slug={project.slug}
         industry={project.industry}
         coverImage={project.coverImage}
-        className="mt-10 h-80"
+        title={title}
+        className="mt-10 h-96"
       />
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -88,19 +91,7 @@ export default async function ProjectDetailPage({
         ))}
       </div>
 
-      {project.gallery.length > 0 && (
-        <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {project.gallery.map((url) => (
-            // eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL
-            <img
-              key={url}
-              src={url}
-              alt=""
-              className="aspect-video w-full rounded-lg border border-[var(--color-line)] object-cover"
-            />
-          ))}
-        </div>
-      )}
+      {project.gallery.length > 0 && <ProjectGallery images={project.gallery} title={title} />}
 
       <div className="mt-16 grid gap-10 sm:grid-cols-3">
         <div>
@@ -128,6 +119,70 @@ export default async function ProjectDetailPage({
           </p>
         </div>
       </div>
+
+      {(project.constraints ||
+        project.architecture ||
+        project.keyEngineeringDecisions ||
+        project.security ||
+        project.performance) && (
+        <div className="mt-16 border-t border-[var(--color-line)] pt-16">
+          <p className="mb-8 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
+            Engineering deep dive
+          </p>
+          <div className="grid gap-10 sm:grid-cols-2">
+            {project.constraints && (
+              <div>
+                <h2 className="font-[family-name:var(--font-display)] text-lg font-medium">
+                  Constraints
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-slate)]">
+                  {project.constraints}
+                </p>
+              </div>
+            )}
+            {project.architecture && (
+              <div>
+                <h2 className="font-[family-name:var(--font-display)] text-lg font-medium">
+                  Architecture
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-slate)]">
+                  {project.architecture}
+                </p>
+              </div>
+            )}
+            {project.keyEngineeringDecisions && (
+              <div>
+                <h2 className="font-[family-name:var(--font-display)] text-lg font-medium">
+                  Key engineering decisions
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-slate)]">
+                  {project.keyEngineeringDecisions}
+                </p>
+              </div>
+            )}
+            {project.security && (
+              <div>
+                <h2 className="font-[family-name:var(--font-display)] text-lg font-medium">
+                  Security
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-slate)]">
+                  {project.security}
+                </p>
+              </div>
+            )}
+            {project.performance && (
+              <div>
+                <h2 className="font-[family-name:var(--font-display)] text-lg font-medium">
+                  Performance
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-slate)]">
+                  {project.performance}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="glass mt-20 flex flex-col items-start gap-4 rounded-2xl p-8 sm:flex-row sm:items-center sm:justify-between">
         <div>

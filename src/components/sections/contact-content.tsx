@@ -69,6 +69,46 @@ export function ContactContent() {
           </AuthGate>
         </div>
       </div>
+
+      <div className="mt-24 border-t border-[var(--color-line)] pt-16">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-medium">
+          What happens after you reach out
+        </h2>
+        <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              step: "01",
+              title: "Discovery Call",
+              desc: "A short conversation about what you're trying to build and why.",
+            },
+            {
+              step: "02",
+              title: "Technical Scope",
+              desc: "The problem gets mapped to an actual architecture, not a guess.",
+            },
+            {
+              step: "03",
+              title: "Proposal",
+              desc: "A clear timeline and price, no ambiguity before work starts.",
+            },
+            {
+              step: "04",
+              title: "Build Begins",
+              desc: "Work starts once the proposal is agreed, with regular updates.",
+            },
+          ].map((s) => (
+            <div key={s.step}>
+              <p className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-brass)]">
+                {s.step}
+              </p>
+              <h3 className="mt-2 font-[family-name:var(--font-display)] text-base font-medium">
+                {s.title}
+              </h3>
+              <p className="mt-1.5 text-sm text-[var(--color-slate)]">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

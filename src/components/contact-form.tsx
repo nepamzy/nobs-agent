@@ -94,10 +94,14 @@ export function ContactForm() {
         aria-hidden="true"
       />
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label
+          htmlFor="contact-message"
+          className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+        >
           Message
         </label>
         <textarea
+          id="contact-message"
           name="message"
           required
           rows={5}
@@ -134,10 +138,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+      <label
+        htmlFor={`contact-${name}`}
+        className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+      >
         {label}
       </label>
       <input
+        id={`contact-${name}`}
         name={name}
         type={type}
         required={required}

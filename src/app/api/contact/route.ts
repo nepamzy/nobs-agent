@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       await sendBrevoEmail({
         to: [{ email: process.env.STUDIO_NOTIFICATION_EMAIL || "hello@nobsagent.com" }],
         subject: `New inquiry from ${name}${company ? ` (${company})` : ""}`,
-        htmlContent: `<p>${message.replace(/\n/g, "<br>")}</p><p>— ${name} &lt;${email}&gt;</p>`,
+        htmlContent: `<p>${message.replace(/\n/g, "<br>")}</p><p>From ${name} &lt;${email}&gt;</p>`,
         replyTo: email,
       });
     }

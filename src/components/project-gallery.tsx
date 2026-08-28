@@ -26,7 +26,7 @@ export function ProjectGallery({ images, title }: { images: string[]; title: str
             {/* eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL */}
             <img
               src={url}
-              alt={`${title} — screenshot ${i + 1}`}
+              alt={`${title} screenshot ${i + 1}`}
               className="aspect-video w-full object-cover transition duration-300 group-hover:scale-105"
             />
           </button>
@@ -64,7 +64,7 @@ export function ProjectGallery({ images, title }: { images: string[]; title: str
           {/* eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL */}
           <img
             src={images[openIndex]}
-            alt={`${title} — screenshot ${openIndex + 1}`}
+            alt={`${title} screenshot ${openIndex + 1}`}
             className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}
           />

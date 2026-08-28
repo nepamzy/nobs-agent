@@ -155,7 +155,7 @@ export function ProjectForm({
           Engineering deep dive
         </h3>
         <p className="mb-4 text-[11px] text-[var(--color-slate)]">
-          All optional. Fill in what applies to this project — shown on the case study/detail page
+          All optional. Fill in what applies to this project, shown on the case study/detail page
           when present, hidden entirely when left blank.
         </p>
         <div className="grid gap-5 sm:grid-cols-2">

@@ -15,7 +15,7 @@ const TIMELINE_BY_GROUP: Record<string, string> = {
   commerce: "Typically 2–3 weeks for a standard build, longer for larger scope",
   corporate: "Typically 2–3 weeks for a standard build, longer for larger scope",
   product: "Typically 2–3 weeks as a baseline, scoped up for custom systems",
-  care: "Ongoing — starts once your platform is live, no fixed end date",
+  care: "Ongoing, starts once your platform is live, no fixed end date",
 };
 
 export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples: boolean }) {

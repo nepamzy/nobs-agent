@@ -24,7 +24,10 @@ const ContentSecurityPolicy = [
   // <Environment preset="studio" /> loads for the homepage's 3D robot hero
   // — it 301-redirects to raw.githubusercontent.com, and CSP connect-src
   // is enforced against the redirect target too, so both are needed.
-  "connect-src 'self' https://api.cloudinary.com https://www.google-analytics.com https://www.googletagmanager.com https://api.paystack.co https://api.flutterwave.com https://checkout.flutterwave.com https://raw.githack.com https://raw.githubusercontent.com",
+  // o4511891311296512.ingest.de.sentry.io is where the browser SDK sends
+  // error reports directly (see next.config.ts's withSentryConfig comment
+  // for why this isn't tunneled through our own /monitoring route).
+  "connect-src 'self' https://api.cloudinary.com https://www.google-analytics.com https://www.googletagmanager.com https://api.paystack.co https://api.flutterwave.com https://checkout.flutterwave.com https://raw.githack.com https://raw.githubusercontent.com https://o4511891311296512.ingest.de.sentry.io",
   // Paystack/Flutterwave's checkout SDKs open their payment UI in an
   // embedded iframe from these hosts — verify against a real test
   // transaction before relying on this list in production.
@@ -69,11 +72,11 @@ export default withSentryConfig(nextConfig, {
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: true,
-  // Routes client-side error reports through this app's own /monitoring
-  // route instead of directly to Sentry's ingest domain — keeps the CSP
-  // above from needing a Sentry-specific connect-src entry, and avoids ad
-  // blockers that target Sentry's domain directly.
-  tunnelRoute: "/monitoring",
+  // Deliberately NOT using tunnelRoute here — it requires a working
+  // rewrite that proved unreliable to verify in this deployment setup
+  // (requests to it 404'd instead of reaching Sentry). The browser SDK
+  // sends events straight to Sentry's ingest domain instead, which is
+  // simpler and directly testable; the CSP connect-src above allows it.
   webpack: { treeshake: { removeDebugLogging: true } },
   telemetry: false,
 });

@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Dummy values so `prisma generate` and `next build` can run without a
+  # real database or auth secret — the app is written to fall back to
+  # sample data when Prisma can't reach a database (see README), and
+  # Auth.js only needs AUTH_SECRET to be present, not valid, to build.
+  DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+  AUTH_SECRET: "ci-build-secret-not-for-production-use-only"
+  NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - run: npm run build

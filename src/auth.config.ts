@@ -10,6 +10,13 @@ export const authConfig: NextAuthConfig = {
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [],
+  // Auth.js only auto-trusts the request host on Vercel (it checks for the
+  // VERCEL env var). Without this, every other host — Render, Docker,
+  // even `next start` on your own machine — throws UntrustedHost on every
+  // session check, 500ing /api/auth/session site-wide. Safe here because
+  // NEXTAUTH_URL is already an explicitly configured env var, not derived
+  // from an untrusted request header.
+  trustHost: true,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

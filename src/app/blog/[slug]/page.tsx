@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getAllBlogSlugs, getBlogPostBySlug } from "@/lib/data/blog";
 import { getServerLanguage, translateFields, translateList } from "@/lib/translate-content";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export async function generateStaticParams() {
   const slugs = await getAllBlogSlugs();
@@ -18,7 +19,13 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getBlogPostBySlug(slug);
   if (!post) return {};
-  return { title: post.title, description: post.excerpt };
+  return {
+    title: post.title,
+    description: post.excerpt,
+    alternates: {
+      canonical: `/blog/${slug}`,
+    },
+  };
 }
 
 function formatDate(iso: string) {
@@ -44,6 +51,13 @@ export default async function BlogPostPage({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-24">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Blog", href: "/blog" },
+          { label: title },
+        ]}
+      />
       <Link
         href="/blog"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--color-slate)] hover:text-[var(--color-brass)]"

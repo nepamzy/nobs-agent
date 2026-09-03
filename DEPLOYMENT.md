@@ -53,10 +53,18 @@ git push -u origin main
 
 1. neon.tech → sign up → **Create a project**.
 2. Name it (e.g. `nobs-agent`), pick a region close to your users.
-3. Once created, copy the **connection string** it shows you — it looks like:
+3. Once created, open **Connect** and make sure **Pooled connection** is
+   checked before copying the string — the hostname will have `-pooler`
+   in it:
    ```
-   postgresql://user:password@ep-xxxx.region.aws.neon.tech/dbname?sslmode=require
+   postgresql://user:password@ep-xxxx-pooler.region.aws.neon.tech/dbname?sslmode=require
    ```
+   This matters here specifically: `src/lib/prisma.ts` opens a real `pg`
+   connection pool (via Prisma's driver adapter) on every serverless
+   function invocation. On Vercel, concurrent requests can spin up many
+   of these at once — the *direct* (non-pooled) connection string has a
+   low connection cap and will get exhausted under real traffic; the
+   pooled string routes through PgBouncer and handles this correctly.
    This is your `DATABASE_URL`. Save it somewhere for Step 6.
 
 *(Supabase works identically if you'd rather use it — Settings → Database

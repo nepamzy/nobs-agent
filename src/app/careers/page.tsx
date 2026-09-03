@@ -6,6 +6,9 @@ import { CareersContent } from "@/components/sections/careers-content";
 export const metadata: Metadata = {
   title: "Careers",
   description: "Open roles at NOBS AGENT.",
+  alternates: {
+    canonical: "/careers",
+  },
 };
 
 async function getOpenRoles() {

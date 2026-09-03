@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { ApplyForm } from "@/components/apply-form";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export async function generateMetadata({
   params,
@@ -12,7 +13,13 @@ export async function generateMetadata({
   try {
     const job = await prisma.job.findUnique({ where: { id } });
     if (!job) return {};
-    return { title: job.title, description: job.description.slice(0, 160) };
+    return {
+      title: job.title,
+      description: job.description.slice(0, 160),
+      alternates: {
+        canonical: `/careers/${id}`,
+      },
+    };
   } catch {
     return {};
   }
@@ -36,6 +43,13 @@ export default async function JobDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-24">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Careers", href: "/careers" },
+          { label: job.title },
+        ]}
+      />
       <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
         {job.department ? `${job.department} · ` : ""}
         {job.location} · {job.type}

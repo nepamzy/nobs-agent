@@ -94,10 +94,11 @@ export function BookingSearchList({
                 >
                   <input type="hidden" name="id" value={row.id} />
                   <div>
-                    <label className="mb-1 block text-[11px] text-[var(--color-slate)]">
+                    <label htmlFor={`booking-${row.id}-agreed-amount`} className="mb-1 block text-[11px] text-[var(--color-slate)]">
                       Agreed price (₦)
                     </label>
                     <input
+                      id={`booking-${row.id}-agreed-amount`}
                       name="agreedAmountNaira"
                       type="number"
                       min={1}
@@ -108,10 +109,11 @@ export function BookingSearchList({
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] text-[var(--color-slate)]">
+                    <label htmlFor={`booking-${row.id}-deposit-percentage`} className="mb-1 block text-[11px] text-[var(--color-slate)]">
                       Deposit % (min 45)
                     </label>
                     <input
+                      id={`booking-${row.id}-deposit-percentage`}
                       name="depositPercentage"
                       type="number"
                       min={45}

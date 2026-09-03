@@ -195,10 +195,11 @@ export default async function ProjectsPage({
 
         <form action={submitProjectBrief} className="mt-6 space-y-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            <label htmlFor="new-project-service-interest" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
               What are you looking to build?
             </label>
             <select
+              id="new-project-service-interest"
               name="serviceInterest"
               required
               defaultValue=""
@@ -213,10 +214,11 @@ export default async function ProjectsPage({
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+              <label htmlFor="new-project-budget-range" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
                 Budget range
               </label>
               <select
+                id="new-project-budget-range"
                 name="budgetRange"
                 required
                 defaultValue=""
@@ -229,10 +231,11 @@ export default async function ProjectsPage({
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+              <label htmlFor="new-project-meeting-type" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
                 Meeting type
               </label>
               <select
+                id="new-project-meeting-type"
                 name="meetingType"
                 required
                 defaultValue=""
@@ -247,10 +250,11 @@ export default async function ProjectsPage({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            <label htmlFor="new-project-scheduled-for" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
               Preferred date & time
             </label>
             <input
+              id="new-project-scheduled-for"
               name="scheduledFor"
               type="datetime-local"
               required
@@ -259,10 +263,11 @@ export default async function ProjectsPage({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            <label htmlFor="new-project-notes" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
               Tell us about it
             </label>
             <textarea
+              id="new-project-notes"
               name="notes"
               required
               rows={6}

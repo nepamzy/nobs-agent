@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Skills",
   description: "The actual tools NOBS AGENT builds with, day to day.",
+  alternates: {
+    canonical: "/skills",
+  },
 };
 
 const stack = [

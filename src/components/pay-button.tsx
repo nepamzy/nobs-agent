@@ -135,12 +135,13 @@ export function PayButton({
     <div>
       {!isFullBalance && (
         <div className="mb-4">
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          <label htmlFor="pay-button-amount" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
             Amount to pay now
           </label>
           <div className="flex items-center gap-2">
             <span className="text-sm text-[var(--color-slate)]">₦</span>
             <input
+              id="pay-button-amount"
               type="number"
               value={amountNaira}
               onChange={(e) => setAmountNaira(Number(e.target.value))}

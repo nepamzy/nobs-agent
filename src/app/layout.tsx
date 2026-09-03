@@ -6,6 +6,7 @@ import { LanguageProvider } from "@/lib/i18n/language-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { AuthSessionProvider } from "@/components/auth-session-provider";
 import { SiteHeader } from "@/components/site-header";
+import { SkipLink } from "@/components/skip-link";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
@@ -42,14 +43,19 @@ export const metadata: Metadata = {
   description:
     "A full-stack software engineer building websites, platforms, and systems for schools, hospitals, hotels, dealerships, churches, and ambitious businesses across Africa.",
   metadataBase: new URL(getSiteUrl()),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "NOBS AGENT",
     description:
       "Digital infrastructure for growing institutions, built to global standard.",
     type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "NOBS AGENT" }],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/og-image.png"],
   },
   appleWebApp: {
     title: "NOBS AGENT",
@@ -76,6 +82,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col antialiased">
+        <SkipLink />
         <OrganizationJsonLd />
         <GoogleAnalytics />
         <ServiceWorkerRegister />
@@ -86,7 +93,9 @@ export default function RootLayout({
               <ThemeProvider>
                 <AnnouncementBanner />
                 <SiteHeader />
-                <main className="flex-1">{children}</main>
+                <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
+                  {children}
+                </main>
                 <SiteFooter />
                 <WhatsAppButton />
                 <CookieConsentBanner />

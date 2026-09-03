@@ -21,7 +21,7 @@ export function AnnouncementBanner() {
         type="button"
         onClick={() => setDismissed(true)}
         aria-label="Dismiss"
-        className="absolute right-4 text-[var(--color-ink)]/70 hover:text-[var(--color-ink)]"
+        className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-[var(--color-ink)]/70 transition hover:text-[var(--color-ink)]"
       >
         <X size={14} />
       </button>

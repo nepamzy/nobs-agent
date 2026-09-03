@@ -2,10 +2,20 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { ResetPasswordForm } from "@/components/reset-password-form";
 
-export const metadata: Metadata = {
-  title: "Set a new password",
-  robots: { index: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  return {
+    title: "Set a new password",
+    robots: { index: false },
+    alternates: {
+      canonical: `/reset-password/${token}`,
+    },
+  };
+}
 
 export default async function ResetPasswordPage({
   params,

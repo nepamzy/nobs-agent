@@ -31,12 +31,13 @@ export default async function AdminFounderPage() {
       <form action={saveFounder} className="glass mt-8 space-y-5 rounded-2xl p-8">
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label className={labelClass}>Name</label>
-            <input name="name" required defaultValue={founder?.name} className={inputClass} />
+            <label htmlFor="founder-name" className={labelClass}>Name</label>
+            <input id="founder-name" name="name" required defaultValue={founder?.name} className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>Role</label>
+            <label htmlFor="founder-role" className={labelClass}>Role</label>
             <input
+              id="founder-role"
               name="role"
               required
               defaultValue={founder?.role}
@@ -47,8 +48,9 @@ export default async function AdminFounderPage() {
         </div>
 
         <div>
-          <label className={labelClass}>Bio</label>
+          <label htmlFor="founder-bio" className={labelClass}>Bio</label>
           <textarea
+            id="founder-bio"
             name="bio"
             required
             rows={5}
@@ -66,8 +68,9 @@ export default async function AdminFounderPage() {
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label className={labelClass}>GitHub URL</label>
+            <label htmlFor="founder-github-url" className={labelClass}>GitHub URL</label>
             <input
+              id="founder-github-url"
               name="githubUrl"
               type="url"
               defaultValue={founder?.githubUrl ?? undefined}
@@ -76,8 +79,9 @@ export default async function AdminFounderPage() {
             />
           </div>
           <div>
-            <label className={labelClass}>LinkedIn URL (optional)</label>
+            <label htmlFor="founder-linkedin-url" className={labelClass}>LinkedIn URL (optional)</label>
             <input
+              id="founder-linkedin-url"
               name="linkedinUrl"
               type="url"
               defaultValue={founder?.linkedinUrl ?? undefined}

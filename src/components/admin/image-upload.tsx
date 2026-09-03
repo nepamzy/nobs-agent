@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
+import Image from "next/image";
 import { Loader2, ImageIcon, X } from "lucide-react";
+import { isCloudinaryUrl } from "@/lib/is-cloudinary-url";
 
 export function ImageUpload({
   name,
@@ -61,14 +63,16 @@ export function ImageUpload({
 
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">{label}</label>
+      <label htmlFor={`${name}-url`} className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">{label}</label>
 
       <input type="hidden" name={name} value={url} />
 
       <div className="flex items-start gap-4">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5">
-          {url ? (
-            // eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL, not a local static asset
+        <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5">
+          {url && isCloudinaryUrl(url) ? (
+            <Image src={url} alt="" fill sizes="96px" className="object-cover" />
+          ) : url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- manually pasted URL, host not known ahead of time so next/image can't optimize it
             <img src={url} alt="" className="h-full w-full object-cover" />
           ) : (
             <ImageIcon size={20} className="text-[var(--color-slate)]" />
@@ -93,6 +97,7 @@ export function ImageUpload({
           )}
 
           <input
+            id={`${name}-url`}
             type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}

@@ -33,6 +33,9 @@ export function CurrencySwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-label={`${currentMeta?.code ?? "Currency"}, change currency`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3.5 py-2 text-sm transition hover:border-[var(--color-brass)]"
       >
         <Globe size={15} />

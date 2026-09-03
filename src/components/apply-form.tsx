@@ -41,20 +41,24 @@ export function ApplyForm({ jobId }: { jobId: string }) {
     <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          <label htmlFor="apply-name" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
             Full name
           </label>
           <input
+            id="apply-name"
             name="name"
             required
+            minLength={2}
+            maxLength={150}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          <label htmlFor="apply-email" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
             Email
           </label>
           <input
+            id="apply-email"
             name="email"
             type="email"
             required
@@ -64,12 +68,14 @@ export function ApplyForm({ jobId }: { jobId: string }) {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="apply-cover-letter" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Why you, for this role
         </label>
         <textarea
+          id="apply-cover-letter"
           name="coverLetter"
           required
+          minLength={20}
           rows={7}
           placeholder="What have you built, and why does this particular role interest you?"
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"

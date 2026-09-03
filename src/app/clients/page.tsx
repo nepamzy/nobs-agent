@@ -6,6 +6,9 @@ import { Users } from "lucide-react";
 export const metadata: Metadata = {
   title: "Clients",
   description: "Institutions and businesses that have trusted NOBS AGENT with their platforms.",
+  alternates: {
+    canonical: "/clients",
+  },
 };
 
 export default async function ClientsPage() {

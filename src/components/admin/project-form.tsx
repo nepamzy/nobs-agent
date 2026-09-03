@@ -45,8 +45,9 @@ export function ProjectForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Title</label>
+          <label htmlFor="project-form-title" className={labelClass}>Title</label>
           <input
+            id="project-form-title"
             name="title"
             required
             defaultValue={defaultValues?.title}
@@ -54,14 +55,15 @@ export function ProjectForm({
           />
         </div>
         <div>
-          <label className={labelClass}>Slug (leave blank to auto-generate)</label>
-          <input name="slug" defaultValue={defaultValues?.slug} className={inputClass} />
+          <label htmlFor="project-form-slug" className={labelClass}>Slug (leave blank to auto-generate)</label>
+          <input id="project-form-slug" name="slug" defaultValue={defaultValues?.slug} className={inputClass} />
         </div>
       </div>
 
       <div>
-        <label className={labelClass}>Summary</label>
+        <label htmlFor="project-form-summary" className={labelClass}>Summary</label>
         <textarea
+          id="project-form-summary"
           name="summary"
           required
           rows={2}
@@ -72,8 +74,9 @@ export function ProjectForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Client name</label>
+          <label htmlFor="project-form-client-name" className={labelClass}>Client name</label>
           <input
+            id="project-form-client-name"
             name="clientName"
             defaultValue={defaultValues?.clientName}
             placeholder="e.g. Riverside Hotel"
@@ -84,8 +87,9 @@ export function ProjectForm({
           </p>
         </div>
         <div>
-          <label className={labelClass}>Industry</label>
+          <label htmlFor="project-form-industry" className={labelClass}>Industry</label>
           <input
+            id="project-form-industry"
             name="industry"
             required
             defaultValue={defaultValues?.industry}
@@ -96,8 +100,9 @@ export function ProjectForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Duration (weeks)</label>
+          <label htmlFor="project-form-duration-weeks" className={labelClass}>Duration (weeks)</label>
           <input
+            id="project-form-duration-weeks"
             name="durationWeeks"
             type="number"
             min={1}
@@ -108,8 +113,9 @@ export function ProjectForm({
       </div>
 
       <div>
-        <label className={labelClass}>Technologies (comma-separated)</label>
+        <label htmlFor="project-form-technologies" className={labelClass}>Technologies (comma-separated)</label>
         <input
+          id="project-form-technologies"
           name="technologies"
           defaultValue={defaultValues?.technologies?.join(", ")}
           placeholder="Next.js, PostgreSQL, Paystack"
@@ -119,8 +125,9 @@ export function ProjectForm({
 
       <div className="grid gap-5 sm:grid-cols-3">
         <div>
-          <label className={labelClass}>Problem</label>
+          <label htmlFor="project-form-problem" className={labelClass}>Problem</label>
           <textarea
+            id="project-form-problem"
             name="problem"
             required
             rows={4}
@@ -129,8 +136,9 @@ export function ProjectForm({
           />
         </div>
         <div>
-          <label className={labelClass}>Solution</label>
+          <label htmlFor="project-form-solution" className={labelClass}>Solution</label>
           <textarea
+            id="project-form-solution"
             name="solution"
             required
             rows={4}
@@ -139,8 +147,9 @@ export function ProjectForm({
           />
         </div>
         <div>
-          <label className={labelClass}>Results</label>
+          <label htmlFor="project-form-results" className={labelClass}>Results</label>
           <textarea
+            id="project-form-results"
             name="results"
             required
             rows={4}
@@ -160,8 +169,9 @@ export function ProjectForm({
         </p>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label className={labelClass}>Constraints</label>
+            <label htmlFor="project-form-constraints" className={labelClass}>Constraints</label>
             <textarea
+              id="project-form-constraints"
               name="constraints"
               rows={4}
               defaultValue={defaultValues?.constraints ?? undefined}
@@ -169,8 +179,9 @@ export function ProjectForm({
             />
           </div>
           <div>
-            <label className={labelClass}>Architecture</label>
+            <label htmlFor="project-form-architecture" className={labelClass}>Architecture</label>
             <textarea
+              id="project-form-architecture"
               name="architecture"
               rows={4}
               defaultValue={defaultValues?.architecture ?? undefined}
@@ -178,8 +189,9 @@ export function ProjectForm({
             />
           </div>
           <div>
-            <label className={labelClass}>Key engineering decisions</label>
+            <label htmlFor="project-form-key-engineering-decisions" className={labelClass}>Key engineering decisions</label>
             <textarea
+              id="project-form-key-engineering-decisions"
               name="keyEngineeringDecisions"
               rows={4}
               defaultValue={defaultValues?.keyEngineeringDecisions ?? undefined}
@@ -187,8 +199,9 @@ export function ProjectForm({
             />
           </div>
           <div>
-            <label className={labelClass}>Security</label>
+            <label htmlFor="project-form-security" className={labelClass}>Security</label>
             <textarea
+              id="project-form-security"
               name="security"
               rows={4}
               defaultValue={defaultValues?.security ?? undefined}
@@ -196,8 +209,9 @@ export function ProjectForm({
             />
           </div>
           <div>
-            <label className={labelClass}>Performance</label>
+            <label htmlFor="project-form-performance" className={labelClass}>Performance</label>
             <textarea
+              id="project-form-performance"
               name="performance"
               rows={4}
               defaultValue={defaultValues?.performance ?? undefined}
@@ -216,8 +230,9 @@ export function ProjectForm({
         />
         <div className="grid gap-5">
           <div>
-            <label className={labelClass}>Live URL</label>
+            <label htmlFor="project-form-live-url" className={labelClass}>Live URL</label>
             <input
+              id="project-form-live-url"
               name="liveUrl"
               type="url"
               defaultValue={defaultValues?.liveUrl ?? undefined}
@@ -225,8 +240,9 @@ export function ProjectForm({
             />
           </div>
           <div>
-            <label className={labelClass}>GitHub URL</label>
+            <label htmlFor="project-form-github-url" className={labelClass}>GitHub URL</label>
             <input
+              id="project-form-github-url"
               name="githubUrl"
               type="url"
               defaultValue={defaultValues?.githubUrl ?? undefined}

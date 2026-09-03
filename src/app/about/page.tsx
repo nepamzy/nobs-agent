@@ -5,6 +5,9 @@ import { getFounder } from "@/lib/data/founder";
 export const metadata: Metadata = {
   title: "About",
   description: "The studio, the standard, and the story behind NOBS AGENT.",
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 export default async function AboutPage() {

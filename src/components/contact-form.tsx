@@ -81,10 +81,10 @@ export function ContactForm() {
     />
     <form ref={formRef} onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Name" name="name" required />
+        <Field label="Name" name="name" required minLength={2} maxLength={100} />
         <Field label="Email" name="email" type="email" required />
       </div>
-      <Field label="Company / Organization" name="company" />
+      <Field label="Company / Organization" name="company" maxLength={150} />
       <input
         type="text"
         name="website"
@@ -104,6 +104,8 @@ export function ContactForm() {
           id="contact-message"
           name="message"
           required
+          minLength={10}
+          maxLength={5000}
           rows={5}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
           placeholder="Tell me about the project, timeline, and budget range."
@@ -130,11 +132,15 @@ function Field({
   name,
   type = "text",
   required = false,
+  minLength,
+  maxLength,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
+  minLength?: number;
+  maxLength?: number;
 }) {
   return (
     <div>
@@ -149,6 +155,8 @@ function Field({
         name={name}
         type={type}
         required={required}
+        minLength={minLength}
+        maxLength={maxLength}
         className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
       />
     </div>

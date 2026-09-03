@@ -58,8 +58,10 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <LanguageSwitcher />
-          <CurrencySwitcher />
+          <div className="hidden items-center gap-3 md:flex">
+            <LanguageSwitcher />
+            <CurrencySwitcher />
+          </div>
           <Link
             href={session ? dashboardHref : "/login"}
             aria-label={session ? "Go to your portal" : "Sign in"}
@@ -101,6 +103,10 @@ export function SiteHeader() {
               {navKeyByHref[item.href] ? t(navKeyByHref[item.href]) : item.label}
             </Link>
           ))}
+          <div className="mt-2 flex items-center gap-3 py-2">
+            <LanguageSwitcher />
+            <CurrencySwitcher />
+          </div>
           <Link
             href="/booking"
             className="mt-2 rounded-full bg-[var(--color-brass)] px-5 py-2 text-center text-sm font-medium text-[var(--color-ink)]"

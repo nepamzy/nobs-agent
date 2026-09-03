@@ -173,6 +173,8 @@ export function BookingForm() {
             id="booking-fullName"
             name="fullName"
             required
+            minLength={2}
+            maxLength={100}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
           />
         </div>
@@ -325,6 +327,7 @@ export function BookingForm() {
         <textarea
           id="booking-notes"
           name="notes"
+          maxLength={3000}
           rows={4}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
           placeholder="Project brief, current pain points, links to anything relevant."

@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Services",
   description:
     "Websites and platforms for institutions, commerce, and growing businesses, plus the design, SEO, hosting, and maintenance behind them.",
+  alternates: {
+    canonical: "/services",
+  },
 };
 
 export default async function ServicesPage() {

@@ -27,22 +27,24 @@ export function JobForm({
       {defaultValues?.id && <input type="hidden" name="id" value={defaultValues.id} />}
 
       <div>
-        <label className={labelClass}>Job title</label>
-        <input name="title" required defaultValue={defaultValues?.title} className={inputClass} />
+        <label htmlFor="job-form-title" className={labelClass}>Job title</label>
+        <input id="job-form-title" name="title" required defaultValue={defaultValues?.title} className={inputClass} />
       </div>
 
       <div className="grid gap-5 sm:grid-cols-3">
         <div>
-          <label className={labelClass}>Department (optional)</label>
+          <label htmlFor="job-form-department" className={labelClass}>Department (optional)</label>
           <input
+            id="job-form-department"
             name="department"
             defaultValue={defaultValues?.department ?? undefined}
             className={inputClass}
           />
         </div>
         <div>
-          <label className={labelClass}>Location</label>
+          <label htmlFor="job-form-location" className={labelClass}>Location</label>
           <input
+            id="job-form-location"
             name="location"
             required
             defaultValue={defaultValues?.location ?? "Remote"}
@@ -50,8 +52,9 @@ export function JobForm({
           />
         </div>
         <div>
-          <label className={labelClass}>Type</label>
+          <label htmlFor="job-form-type" className={labelClass}>Type</label>
           <select
+            id="job-form-type"
             name="type"
             defaultValue={defaultValues?.type ?? "Full-time"}
             className={inputClass}
@@ -64,8 +67,9 @@ export function JobForm({
       </div>
 
       <div>
-        <label className={labelClass}>Description</label>
+        <label htmlFor="job-form-description" className={labelClass}>Description</label>
         <textarea
+          id="job-form-description"
           name="description"
           required
           rows={6}
@@ -75,8 +79,9 @@ export function JobForm({
       </div>
 
       <div>
-        <label className={labelClass}>Requirements (optional)</label>
+        <label htmlFor="job-form-requirements" className={labelClass}>Requirements (optional)</label>
         <textarea
+          id="job-form-requirements"
           name="requirements"
           rows={5}
           defaultValue={defaultValues?.requirements ?? undefined}

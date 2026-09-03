@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function ProjectGallery({ images, title }: { images: string[]; title: string }) {
@@ -21,13 +22,14 @@ export function ProjectGallery({ images, title }: { images: string[]; title: str
             key={url}
             type="button"
             onClick={() => setOpenIndex(i)}
-            className="group overflow-hidden rounded-xl border border-[var(--color-line)]"
+            className="group relative aspect-video w-full overflow-hidden rounded-xl border border-[var(--color-line)]"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL */}
-            <img
+            <Image
               src={url}
               alt={`${title} screenshot ${i + 1}`}
-              className="aspect-video w-full object-cover transition duration-300 group-hover:scale-105"
+              fill
+              sizes="(max-width: 640px) 100vw, 50vw"
+              className="object-cover transition duration-300 group-hover:scale-105"
             />
           </button>
         ))}
@@ -61,7 +63,7 @@ export function ProjectGallery({ images, title }: { images: string[]; title: str
             </button>
           )}
 
-          {/* eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- lightbox shows the image at its natural aspect ratio bounded only by viewport size, which next/image's fill mode can't express without a known aspect ratio ahead of time */}
           <img
             src={images[openIndex]}
             alt={`${title} screenshot ${openIndex + 1}`}

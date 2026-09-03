@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/language-context";
 import type { Founder } from "@/lib/data/founder";
+import { isCloudinaryUrl } from "@/lib/is-cloudinary-url";
 
 function GithubIcon({ size = 16 }: { size?: number }) {
   return (
@@ -51,11 +53,13 @@ export function AboutContent({ founder }: { founder: Founder }) {
         The Engineer Behind NOBS
       </p>
       <div className="glass flex flex-col items-start gap-6 rounded-2xl p-8 sm:flex-row sm:items-center">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full border border-[var(--color-line)] bg-white/5">
-          {founder.photoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL
+        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border border-[var(--color-line)] bg-white/5">
+          {founder.photoUrl && isCloudinaryUrl(founder.photoUrl) ? (
+            <Image src={founder.photoUrl} alt={founder.name} fill sizes="96px" className="object-cover" />
+          ) : founder.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- manually pasted URL, host not known ahead of time so next/image can't optimize it
             <img src={founder.photoUrl} alt={founder.name} className="h-full w-full object-cover" />
-          )}
+          ) : null}
         </div>
 
         <div>

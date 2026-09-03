@@ -33,20 +33,21 @@ export function BlogPostForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Title</label>
-          <input name="title" required defaultValue={defaultValues?.title} className={inputClass} />
+          <label htmlFor="blog-post-title" className={labelClass}>Title</label>
+          <input id="blog-post-title" name="title" required defaultValue={defaultValues?.title} className={inputClass} />
         </div>
         {!defaultValues?.id && (
           <div>
-            <label className={labelClass}>Slug (leave blank to auto-generate)</label>
-            <input name="slug" className={inputClass} />
+            <label htmlFor="blog-post-slug" className={labelClass}>Slug (leave blank to auto-generate)</label>
+            <input id="blog-post-slug" name="slug" className={inputClass} />
           </div>
         )}
       </div>
 
       <div>
-        <label className={labelClass}>Excerpt</label>
+        <label htmlFor="blog-post-excerpt" className={labelClass}>Excerpt</label>
         <textarea
+          id="blog-post-excerpt"
           name="excerpt"
           required
           rows={2}
@@ -56,10 +57,11 @@ export function BlogPostForm({
       </div>
 
       <div>
-        <label className={labelClass}>
+        <label htmlFor="blog-post-content" className={labelClass}>
           Content, separate paragraphs with a blank line
         </label>
         <textarea
+          id="blog-post-content"
           name="content"
           required
           rows={10}
@@ -70,8 +72,9 @@ export function BlogPostForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Content type</label>
+          <label htmlFor="blog-post-type" className={labelClass}>Content type</label>
           <select
+            id="blog-post-type"
             name="postType"
             defaultValue={defaultValues?.postType ?? "ARTICLE"}
             className={inputClass}
@@ -85,8 +88,9 @@ export function BlogPostForm({
           </p>
         </div>
         <div>
-          <label className={labelClass}>Category</label>
+          <label htmlFor="blog-post-category" className={labelClass}>Category</label>
           <input
+            id="blog-post-category"
             name="category"
             defaultValue={defaultValues?.category ?? undefined}
             className={inputClass}
@@ -103,16 +107,18 @@ export function BlogPostForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Meta title (SEO, optional)</label>
+          <label htmlFor="blog-post-meta-title" className={labelClass}>Meta title (SEO, optional)</label>
           <input
+            id="blog-post-meta-title"
             name="metaTitle"
             defaultValue={defaultValues?.metaTitle ?? undefined}
             className={inputClass}
           />
         </div>
         <div>
-          <label className={labelClass}>Meta description (SEO, optional)</label>
+          <label htmlFor="blog-post-meta-description" className={labelClass}>Meta description (SEO, optional)</label>
           <input
+            id="blog-post-meta-description"
             name="metaDescription"
             defaultValue={defaultValues?.metaDescription ?? undefined}
             className={inputClass}

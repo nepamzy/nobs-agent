@@ -1,3 +1,5 @@
+import { Breadcrumbs } from "@/components/breadcrumbs";
+
 export function PageHeader({
   eyebrow,
   title,
@@ -9,6 +11,7 @@ export function PageHeader({
 }) {
   return (
     <div className="mx-auto max-w-3xl px-6 pt-24 pb-4 text-center">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: eyebrow }]} className="justify-center" />
       <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
         {eyebrow}
       </p>

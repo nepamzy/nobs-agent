@@ -72,10 +72,10 @@ export function TestimonialPopup({
               <input type="hidden" name="projectId" value={projectId} />
 
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+                <span id="testimonial-rating-label" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
                   Rating
-                </label>
-                <div className="flex gap-1">
+                </span>
+                <div role="group" aria-labelledby="testimonial-rating-label" className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
                       key={n}
@@ -98,10 +98,11 @@ export function TestimonialPopup({
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+                <label htmlFor="testimonial-quote" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
                   A few words
                 </label>
                 <textarea
+                  id="testimonial-quote"
                   name="quote"
                   required
                   rows={4}

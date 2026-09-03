@@ -8,6 +8,9 @@ import { ArrowUpRight, FolderKanban } from "lucide-react";
 export const metadata: Metadata = {
   title: "Portfolio",
   description: "Websites and platforms built for schools, hospitals, hotels, dealerships, and growing businesses.",
+  alternates: {
+    canonical: "/portfolio",
+  },
 };
 
 export default async function PortfolioPage() {

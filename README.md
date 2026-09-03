@@ -6,6 +6,28 @@ booking, client portal, and an admin CMS backed by PostgreSQL via Prisma.
 
 ## Honest scope note
 
+**Pre-launch hardening pass (this session, against the site build checklist):**
+- Custom 404 page (`src/app/not-found.tsx`), previously the framework default
+- Canonical tags on all 27 pages that carry metadata, plus a real Open Graph/Twitter share image (`public/og-image.png`) — previously neither existed
+- Security headers (CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy) and Cloudinary `remotePatterns` added in `next.config.ts`
+- Skip-to-content link and a `#main-content` landmark for keyboard/screen-reader users
+- Breadcrumb nav + `BreadcrumbList` JSON-LD added to every page using `PageHeader`
+- Several admin-uploaded images switched from raw `<img>` to `next/image` (gated by `isCloudinaryUrl()` so manually-pasted non-Cloudinary URLs still render safely, just unoptimized)
+- Real GitHub Actions CI (`.github/workflows/ci.yml`) and Dependabot (`.github/dependabot.yml`) added — the CI file this README already described didn't actually exist until now
+- `npm audit`: fixed the Next.js/postcss/sharp CVEs by bumping to `next@16.3.4`; nanoid fixed via `npm audit fix`. Three remaining advisories (mysql2, deepmerge-ts, valibot) are transitive Prisma CLI dependencies unrelated to this Postgres-only app, and fixing them would force a downgrade to Prisma 6.x — left as a deliberate tradeoff rather than undoing the Prisma 7 upgrade above
+- Generated and committed the missing initial migration (`prisma/migrations/`) via `prisma migrate diff` — the schema existed but had never actually been turned into a migration
+- Corrected two stale claims in this file and `.env.example` (the contact/booking Prisma inserts were already live, not commented; Google Analytics was already wired up, not an unused placeholder)
+- **Sentry error monitoring wired up** (`@sentry/nextjs`): `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation.ts`, `src/instrumentation-client.ts`, and `next.config.ts` wrapped with `withSentryConfig`. Fully inert until `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` are set in `.env.local` — `Sentry.init()` with no dsn just disables the SDK, no errors either way. Client-side error reports tunnel through this app's own `/monitoring` route rather than going straight to Sentry's domain, so the CSP above didn't need a Sentry-specific `connect-src` entry.
+- **Found and fixed a real production bug via a live Lighthouse audit**: `src/auth.config.ts` had no `trustHost`, so Auth.js only auto-trusts the request host on Vercel (it checks for a `VERCEL` env var) — every other host, including plain `next start`, 500'd `/api/auth/session` site-wide with `UntrustedHost`. This would have silently broken login/session checks on any non-Vercel deploy. Fixed with `trustHost: true`, safe here since `NEXTAUTH_URL` is already an explicitly configured env var.
+- **Ran a real Lighthouse audit** (`/faq`, `/contact`, `/booking`, `/login`, `/signup`, `/pricing` — homepage's WebGL hero can't render in headless Chrome without a GPU, so it wasn't audited): accessibility and best-practices now score 100 on every page tested, performance 96, SEO 100 (login/signup intentionally score lower on SEO — they're deliberately `noindex`-gated). Fixed along the way:
+  - `AuthGate` (the "sign up to continue" blur overlay on `/contact` and `/booking` for anonymous visitors) used `aria-hidden` on the blurred form behind it, but that doesn't remove focusability — a keyboard user could Tab into invisible fields. Switched to the `inert` attribute, which actually does.
+  - **62 form label/input pairs across 24 files** had a `<label>` sitting next to its input with no `htmlFor`/`id` connecting them — looked associated visually, announced nothing to screen readers. Every real form in the app (login, signup, contact, booking, careers, admin CMS, dashboard settings, password change, testimonial popup) now has proper label association.
+  - Language switcher's accessible name ("Change language") didn't include its own visible text ("English") — fixed, plus added `aria-expanded`/`aria-haspopup` to it and the currency switcher.
+  - Announcement banner's dismiss button was a 14×14px touch target (WCAG needs ≥24×24px) — enlarged the hit area without changing the visual icon size.
+- Added breadcrumbs (extracted into a shared `Breadcrumbs` component) to the 3 dynamic detail pages (`/portfolio/[slug]`, `/blog/[slug]`, `/careers/[id]`) that don't use `PageHeader`.
+- Contact, booking, and careers-application forms now carry client-side `minLength`/`maxLength` matching their server-side Zod schemas, so invalid input is caught before a round trip instead of only after.
+- Fixed one real alt-text gap: `case-studies-content.tsx` had `project.title` in scope but wasn't passing it to `ProjectCover`, so those cover images got empty alt text for no reason.
+
 **Recent changes (client-requested revisions):**
 - Homepage hero replaced with an interactive 3D robot (drag to rotate, head tracks your cursor, colored cursor trail) instead of the abstract monolith
 - Homepage services section and the full `/services` page rebuilt as draggable 3D carousels (horizontal on home, vertical on `/services`)
@@ -42,8 +64,9 @@ brief asks for, plus a schema and roadmap for the rest:
   Resources, Privacy, Terms.
 - **Two real, working forms → API routes**: `/api/contact` and
   `/api/booking` — Zod validation, honeypot bot protection, rate limiting,
-  Brevo email wiring (add `BREVO_API_KEY` and they send), and commented
-  Prisma inserts ready to uncomment once the database is connected.
+  Brevo email wiring (add `BREVO_API_KEY` and they send), and live Prisma
+  inserts (`prisma.contactMessage.create` / `prisma.booking.create`) that
+  write the moment `DATABASE_URL` points at a real database.
 - Full `prisma/schema.prisma` covering every entity the brief calls for:
   users/roles, site content (the CMS backbone), portfolio projects +
   progress + files, clients, testimonials, blog, services, pricing,
@@ -219,7 +242,7 @@ For local development only:
 ```bash
 npm install
 cp .env.example .env.local   # fill in DATABASE_URL and AUTH_SECRET at minimum
-npx prisma migrate dev --name init
+npx prisma migrate dev            # applies the committed initial migration
 npm run prisma:seed          # creates the admin/client test accounts
 npm run dev
 ```

@@ -42,6 +42,7 @@ export function CaseStudiesContent({ projects }: { projects: Project[] }) {
                 slug={project.slug}
                 industry={project.industry}
                 coverImage={project.coverImage ?? undefined}
+                title={project.title}
                 className="h-40 w-full shrink-0 sm:w-56"
               />
               <div className="flex-1">

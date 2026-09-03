@@ -31,20 +31,22 @@ export function ChangePasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="change-password-current" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Current password
         </label>
         <PasswordInput
+          id="change-password-current"
           name="currentPassword"
           required
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 pr-11 text-sm outline-none transition focus:border-[var(--color-brass)]"
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="change-password-new" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           New password
         </label>
         <PasswordInput
+          id="change-password-new"
           name="newPassword"
           required
           minLength={8}
@@ -52,10 +54,11 @@ export function ChangePasswordForm() {
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="change-password-confirm" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Confirm new password
         </label>
         <PasswordInput
+          id="change-password-confirm"
           name="confirmPassword"
           required
           minLength={8}

@@ -5,6 +5,9 @@ import { LoginForm } from "@/components/login-form";
 export const metadata: Metadata = {
   title: "Sign in",
   robots: { index: false },
+  alternates: {
+    canonical: "/login",
+  },
 };
 
 export default async function LoginPage({

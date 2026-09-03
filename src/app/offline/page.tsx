@@ -5,6 +5,9 @@ import { WifiOff } from "lucide-react";
 export const metadata: Metadata = {
   title: "You're offline",
   robots: { index: false },
+  alternates: {
+    canonical: "/offline",
+  },
 };
 
 export default function OfflinePage() {

@@ -4,6 +4,9 @@ import { getServerLanguage, translateList } from "@/lib/translate-content";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "The terms governing engagements with NOBS AGENT.",
+  alternates: {
+    canonical: "/terms",
+  },
 };
 
 const sections = [

@@ -8,6 +8,9 @@ import { Check, ArrowUpRight } from "lucide-react";
 export const metadata: Metadata = {
   title: "Pricing",
   description: "Transparent pricing by category, with current launch rates.",
+  alternates: {
+    canonical: "/pricing",
+  },
 };
 
 const tierStyles: Record<PricingTier, string> = {

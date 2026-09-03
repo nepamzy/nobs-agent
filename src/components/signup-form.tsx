@@ -51,29 +51,32 @@ export function SignupForm() {
   return (
     <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="signup-name" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Full name
         </label>
         <input
+          id="signup-name"
           name="name"
           required
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="signup-organization" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Organization (optional)
         </label>
         <input
+          id="signup-organization"
           name="organization"
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="signup-email" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Email
         </label>
         <input
+          id="signup-email"
           name="email"
           type="email"
           required
@@ -81,10 +84,11 @@ export function SignupForm() {
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="signup-phone" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Phone number (WhatsApp preferred)
         </label>
         <input
+          id="signup-phone"
           name="phone"
           type="tel"
           required
@@ -93,10 +97,10 @@ export function SignupForm() {
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="signup-password" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Password
         </label>
-        <PasswordInput name="password" required minLength={8} />
+        <PasswordInput id="signup-password" name="password" required minLength={8} />
         <p className="mt-1.5 text-xs text-[var(--color-slate)]">At least 8 characters.</p>
       </div>
 

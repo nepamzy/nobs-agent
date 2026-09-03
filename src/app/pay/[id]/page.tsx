@@ -4,10 +4,20 @@ import { prisma } from "@/lib/prisma";
 import { PaymentProviderSelect } from "@/components/payment-provider-select";
 import { CheckCircle2, CreditCard, Landmark, Smartphone } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Project Payment",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  return {
+    title: "Project Payment",
+    robots: { index: false, follow: false },
+    alternates: {
+      canonical: `/pay/${id}`,
+    },
+  };
+}
 
 function formatNaira(kobo: number) {
   return `₦${(kobo / 100).toLocaleString("en-NG")}`;

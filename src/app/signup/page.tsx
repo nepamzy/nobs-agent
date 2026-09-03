@@ -5,6 +5,9 @@ import { SignupForm } from "@/components/signup-form";
 export const metadata: Metadata = {
   title: "Create your account",
   robots: { index: false },
+  alternates: {
+    canonical: "/signup",
+  },
 };
 
 export default function SignupPage() {

@@ -27,7 +27,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative">
-      <div aria-hidden className="pointer-events-none select-none blur-sm opacity-40">
+      {/* `inert` (not just aria-hidden) is what actually pulls this out of
+          tab order — aria-hidden alone leaves the blurred, invisible form
+          fields reachable by keyboard, letting a sighted keyboard user tab
+          into content a screen reader user wouldn't even know was there. */}
+      <div inert className="pointer-events-none select-none blur-sm opacity-40">
         {children}
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-2xl bg-[var(--color-ink)]/70 p-8 text-center backdrop-blur-sm">

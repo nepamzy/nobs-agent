@@ -6,6 +6,9 @@ import { TestimonialsContent } from "@/components/sections/testimonials-content"
 export const metadata: Metadata = {
   title: "Testimonials",
   description: "What clients say after working with NOBS AGENT.",
+  alternates: {
+    canonical: "/testimonials",
+  },
 };
 
 export default async function TestimonialsPage() {

@@ -1,7 +1,16 @@
+function toDayParam(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function DailyVisitorHistogram({
   data,
+  selectedDay,
 }: {
   data: { date: Date; label: string; count: number }[];
+  selectedDay?: Date;
 }) {
   const width = 800;
   const height = 240;
@@ -48,7 +57,8 @@ function DailyVisitorHistogram({
         Daily visitors
       </h2>
       <p className="mt-1 text-sm text-[var(--color-slate)]">
-        Unique visitors per day, {monthNames.join(" to ")}.
+        Unique visitors per day, {monthNames.join(" to ")}. Click a point to see who visited
+        that day and which pages they looked at.
       </p>
 
       <div className="mt-6 overflow-x-auto">
@@ -85,14 +95,31 @@ function DailyVisitorHistogram({
           <path d={areaPath} fill="url(#visitorFill)" />
           <path d={linePath} fill="none" stroke="var(--color-brass)" strokeWidth="2" />
 
-          {points.map((p) => (
-            <g key={p.date.toISOString()}>
-              <circle cx={p.x} cy={p.y} r="3" fill="var(--color-brass)" />
-              <title>
-                {p.label}: {p.count} unique visitor{p.count === 1 ? "" : "s"}
-              </title>
-            </g>
-          ))}
+          {points.map((p) => {
+            const isSelected = selectedDay && toDayParam(selectedDay) === toDayParam(p.date);
+            return (
+              <a
+                key={p.date.toISOString()}
+                href={`/admin/analytics?day=${toDayParam(p.date)}`}
+                className="cursor-pointer"
+              >
+                {/* Generously-sized transparent hit area — the visible dot
+                    below is too small on its own to comfortably click/tap. */}
+                <circle cx={p.x} cy={p.y} r="10" fill="transparent" />
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={isSelected ? "5" : "3"}
+                  fill="var(--color-brass)"
+                  stroke={isSelected ? "var(--color-paper)" : "none"}
+                  strokeWidth="1.5"
+                />
+                <title>
+                  {p.label}: {p.count} unique visitor{p.count === 1 ? "" : "s"} — click to see pages visited
+                </title>
+              </a>
+            );
+          })}
 
           {uniqueLabelIndices.map((i) => (
             <text

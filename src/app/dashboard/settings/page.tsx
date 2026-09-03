@@ -38,10 +38,11 @@ export default async function SettingsPage() {
         </h2>
         <form action={updateProfile} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            <label htmlFor="settings-name" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
               Full name
             </label>
             <input
+              id="settings-name"
               name="name"
               defaultValue={session!.user.name ?? ""}
               required
@@ -49,20 +50,22 @@ export default async function SettingsPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            <label htmlFor="settings-organization" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
               Organization
             </label>
             <input
+              id="settings-organization"
               name="organization"
               defaultValue={client?.organization ?? ""}
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            <label htmlFor="settings-email" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
               Email
             </label>
             <input
+              id="settings-email"
               value={session!.user.email ?? ""}
               disabled
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-[var(--color-slate)] outline-none"

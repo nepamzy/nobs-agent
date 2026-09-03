@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
+import Image from "next/image";
 import { Loader2, ImageIcon, X } from "lucide-react";
 
 export function GalleryUpload({
@@ -77,8 +78,7 @@ export function GalleryUpload({
         <div className="mb-3 grid grid-cols-4 gap-2 sm:grid-cols-6">
           {urls.map((url, i) => (
             <div key={url} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10">
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary URL */}
-              <img src={url} alt="" className="h-full w-full object-cover" />
+              <Image src={url} alt="" fill sizes="(max-width: 640px) 25vw, 16vw" className="object-cover" />
               <button
                 type="button"
                 onClick={() => removeAt(i)}

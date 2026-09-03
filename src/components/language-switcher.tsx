@@ -25,7 +25,9 @@ export function LanguageSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Change language"
+        aria-label={`${current?.label ?? "Language"}, change language`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className="flex h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs transition hover:border-[var(--color-brass)]"
       >
         <Globe size={14} />

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { DailyVisitorHistogram } from "@/components/admin/daily-visitor-histogram";
@@ -12,6 +13,27 @@ function startOfMonth(d: Date) {
 }
 function startOfYear(d: Date) {
   return new Date(d.getFullYear(), 0, 1);
+}
+
+// YYYY-MM-DD in local time, for the ?day= URL param and the <input
+// type="date"> value — deliberately not toISOString(), which shifts to
+// UTC and can land on the wrong day for the visitor's own timezone.
+function toDayParam(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseDayParam(value: string | undefined, fallback: Date): Date {
+  if (value) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (match) {
+      const parsed = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+  }
+  return fallback;
 }
 
 async function uniqueVisitors(where: { createdAt?: { gte?: Date; lt?: Date } }) {
@@ -45,6 +67,32 @@ async function getDailyTrend(days: number) {
     label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     count: counts[i],
   }));
+}
+
+// Who showed up on one specific day, and which pages they actually
+// looked at that day — distinct from `topPaths`, which is an all-time
+// aggregate and can't answer "what did people view on the 14th."
+async function getDayBreakdown(day: Date) {
+  const start = startOfDay(day);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  const where = { createdAt: { gte: start, lt: end } };
+
+  try {
+    const [unique, pageViews, paths] = await Promise.all([
+      uniqueVisitors(where),
+      prisma.pageView.count({ where }),
+      prisma.pageView.groupBy({
+        by: ["path"],
+        where,
+        _count: { path: true },
+        orderBy: { _count: { path: "desc" } },
+      }),
+    ]);
+    return { unique, pageViews, paths };
+  } catch {
+    return { unique: 0, pageViews: 0, paths: [] as { path: string; _count: { path: number } }[] };
+  }
 }
 
 async function getRevenueAndDuration() {
@@ -200,9 +248,9 @@ function StatCard({
   growth?: number | null;
 }) {
   return (
-    <div className="glass rounded-2xl p-6">
+    <div className="glass overflow-hidden rounded-2xl p-6">
       <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">{label}</p>
-      <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+      <p className="mt-2 break-words font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)] sm:text-3xl">
         {uniqueValue.toLocaleString()}
       </p>
       <p className="mt-1 text-xs text-[var(--color-slate)]">
@@ -231,11 +279,19 @@ function formatDuration(ms: number) {
   return `${seconds}s`;
 }
 
-export default async function AdminAnalyticsPage() {
-  const [data, dailyTrend, revenueData] = await Promise.all([
+export default async function AdminAnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ day?: string }>;
+}) {
+  const { day: dayParam } = await searchParams;
+  const selectedDay = parseDayParam(dayParam, startOfDay(new Date()));
+
+  const [data, dailyTrend, revenueData, dayBreakdown] = await Promise.all([
     getAnalytics(),
     getDailyTrend(30),
     getRevenueAndDuration(),
+    getDayBreakdown(selectedDay),
   ]);
 
   const monthGrowth = growthPercent(data.thisMonthUnique, data.lastMonthUnique);
@@ -254,38 +310,38 @@ export default async function AdminAnalyticsPage() {
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="glass rounded-2xl p-6">
+        <div className="glass overflow-hidden rounded-2xl p-6">
           <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
             Total page views
           </p>
-          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+          <p className="mt-2 break-words font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)] sm:text-3xl">
             {data.allTimeCount.toLocaleString()}
           </p>
         </div>
-        <div className="glass rounded-2xl p-6">
+        <div className="glass overflow-hidden rounded-2xl p-6">
           <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
             Total time on site
           </p>
-          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+          <p className="mt-2 break-words font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)] sm:text-3xl">
             {formatDuration(revenueData.totalDurationMs)}
           </p>
           <p className="mt-1 text-xs text-[var(--color-slate)]">
             avg {formatDuration(revenueData.avgDurationMs)} per visit
           </p>
         </div>
-        <div className="glass rounded-2xl p-6">
+        <div className="glass overflow-hidden rounded-2xl p-6">
           <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
             Total revenue
           </p>
-          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+          <p className="mt-2 break-words font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)] sm:text-3xl">
             {formatNaira(revenueData.totalRevenue)}
           </p>
         </div>
-        <div className="glass rounded-2xl p-6">
+        <div className="glass overflow-hidden rounded-2xl p-6">
           <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
             All-time unique visitors
           </p>
-          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+          <p className="mt-2 break-words font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)] sm:text-3xl">
             {data.allTimeUnique.toLocaleString()}
           </p>
         </div>
@@ -343,7 +399,89 @@ export default async function AdminAnalyticsPage() {
         </div>
       )}
 
-      <DailyVisitorHistogram data={dailyTrend} />
+      <DailyVisitorHistogram data={dailyTrend} selectedDay={selectedDay} />
+
+      <div className="glass mt-8 rounded-2xl p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="font-[family-name:var(--font-display)] text-lg font-medium">
+              Visitors by day
+            </h2>
+            <p className="mt-1 text-sm text-[var(--color-slate)]">
+              Who showed up on {selectedDay.toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}, and exactly which pages they looked at.
+            </p>
+          </div>
+
+          <form action="/admin/analytics" method="GET" className="flex items-center gap-2">
+            <input
+              type="date"
+              name="day"
+              defaultValue={toDayParam(selectedDay)}
+              max={toDayParam(new Date())}
+              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none transition focus:border-[var(--color-brass)]"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+            >
+              View
+            </button>
+          </form>
+        </div>
+
+        <div className="mt-2 flex gap-3 text-xs">
+          <Link href="/admin/analytics" className="text-[var(--color-brass)] hover:underline">
+            Today
+          </Link>
+          <Link
+            href={`/admin/analytics?day=${toDayParam(
+              new Date(new Date().setDate(new Date().getDate() - 1))
+            )}`}
+            className="text-[var(--color-brass)] hover:underline"
+          >
+            Yesterday
+          </Link>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="glass overflow-hidden rounded-xl p-5">
+            <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
+              Unique visitors that day
+            </p>
+            <p className="mt-2 break-words font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)] sm:text-3xl">
+              {dayBreakdown.unique.toLocaleString()}
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-slate)]">
+              {dayBreakdown.pageViews.toLocaleString()} total page views
+            </p>
+          </div>
+
+          <div className="glass overflow-hidden rounded-xl p-5">
+            <p className="mb-3 text-xs uppercase tracking-wider text-[var(--color-slate)]">
+              Pages visited that day
+            </p>
+            {dayBreakdown.paths.length === 0 ? (
+              <p className="text-sm text-[var(--color-slate)]">No visits recorded that day.</p>
+            ) : (
+              <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                {dayBreakdown.paths.map((p) => (
+                  <div key={p.path} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="truncate text-[var(--color-slate)]">{p.path}</span>
+                    <span className="shrink-0 font-[family-name:var(--font-mono)] text-[var(--color-brass)]">
+                      {p._count.path.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -45,10 +45,11 @@ export function ResetPasswordForm({ token }: { token: string }) {
   return (
     <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="reset-password-new" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           New password
         </label>
         <input
+          id="reset-password-new"
           name="newPassword"
           type="password"
           required
@@ -57,10 +58,11 @@ export function ResetPasswordForm({ token }: { token: string }) {
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="reset-password-confirm" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Confirm new password
         </label>
         <input
+          id="reset-password-confirm"
           name="confirmPassword"
           type="password"
           required

@@ -110,10 +110,11 @@ export function AuthorizePaymentForm({
 
       {!hasAgreedAmount && (
         <div>
-          <label className="mb-1 block text-[11px] text-[var(--color-slate)]">
+          <label htmlFor="authorize-payment-agreed-amount" className="mb-1 block text-[11px] text-[var(--color-slate)]">
             Total project cost (₦), this booking has no agreed price yet
           </label>
           <input
+            id="authorize-payment-agreed-amount"
             name="agreedAmountNaira"
             type="number"
             min={1}
@@ -151,7 +152,7 @@ export function AuthorizePaymentForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-[11px] text-[var(--color-slate)]">
+        <label htmlFor="authorize-payment-value" className="mb-1 block text-[11px] text-[var(--color-slate)]">
           {mode === "amount" ? "Amount paid this transaction (₦)" : "Percentage paid (%)"}
           {hasAgreedAmount &&
             (mode === "amount"
@@ -159,6 +160,7 @@ export function AuthorizePaymentForm({
               : `, max ${remainingPercent}%`)}
         </label>
         <input
+          id="authorize-payment-value"
           name="value"
           type="number"
           min={mode === "amount" ? 1 : 0.01}
@@ -178,10 +180,10 @@ export function AuthorizePaymentForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-[11px] text-[var(--color-slate)]">
+        <label htmlFor="authorize-payment-note" className="mb-1 block text-[11px] text-[var(--color-slate)]">
           Note (optional, e.g. &quot;bank transfer, ref #123&quot;)
         </label>
-        <input name="note" type="text" maxLength={1000} className={`${inputClass} w-full`} />
+        <input id="authorize-payment-note" name="note" type="text" maxLength={1000} className={`${inputClass} w-full`} />
       </div>
 
       {error && <p className="text-xs text-red-400">{error}</p>}

@@ -4,6 +4,9 @@ import { getServerLanguage, translateList } from "@/lib/translate-content";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "How NOBS AGENT collects, uses, and protects your information.",
+  alternates: {
+    canonical: "/privacy",
+  },
 };
 
 const sections = [

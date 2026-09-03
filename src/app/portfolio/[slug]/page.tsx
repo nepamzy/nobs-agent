@@ -6,6 +6,7 @@ import { getAllProjectSlugs, getProjectBySlug } from "@/lib/data/projects";
 import { getServerLanguage, translateFields } from "@/lib/translate-content";
 import { ProjectCover } from "@/components/project-cover";
 import { ProjectGallery } from "@/components/project-gallery";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export async function generateStaticParams() {
   const slugs = await getAllProjectSlugs();
@@ -23,6 +24,9 @@ export async function generateMetadata({
   return {
     title: project.title,
     description: project.summary,
+    alternates: {
+      canonical: `/portfolio/${slug}`,
+    },
   };
 }
 
@@ -43,6 +47,13 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-24">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Portfolio", href: "/portfolio" },
+          { label: title },
+        ]}
+      />
       <Link
         href="/portfolio"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--color-slate)] hover:text-[var(--color-brass)]"

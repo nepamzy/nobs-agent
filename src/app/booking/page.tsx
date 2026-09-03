@@ -6,6 +6,9 @@ import { AuthGate } from "@/components/auth-gate";
 export const metadata: Metadata = {
   title: "Book a Consultation",
   description: "Pick a time to discuss your project with NOBS AGENT.",
+  alternates: {
+    canonical: "/booking",
+  },
 };
 
 export default function BookingPage() {

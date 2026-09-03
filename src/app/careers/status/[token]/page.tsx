@@ -6,10 +6,20 @@ import { MessageAttachmentInput } from "@/components/message-attachment-input";
 import { MessageAttachment } from "@/components/message-attachment";
 import { CheckCircle2, Circle } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Your application",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  return {
+    title: "Your application",
+    robots: { index: false, follow: false },
+    alternates: {
+      canonical: `/careers/status/${token}`,
+    },
+  };
+}
 
 const STATUS_ORDER = ["RECEIVED", "IN_REVIEW", "INTERVIEWING", "HIRED"] as const;
 const STATUS_LABELS: Record<string, string> = {

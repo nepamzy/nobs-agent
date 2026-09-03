@@ -37,10 +37,11 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   return (
     <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="login-email" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Email
         </label>
         <input
+          id="login-email"
           name="email"
           type="email"
           required
@@ -49,12 +50,12 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
       </div>
       <div>
         <div className="mb-1.5 flex items-center justify-between">
-          <label className="text-xs font-medium text-[var(--color-slate)]">Password</label>
+          <label htmlFor="login-password" className="text-xs font-medium text-[var(--color-slate)]">Password</label>
           <a href="/forgot-password" className="text-xs text-[var(--color-brass)] hover:underline">
             Forgot password?
           </a>
         </div>
-        <PasswordInput name="password" required minLength={8} />
+        <PasswordInput id="login-password" name="password" required minLength={8} />
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}

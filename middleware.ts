@@ -8,28 +8,53 @@ import { authConfig } from "@/auth.config";
 // database.
 const { auth } = NextAuth(authConfig);
 
+const REFERRAL_COOKIE = "nobs_ref";
+const REFERRAL_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
+
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
   const role = req.auth?.user?.role;
 
   const isAdminRoute = pathname.startsWith("/admin");
   const isPortalRoute = pathname.startsWith("/dashboard");
+  // /partner/signup is the public self-service page that lets someone
+  // BECOME a REFERRER in the first place, it can't require the role it
+  // grants — everything else under /partner is the gated dashboard.
+  const isPartnerRoute = pathname.startsWith("/partner") && pathname !== "/partner/signup";
 
-  if (!isAdminRoute && !isPortalRoute) return NextResponse.next();
+  let response: NextResponse;
 
-  if (!req.auth) {
+  if (!isAdminRoute && !isPortalRoute && !isPartnerRoute) {
+    response = NextResponse.next();
+  } else if (!req.auth) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+    response = NextResponse.redirect(loginUrl);
+  } else if (isAdminRoute && role !== "ADMIN" && role !== "STAFF") {
+    response = NextResponse.redirect(new URL("/dashboard", req.url));
+  } else if (isPartnerRoute && role !== "REFERRER") {
+    response = NextResponse.redirect(new URL("/dashboard", req.url));
+  } else {
+    response = NextResponse.next();
   }
 
-  if (isAdminRoute && role !== "ADMIN" && role !== "STAFF") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+  // Referral attribution: someone can land on any page from a shared
+  // referral link (not just /signup directly), so this runs sitewide
+  // rather than being scoped to the gated routes above. Read later by
+  // src/app/signup/actions.ts if they go on to create an account.
+  const refCode = searchParams.get("ref");
+  if (refCode) {
+    response.cookies.set(REFERRAL_COOKIE, refCode, {
+      maxAge: REFERRAL_COOKIE_MAX_AGE_SECONDS,
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    });
   }
 
-  return NextResponse.next();
+  return response;
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

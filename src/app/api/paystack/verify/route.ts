@@ -5,6 +5,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { rateLimit } from "@/lib/rate-limit";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
+import { recordReferralCommissionIfApplicable } from "@/lib/referral-commission";
 
 const verifySchema = z.object({
   reference: z.string().min(1),
@@ -89,11 +90,11 @@ export async function POST(req: NextRequest) {
 
     const newTotalPaid = booking.amountPaid + paidAmount;
 
-    await prisma.$transaction([
-      prisma.bookingPayment.create({
+    await prisma.$transaction(async (tx) => {
+      const payment = await tx.bookingPayment.create({
         data: { bookingId: booking.id, amount: paidAmount, provider: "paystack", reference },
-      }),
-      prisma.booking.update({
+      });
+      await tx.booking.update({
         where: { id: booking.id },
         data: {
           amountPaid: newTotalPaid,
@@ -101,8 +102,21 @@ export async function POST(req: NextRequest) {
           depositPaidAt: booking.depositPaidAt ?? new Date(),
           paystackReference: booking.paystackReference ?? reference,
         },
-      }),
-    ]);
+      });
+      await recordReferralCommissionIfApplicable(tx, {
+        bookingUserId: booking.userId,
+        bookingPaymentId: payment.id,
+        paidAmountKobo: paidAmount,
+      });
+    }, { timeout: 15000 });
+    // Prisma's default interactive-transaction timeout is 5s — this
+    // transaction now does meaningfully more work than when it was first
+    // written (referral lookup, tier locking, commission + notification
+    // rows), and hit that default under real network latency to the
+    // database during testing. A timed-out commit here after Paystack has
+    // already charged the client would be a real, dangerous split: money
+    // taken, nothing recorded. 15s gives real headroom without masking a
+    // genuinely broken query if one ever creeps in.
 
     if (process.env.BREVO_API_KEY) {
       const receiptHtml = buildReceiptHtml({

@@ -14,6 +14,10 @@ export async function clearAllPaymentData() {
   }
 
   await prisma.$transaction([
+    // Referral commissions reference BookingPayment rows, so they have to
+    // go first — otherwise deleting the payments they point to would hit
+    // a foreign-key wall.
+    prisma.referralCommission.deleteMany({}),
     prisma.bookingPayment.deleteMany({}),
     prisma.booking.updateMany({
       data: {
@@ -30,6 +34,19 @@ export async function clearAllPaymentData() {
         status: "PENDING",
       },
     }),
+    // Wiping payments would otherwise leave referrals permanently
+    // "converted" at a locked-in rate with no actual payment behind it,
+    // and partners' tier progress stuck at whatever it was — reset both
+    // back to their pre-payment state along with everything else here.
+    prisma.referral.updateMany({
+      data: {
+        status: "PENDING",
+        commissionRatePercent: null,
+        tierPositionAtQualification: null,
+        convertedAt: null,
+      },
+    }),
+    prisma.referralPartner.updateMany({ data: { paidReferralCount: 0 } }),
   ]);
 
   revalidatePath("/admin/payments");
@@ -37,4 +54,6 @@ export async function clearAllPaymentData() {
   revalidatePath("/admin/bookings");
   revalidatePath("/admin/clients");
   revalidatePath("/dashboard/payments");
+  revalidatePath("/admin/partners");
+  revalidatePath("/partner");
 }

@@ -4,10 +4,10 @@ import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { createClientAccount } from "@/app/signup/actions";
+import { createReferralPartnerAccount } from "@/app/partner/signup/actions";
 import { PasswordInput } from "@/components/password-input";
 
-export function SignupForm({ referralCode }: { referralCode?: string }) {
+export function PartnerSignupForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,15 +20,13 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    const result = await createClientAccount(formData);
+    const result = await createReferralPartnerAccount(formData);
     if (!result.ok) {
       setError(result.error);
       setLoading(false);
       return;
     }
 
-    // Sign in immediately with the same credentials rather than send them
-    // back to a login screen right after they just typed a password in.
     const signInResult = await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),
@@ -38,46 +36,33 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
     setLoading(false);
 
     if (signInResult?.error) {
-      // Account was created but auto-login failed for some reason,
-      // send them to login rather than strand them on a broken state.
       router.push("/login");
       return;
     }
 
-    router.push("/dashboard");
+    router.push("/partner");
     router.refresh();
   }
 
   return (
     <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
-      {referralCode && <input type="hidden" name="ref" value={referralCode} />}
       <div>
-        <label htmlFor="signup-name" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="partner-signup-name" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Full name
         </label>
         <input
-          id="signup-name"
+          id="partner-signup-name"
           name="name"
           required
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
         />
       </div>
       <div>
-        <label htmlFor="signup-organization" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
-          Organization (optional)
-        </label>
-        <input
-          id="signup-organization"
-          name="organization"
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-        />
-      </div>
-      <div>
-        <label htmlFor="signup-email" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="partner-signup-email" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Email
         </label>
         <input
-          id="signup-email"
+          id="partner-signup-email"
           name="email"
           type="email"
           required
@@ -85,11 +70,11 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
         />
       </div>
       <div>
-        <label htmlFor="signup-phone" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="partner-signup-phone" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Phone number (WhatsApp preferred)
         </label>
         <input
-          id="signup-phone"
+          id="partner-signup-phone"
           name="phone"
           type="tel"
           required
@@ -98,10 +83,10 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
         />
       </div>
       <div>
-        <label htmlFor="signup-password" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+        <label htmlFor="partner-signup-password" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Password
         </label>
-        <PasswordInput id="signup-password" name="password" required minLength={8} />
+        <PasswordInput id="partner-signup-password" name="password" required minLength={8} />
         <p className="mt-1.5 text-xs text-[var(--color-slate)]">At least 8 characters.</p>
       </div>
 
@@ -113,11 +98,11 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
         className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-brass)] px-6 py-3 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90 disabled:opacity-60"
       >
         {loading && <Loader2 size={16} className="animate-spin" />}
-        {loading ? "Creating account…" : "Create account"}
+        {loading ? "Creating account…" : "Create partner account"}
       </button>
 
       <p className="text-center text-xs text-[var(--color-slate)]">
-        Already have an account?{" "}
+        Already a partner?{" "}
         <a href="/login" className="text-[var(--color-brass)] underline underline-offset-4">
           Sign in
         </a>

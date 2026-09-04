@@ -17,6 +17,7 @@ enum Role {
   ADMIN
   STAFF
   CLIENT
+  REFERRER
 }
 
 model User {
@@ -42,6 +43,8 @@ model User {
   passwordResetTokens PasswordResetToken[]
   pushSubscriptions PushSubscription[]
   paymentsAuthorized BookingPayment[] @relation("PaymentAuthorizedBy")
+  referralPartner ReferralPartner?
+  referral        Referral?
 }
 
 // Web Push subscription (one row per browser/device the user enabled
@@ -324,6 +327,8 @@ model BookingPayment {
   authorizedBy       User?    @relation("PaymentAuthorizedBy", fields: [authorizedByUserId], references: [id])
   priorGatewayStatus String?  // snapshot, e.g. "PENDING" or "no gateway confirmation"
   note               String?  @db.Text
+
+  referralCommissions ReferralCommission[]
 }
 
 model BookingFile {
@@ -334,6 +339,90 @@ model BookingFile {
   fileName       String
   uploadedByRole Role
   createdAt      DateTime @default(now())
+}
+
+// ---------- Referral partner program ----------
+// A partner (Role = REFERRER) gets a shareable code; a prospective client
+// who signs up through that link becomes a Referral (see middleware.ts for
+// cookie capture and src/app/signup/actions.ts for the link between them).
+// Commission is recorded per BookingPayment, not per Referral, since a
+// client can pay in installments and each installment earns commission
+// separately — see src/lib/referral-tier.ts for the rate math and the
+// three payment-transaction call sites (Paystack/Flutterwave verify,
+// admin manual authorization) for where ReferralCommission rows are created.
+
+model ReferralPartner {
+  id                String     @id @default(cuid())
+  userId            String     @unique
+  user              User       @relation(fields: [userId], references: [id])
+  referralCode      String     @unique
+  // Lifetime count of referrals that have made at least one payment, used
+  // to compute which commission tier the NEXT converting referral lands
+  // in. Never decremented except by the admin "clear test data" reset.
+  paidReferralCount Int        @default(0)
+  bankDetails       String?    @db.Text
+  // Paystack payout automation — set once the partner completes the
+  // "Payout details" flow on their dashboard. bankCode/accountNumber are
+  // what was submitted; accountName is what Paystack resolved it to
+  // (shown back to the partner for confirmation before saving).
+  bankCode                String?
+  accountNumber           String?
+  accountName             String?
+  paystackSubaccountCode  String?    @unique
+  subaccountSetupAt       DateTime?
+  suspended         Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+
+  referrals         Referral[]
+
+  @@index([referralCode])
+}
+
+enum ReferralStatus {
+  PENDING
+  CONVERTED
+  DISQUALIFIED
+}
+
+model Referral {
+  id             String         @id @default(cuid())
+  partnerId      String
+  partner        ReferralPartner @relation(fields: [partnerId], references: [id])
+  referredUserId String         @unique
+  referredUser   User           @relation(fields: [referredUserId], references: [id])
+  status         ReferralStatus @default(PENDING)
+  // Locked in the moment this referral first pays, based on where it fell
+  // in the partner's paidReferralCount sequence at that instant. Later
+  // referrals crossing into bonus territory don't change this.
+  commissionRatePercent       Int?
+  tierPositionAtQualification Int?
+  disqualifiedReason String?   @db.Text
+  createdAt      DateTime      @default(now())
+  convertedAt    DateTime?
+
+  commissions    ReferralCommission[]
+
+  @@index([partnerId])
+}
+
+model ReferralCommission {
+  id               String         @id @default(cuid())
+  referralId       String
+  referral         Referral       @relation(fields: [referralId], references: [id])
+  // Not unique: a bonus-tier (20%) payment creates TWO rows against the
+  // same BookingPayment — one for the base 10% (auto-split via Paystack
+  // when the partner has a subaccount) and one for the extra 10% bonus
+  // portion (always manual, see isBonusPortion).
+  bookingPaymentId String
+  bookingPayment   BookingPayment @relation(fields: [bookingPaymentId], references: [id])
+  amount           Int            // kobo
+  isBonusPortion   Boolean        @default(false)
+  paidOut          Boolean        @default(false)
+  paidOutAt        DateTime?
+  createdAt        DateTime       @default(now())
+
+  @@index([referralId])
+  @@index([bookingPaymentId])
 }
 
 // ---------- Messaging & contact ----------

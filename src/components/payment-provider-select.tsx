@@ -10,12 +10,16 @@ export function PaymentProviderSelect({
   name,
   minimumKobo,
   remainingKobo,
+  paystackSubaccountCode,
 }: {
   bookingId: string;
   email: string;
   name: string;
   minimumKobo: number;
   remainingKobo: number;
+  // Only applies on the Paystack path — see src/lib/paystack.ts. Flutterwave
+  // split payments aren't wired up (deliberately out of scope for now).
+  paystackSubaccountCode?: string | null;
 }) {
   const [provider, setProvider] = useState<"paystack" | "flutterwave">("paystack");
 
@@ -47,7 +51,13 @@ export function PaymentProviderSelect({
       </div>
 
       {provider === "paystack" ? (
-        <PayButton bookingId={bookingId} email={email} minimumKobo={minimumKobo} remainingKobo={remainingKobo} />
+        <PayButton
+          bookingId={bookingId}
+          email={email}
+          minimumKobo={minimumKobo}
+          remainingKobo={remainingKobo}
+          paystackSubaccountCode={paystackSubaccountCode}
+        />
       ) : (
         <FlutterwaveButton
           bookingId={bookingId}

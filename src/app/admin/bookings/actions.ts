@@ -9,6 +9,7 @@ import { getSiteUrl } from "@/lib/env";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToUser } from "@/lib/push";
+import { recordReferralCommissionIfApplicable } from "@/lib/referral-commission";
 import type { BookingStatus } from "@prisma/client";
 
 export async function deleteBooking(formData: FormData) {
@@ -196,8 +197,8 @@ export async function authorizeBookingPayment(formData: FormData) {
   const newTotalPaid = booking.amountPaid + paidAmount;
   const reference = `manual-${crypto.randomUUID()}`;
 
-  await prisma.$transaction([
-    prisma.bookingPayment.create({
+  await prisma.$transaction(async (tx) => {
+    const payment = await tx.bookingPayment.create({
       data: {
         bookingId: booking.id,
         amount: paidAmount,
@@ -207,8 +208,8 @@ export async function authorizeBookingPayment(formData: FormData) {
         priorGatewayStatus: priorStatus,
         note: note || null,
       },
-    }),
-    prisma.booking.update({
+    });
+    await tx.booking.update({
       where: { id: booking.id },
       data: {
         status: "CONFIRMED",
@@ -219,8 +220,15 @@ export async function authorizeBookingPayment(formData: FormData) {
         depositPaid: true,
         depositPaidAt: booking.depositPaidAt ?? new Date(),
       },
-    }),
-  ]);
+    });
+    await recordReferralCommissionIfApplicable(tx, {
+      bookingUserId: booking.userId,
+      bookingPaymentId: payment.id,
+      paidAmountKobo: paidAmount,
+    });
+  }, { timeout: 15000 });
+  // See the matching comment in src/app/api/paystack/verify/route.ts —
+  // same reasoning, same fix.
 
   // Everything downstream matches the normal Paystack-verified flow
   // exactly: same receipt builder, same emails, same dashboard notification.

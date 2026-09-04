@@ -44,6 +44,26 @@ export default async function PayPage({
 
   if (!booking || !booking.agreedAmount || !booking.depositAmount) notFound();
 
+  // If this client was referred and their referrer has automatic payouts
+  // set up, their base commission auto-splits via Paystack's subaccount —
+  // see src/lib/paystack.ts for why this is always a fixed 10%, and
+  // src/lib/referral-commission.ts for how the bonus-tier extra (if any)
+  // still gets tracked for manual payout regardless.
+  let paystackSubaccountCode: string | null = null;
+  if (booking.userId) {
+    try {
+      const referral = await prisma.referral.findUnique({
+        where: { referredUserId: booking.userId },
+        include: { partner: true },
+      });
+      if (referral && referral.status !== "DISQUALIFIED" && !referral.partner.suspended) {
+        paystackSubaccountCode = referral.partner.paystackSubaccountCode;
+      }
+    } catch {
+      // Non-fatal — checkout proceeds without a split rather than blocking payment.
+    }
+  }
+
   const remaining = booking.agreedAmount - booking.amountPaid;
   const percentPaid = Math.round((booking.amountPaid / booking.agreedAmount) * 100);
   const fullyPaid = remaining <= 0;
@@ -120,6 +140,7 @@ export default async function PayPage({
             name={booking.fullName}
             minimumKobo={minimumForThisPayment}
             remainingKobo={remaining}
+            paystackSubaccountCode={paystackSubaccountCode}
           />
         )}
       </div>

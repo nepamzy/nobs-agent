@@ -13,6 +13,7 @@ declare global {
         ref: string;
         currency?: string;
         metadata?: Record<string, unknown>;
+        subaccount?: string;
         callback: (response: { reference: string }) => void;
         onClose: () => void;
       }) => { openIframe: () => void };
@@ -44,12 +45,14 @@ export function PayButton({
   minimumKobo,
   remainingKobo,
   onPaid,
+  paystackSubaccountCode,
 }: {
   bookingId: string;
   email: string;
   minimumKobo: number; // the floor for this specific payment
   remainingKobo: number; // the ceiling, can't pay more than what's left
   onPaid?: (totalPaid: number) => void;
+  paystackSubaccountCode?: string | null;
 }) {
   const [amountNaira, setAmountNaira] = useState(Math.round(remainingKobo / 100));
   const [loading, setLoading] = useState(false);
@@ -90,6 +93,11 @@ export function PayButton({
         ref: reference,
         currency: "NGN",
         metadata: { bookingId },
+        // Referred clients whose partner has automatic payouts set up split
+        // a fixed 10% straight to that partner's own bank account — see
+        // src/lib/paystack.ts for why this is a static value, not computed
+        // per transaction.
+        ...(paystackSubaccountCode ? { subaccount: paystackSubaccountCode } : {}),
         callback: (response) => {
           // Paystack confirms client-side, but that's never trusted alone,
           // the server independently re-verifies with Paystack's API

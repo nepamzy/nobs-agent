@@ -5,6 +5,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { rateLimit } from "@/lib/rate-limit";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
+import { recordReferralCommissionIfApplicable } from "@/lib/referral-commission";
 
 const verifySchema = z.object({
   transactionId: z.string().min(1),
@@ -95,19 +96,26 @@ export async function POST(req: NextRequest) {
 
     const newTotalPaid = booking.amountPaid + paidAmount;
 
-    await prisma.$transaction([
-      prisma.bookingPayment.create({
+    await prisma.$transaction(async (tx) => {
+      const payment = await tx.bookingPayment.create({
         data: { bookingId: booking.id, amount: paidAmount, provider: "flutterwave", reference: transactionId },
-      }),
-      prisma.booking.update({
+      });
+      await tx.booking.update({
         where: { id: booking.id },
         data: {
           amountPaid: newTotalPaid,
           depositPaid: true,
           depositPaidAt: booking.depositPaidAt ?? new Date(),
         },
-      }),
-    ]);
+      });
+      await recordReferralCommissionIfApplicable(tx, {
+        bookingUserId: booking.userId,
+        bookingPaymentId: payment.id,
+        paidAmountKobo: paidAmount,
+      });
+    }, { timeout: 15000 });
+    // See the matching comment in src/app/api/paystack/verify/route.ts —
+    // same reasoning, same fix.
 
     if (process.env.BREVO_API_KEY) {
       const receiptHtml = buildReceiptHtml({

@@ -10,7 +10,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ref?: string }>;
+}) {
+  const { ref } = await searchParams;
+
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-6 py-24">
       <Image src="/logo-mark.svg" alt="" width={56} height={56} className="mx-auto mb-6" />
@@ -20,7 +26,7 @@ export default function SignupPage() {
       <h1 className="mb-8 text-center font-[family-name:var(--font-display)] text-3xl font-medium tracking-tight">
         Create your account
       </h1>
-      <SignupForm />
+      <SignupForm referralCode={ref} />
     </div>
   );
 }

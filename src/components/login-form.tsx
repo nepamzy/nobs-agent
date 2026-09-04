@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { PasswordInput } from "@/components/password-input";
@@ -30,7 +30,22 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
       return;
     }
 
-    router.push(callbackUrl || "/dashboard");
+    if (callbackUrl) {
+      // Respect an explicit callbackUrl — set by middleware when someone
+      // was redirected here from a specific gated page they were already
+      // trying to reach.
+      router.push(callbackUrl);
+    } else {
+      // No callbackUrl means they landed on /login directly, this is the
+      // one place role actually has to be looked up: a referral partner
+      // logging in this way previously always landed on the CLIENT
+      // dashboard (hardcoded "/dashboard"), never their own.
+      const session = await getSession();
+      const role = session?.user?.role;
+      const destination =
+        role === "REFERRER" ? "/partner" : role === "ADMIN" || role === "STAFF" ? "/admin" : "/dashboard";
+      router.push(destination);
+    }
     router.refresh();
   }
 
@@ -73,6 +88,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         New client?{" "}
         <a href="/signup" className="text-[var(--color-brass)] underline underline-offset-4">
           Create an account
+        </a>
+        .
+      </p>
+      <p className="text-center text-xs text-[var(--color-slate)]">
+        Want to become a referral partner instead?{" "}
+        <a href="/partner/signup" className="text-[var(--color-brass)] underline underline-offset-4">
+          Sign up as a middleman
         </a>
         .
       </p>

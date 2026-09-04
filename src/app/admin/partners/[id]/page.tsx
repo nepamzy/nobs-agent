@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { tierProgress } from "@/lib/referral-tier";
-import { disqualifyReferral, reinstateReferral, markCommissionPaidOut } from "../actions";
+import { disqualifyReferral, reinstateReferral, markCommissionPaidOut, resendPartnerAgreement } from "../actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
-import { Ban, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Ban, RotateCcw, CheckCircle2, Mail } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   PENDING: "text-[var(--color-slate)]",
@@ -62,6 +62,16 @@ export default async function AdminPartnerDetailPage({
       <p className="mt-1 text-sm text-[var(--color-slate)]">
         {partner.user.email} · {partner.user.phone} · code <code>{partner.referralCode}</code>
       </p>
+
+      <form action={resendPartnerAgreement} className="mt-3">
+        <input type="hidden" name="id" value={partner.id} />
+        <button
+          type="submit"
+          className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] px-3.5 py-1.5 text-xs font-medium transition hover:border-[var(--color-brass)]"
+        >
+          <Mail size={13} /> Resend Referral Partner Agreement
+        </button>
+      </form>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="glass rounded-2xl p-6">

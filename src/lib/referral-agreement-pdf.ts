@@ -1,5 +1,18 @@
+import fs from "fs";
+import path from "path";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import { AGREEMENT_SECTIONS, AGREEMENT_INTRO_PARAGRAPHS } from "@/lib/referral-agreement-content";
+import {
+  AGREEMENT_SECTIONS,
+  AGREEMENT_INTRO_PARAGRAPHS,
+  COMPANY_SIGNATORY_NAME,
+  COMPANY_SIGNATORY_TITLE,
+} from "@/lib/referral-agreement-content";
+
+// Read once at module load, not per PDF generated — this file never
+// changes at runtime, re-reading it from disk on every signup/download
+// would be pure waste.
+const SIGNATURE_PNG_PATH = path.join(process.cwd(), "src/assets/signature-nobert-agu.png");
+const signaturePngBytes = fs.readFileSync(SIGNATURE_PNG_PATH);
 
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842; // A4
@@ -116,9 +129,7 @@ export async function generateReferralAgreementPdf(params: ReferralAgreementPara
     `Phone: ${partnerPhone}`,
   ];
   for (const line of infoLines) {
-    cursor = ensureSpace(doc, cursor, 14);
-    cursor.page.drawText(line, { x: LEFT, y: cursor.y, size: 11, font: bold, color: ink });
-    cursor.y -= 16;
+    cursor = drawParagraph(doc, cursor, line, bold, 11, ink, 15);
   }
   cursor.y -= 10;
 
@@ -144,11 +155,17 @@ export async function generateReferralAgreementPdf(params: ReferralAgreementPara
     cursor.y -= 6;
   }
 
-  // Signature block — Company side left blank pending the account owner's
-  // authorized signatory details; Referrer side pre-filled with what's
-  // already known, signature line itself left for the Referrer to
-  // physically or electronically execute (clause 11.8 permits this).
-  cursor = ensureSpace(doc, cursor, 140);
+  // Signature block. Company side carries the real signature image
+  // (supplied directly by the account owner) pre-stamped above the Name/
+  // Title/Date lines — this document is pre-executed on the Company's
+  // side. Referrer side is pre-filled with what's already known, but its
+  // signature line is left blank for the Referrer to physically or
+  // electronically execute (clause 11.8 permits this).
+  const signaturePng = await doc.embedPng(signaturePngBytes);
+  const sigWidth = 70;
+  const sigHeight = sigWidth * (signaturePng.height / signaturePng.width);
+
+  cursor = ensureSpace(doc, cursor, 230);
   cursor.page.drawLine({
     start: { x: LEFT, y: cursor.y },
     end: { x: RIGHT, y: cursor.y },
@@ -159,20 +176,20 @@ export async function generateReferralAgreementPdf(params: ReferralAgreementPara
 
   cursor.page.drawText("For and on behalf of NOBS AGENT", { x: LEFT, y: cursor.y, size: 11, font: bold, color: ink });
   cursor.page.drawText("The Referrer", { x: LEFT + 280, y: cursor.y, size: 11, font: bold, color: ink });
-  cursor.y -= 22;
+  cursor.y -= 8;
+
+  cursor.page.drawImage(signaturePng, { x: LEFT, y: cursor.y - sigHeight, width: sigWidth, height: sigHeight });
+  cursor.y -= sigHeight + 6;
 
   const sigLines: [string, string][] = [
-    ["Signature: _____________________", "Signature: _____________________"],
-    ["Name: _____________________", `Name: ${partnerName}`],
-    ["Title: _____________________", `Date: ${dateStr}`],
-    [`Date: ${dateStr}`, ""],
+    [`Name: ${COMPANY_SIGNATORY_NAME}`, "Signature: _____________________"],
+    [`Title: ${COMPANY_SIGNATORY_TITLE}`, `Name: ${partnerName}`],
+    [`Date: ${dateStr}`, `Date: ${dateStr}`],
   ];
   for (const [companyLine, referrerLine] of sigLines) {
     cursor = ensureSpace(doc, cursor, 18);
     cursor.page.drawText(companyLine, { x: LEFT, y: cursor.y, size: 10, font, color: ink });
-    if (referrerLine) {
-      cursor.page.drawText(referrerLine, { x: LEFT + 280, y: cursor.y, size: 10, font, color: ink });
-    }
+    cursor.page.drawText(referrerLine, { x: LEFT + 280, y: cursor.y, size: 10, font, color: ink });
     cursor.y -= 18;
   }
 

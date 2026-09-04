@@ -141,8 +141,11 @@ export const AGREEMENT_SECTIONS: AgreementSection[] = [
   },
 ];
 
+export const COMPANY_SIGNATORY_NAME = "Nobert Agu";
+export const COMPANY_SIGNATORY_TITLE = "Founder";
+
 export const AGREEMENT_INTRO_PARAGRAPHS = [
   'This Referral Partner Agreement ("Agreement") is made and entered into by and between:',
-  "NOBS AGENT, a digital agency with its principal place of business at Kaduna, Kaduna State, Nigeria (\"the Company\", \"NOBS AGENT\", \"we\", \"us\", or \"our\");",
+  `NOBS AGENT, a digital agency with its principal place of business at Kaduna, Kaduna State, Nigeria, represented herein by ${COMPANY_SIGNATORY_NAME} ("the Company", "NOBS AGENT", "we", "us", or "our");`,
   'AND the Referrer named below ("the Referrer", "Partner", "you"), (each individually a "Party" and collectively the "Parties").',
 ];

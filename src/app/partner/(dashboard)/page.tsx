@@ -4,7 +4,7 @@ import { getSiteUrl } from "@/lib/env";
 import { tierProgress } from "@/lib/referral-tier";
 import { ReferralLinkCopy } from "@/components/referral-link-copy";
 import { PayoutDetailsForm } from "@/components/payout-details-form";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, FileDown } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   PENDING: "Pending",
@@ -88,6 +88,12 @@ export default async function PartnerDashboardPage() {
           Anyone who signs up through this link and becomes a paying client earns you commission —
           {" "}{progress.inBonusTier ? "you're currently in the 20% bonus tier." : `${progress.referralsUntilNextBonus} more paid referral${progress.referralsUntilNextBonus === 1 ? "" : "s"} until your next 20% bonus tier.`}
         </p>
+        <a
+          href="/api/partner/agreement"
+          className="mt-4 inline-flex items-center gap-2 text-xs text-[var(--color-brass)] underline underline-offset-4"
+        >
+          <FileDown size={13} /> Download your Referral Partner Agreement
+        </a>
       </div>
 
       <div className="glass mt-6 rounded-2xl p-6">

@@ -7,12 +7,14 @@ import { generateReferralCode } from "@/lib/referral-code";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildPartnerWelcomeHtml } from "@/lib/partner-email";
 import { getSiteUrl } from "@/lib/env";
+import { generateReferralAgreementPdf } from "@/lib/referral-agreement-pdf";
 
 const partnerSignupSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name.").max(150),
   email: z.string().trim().email("Enter a valid email."),
   phone: z.string().trim().min(7, "Enter a valid phone number.").max(20),
   password: z.string().min(8, "Password must be at least 8 characters."),
+  agreedToTerms: z.literal("on", "You must agree to the Referral Partner Agreement and Privacy Policy."),
 });
 
 export type PartnerSignupResult = { ok: true } | { ok: false; error: string };
@@ -23,6 +25,7 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
     email: formData.get("email"),
     phone: formData.get("phone"),
     password: formData.get("password"),
+    agreedToTerms: formData.get("agreedToTerms"),
   });
 
   if (!parsed.success) {
@@ -44,11 +47,23 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
       data: { name, email, phone, passwordHash, role: "REFERRER" },
     });
 
-    await prisma.referralPartner.create({
+    const partner = await prisma.referralPartner.create({
       data: { userId: user.id, referralCode },
     });
 
     if (process.env.BREVO_API_KEY) {
+      // Effective Date on the agreement is the real account-creation
+      // timestamp, not "today" — matters if this PDF is ever regenerated
+      // later (e.g. redownloaded from the dashboard), it must always show
+      // the same date it did on day one, not the day it was redownloaded.
+      const pdfBytes = await generateReferralAgreementPdf({
+        partnerName: name,
+        partnerEmail: email,
+        partnerPhone: phone,
+        effectiveDate: partner.createdAt,
+      });
+      const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
+
       await sendBrevoEmail({
         to: [{ email, name }],
         subject: "Welcome to NOBS Agent",
@@ -57,6 +72,7 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
           referralCode,
           referralLink: `${getSiteUrl()}/signup?ref=${referralCode}`,
         }),
+        attachment: [{ name: "NOBS-Agent-Referral-Partner-Agreement.pdf", content: pdfBase64 }],
       }).catch((err) => console.error("[partner signup] welcome email failed", err));
     }
 

@@ -19,8 +19,13 @@ export default auth((req) => {
   const isPortalRoute = pathname.startsWith("/dashboard");
   // /partner/signup is the public self-service page that lets someone
   // BECOME a REFERRER in the first place, it can't require the role it
-  // grants — everything else under /partner is the gated dashboard.
-  const isPartnerRoute = pathname.startsWith("/partner") && pathname !== "/partner/signup";
+  // grants; /partner/agreement is the public reference copy of the
+  // agreement, read before an account even exists — everything else
+  // under /partner is the gated dashboard.
+  const isPartnerRoute =
+    pathname.startsWith("/partner") &&
+    pathname !== "/partner/signup" &&
+    pathname !== "/partner/agreement";
 
   let response: NextResponse;
 

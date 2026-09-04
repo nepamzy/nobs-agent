@@ -90,6 +90,36 @@ export function PartnerSignupForm() {
         <p className="mt-1.5 text-xs text-[var(--color-slate)]">At least 8 characters.</p>
       </div>
 
+      <label className="flex items-start gap-2.5 text-xs text-[var(--color-slate)]">
+        <input
+          type="checkbox"
+          name="agreedToTerms"
+          required
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-brass)]"
+        />
+        <span>
+          I have read and agree to the{" "}
+          <a
+            href="/partner/agreement"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-brass)] underline underline-offset-4"
+          >
+            Referral Partner Agreement
+          </a>{" "}
+          and{" "}
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-brass)] underline underline-offset-4"
+          >
+            Privacy Policy
+          </a>
+          . My account creation date below becomes the Effective Date of the Agreement.
+        </span>
+      </label>
+
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <button

@@ -16,9 +16,9 @@ const ContentSecurityPolicy = [
   // nonce-based policy is real future work, not an oversight.
   // 'unsafe-eval' is dev-only — Next.js Fast Refresh needs it, React
   // never uses eval() in a production build.
-  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ""}https://www.googletagmanager.com https://js.paystack.co https://checkout.flutterwave.com`,
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ""}https://*.googletagmanager.com https://js.paystack.co https://checkout.flutterwave.com`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://www.googletagmanager.com https://www.google-analytics.com",
+  "img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://*.googletagmanager.com https://*.google-analytics.com",
   "font-src 'self' data:",
   // raw.githack.com serves the HDR environment map @react-three/drei's
   // <Environment preset="studio" /> loads for the homepage's 3D robot hero
@@ -27,7 +27,10 @@ const ContentSecurityPolicy = [
   // o4511891311296512.ingest.de.sentry.io is where the browser SDK sends
   // error reports directly (see next.config.ts's withSentryConfig comment
   // for why this isn't tunneled through our own /monitoring route).
-  "connect-src 'self' https://api.cloudinary.com https://www.google-analytics.com https://www.googletagmanager.com https://api.paystack.co https://api.flutterwave.com https://checkout.flutterwave.com https://raw.githack.com https://raw.githubusercontent.com https://o4511891311296512.ingest.de.sentry.io",
+  // GA4 ships requests through region-sharded subdomains (e.g.
+  // region1.google-analytics.com, region1.analytics.google.com), not just
+  // the bare www host, so these need wildcards rather than exact hosts.
+  "connect-src 'self' https://api.cloudinary.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://api.paystack.co https://api.flutterwave.com https://checkout.flutterwave.com https://raw.githack.com https://raw.githubusercontent.com https://o4511891311296512.ingest.de.sentry.io",
   // Paystack/Flutterwave's checkout SDKs open their payment UI in an
   // embedded iframe from these hosts — verify against a real test
   // transaction before relying on this list in production.

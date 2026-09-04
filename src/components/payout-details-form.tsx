@@ -73,6 +73,11 @@ export function PayoutDetailsForm() {
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-[var(--color-slate)]">
+        Use a regular bank account (e.g. GTBank, Access, Zenith, UBA) rather than a mobile-money
+        wallet like OPay, PalmPay, or Moniepoint — a standard bank account settles automatic
+        commission payouts most reliably.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="payout-bank" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">

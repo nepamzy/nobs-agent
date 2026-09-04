@@ -3,22 +3,36 @@ import { commissionRateForPosition, BASE_RATE_PERCENT, BONUS_RATE_PERCENT } from
 
 type TxClient = Prisma.TransactionClient;
 
+export type CommissionEmailData = {
+  partnerEmail: string;
+  partnerName: string;
+  clientName: string;
+  amount: number;
+  ratePercent: number;
+  autoPaidOut: boolean;
+};
+
 // Call this from inside an interactive `prisma.$transaction(async (tx) => {...})`,
 // right after creating the BookingPayment row, so its real id is available
 // to attach the commission to. Safe no-op if the payer isn't a referred
 // user, or their referral has already been disqualified by an admin.
+//
+// Returns data for a commission-earned email, but deliberately doesn't
+// send it itself — an external HTTP call has no place inside a DB
+// transaction (same reason the client's own receipt email is sent after
+// the transaction closes at every call site, not inside it).
 export async function recordReferralCommissionIfApplicable(
   tx: TxClient,
   params: { bookingUserId: string | null; bookingPaymentId: string; paidAmountKobo: number }
-): Promise<void> {
+): Promise<CommissionEmailData | null> {
   const { bookingUserId, bookingPaymentId, paidAmountKobo } = params;
-  if (!bookingUserId) return;
+  if (!bookingUserId) return null;
 
   const referral = await tx.referral.findUnique({
     where: { referredUserId: bookingUserId },
-    include: { partner: true },
+    include: { partner: { include: { user: true } }, referredUser: true },
   });
-  if (!referral || referral.status === "DISQUALIFIED") return;
+  if (!referral || referral.status === "DISQUALIFIED") return null;
 
   let commissionRatePercent = referral.commissionRatePercent;
 
@@ -45,7 +59,7 @@ export async function recordReferralCommissionIfApplicable(
     });
   }
 
-  if (!commissionRatePercent) return;
+  if (!commissionRatePercent) return null;
 
   // Base 10% auto-splits via Paystack's fixed subaccount configuration
   // (see src/lib/paystack.ts) the instant this same payment clears, IF the
@@ -92,4 +106,18 @@ export async function recordReferralCommissionIfApplicable(
       link: "/partner",
     },
   });
+
+  // The in-app notification above always fires; the email respects the
+  // same emailNotifications opt-out already honored for client-facing
+  // emails elsewhere (src/app/dashboard/messages/direct-actions.ts).
+  if (!referral.partner.user.emailNotifications) return null;
+
+  return {
+    partnerEmail: referral.partner.user.email,
+    partnerName: referral.partner.user.name,
+    clientName: referral.referredUser.name,
+    amount: totalAmount,
+    ratePercent: commissionRatePercent,
+    autoPaidOut: hasAutoPayout,
+  };
 }

@@ -9,7 +9,8 @@ import { getSiteUrl } from "@/lib/env";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToUser } from "@/lib/push";
-import { recordReferralCommissionIfApplicable } from "@/lib/referral-commission";
+import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
+import { buildCommissionEarnedHtml } from "@/lib/partner-email";
 import type { BookingStatus } from "@prisma/client";
 
 export async function deleteBooking(formData: FormData) {
@@ -197,6 +198,7 @@ export async function authorizeBookingPayment(formData: FormData) {
   const newTotalPaid = booking.amountPaid + paidAmount;
   const reference = `manual-${crypto.randomUUID()}`;
 
+  let commissionEmailData: CommissionEmailData | null = null;
   await prisma.$transaction(async (tx) => {
     const payment = await tx.bookingPayment.create({
       data: {
@@ -221,7 +223,7 @@ export async function authorizeBookingPayment(formData: FormData) {
         depositPaidAt: booking.depositPaidAt ?? new Date(),
       },
     });
-    await recordReferralCommissionIfApplicable(tx, {
+    commissionEmailData = await recordReferralCommissionIfApplicable(tx, {
       bookingUserId: booking.userId,
       bookingPaymentId: payment.id,
       paidAmountKobo: paidAmount,
@@ -281,6 +283,15 @@ export async function authorizeBookingPayment(formData: FormData) {
         if (r.status === "rejected") console.error("[authorizeBookingPayment] email failed", r.reason);
       });
     });
+
+    if (commissionEmailData) {
+      const data: CommissionEmailData = commissionEmailData;
+      sendBrevoEmail({
+        to: [{ email: data.partnerEmail, name: data.partnerName }],
+        subject: "You earned a referral commission",
+        htmlContent: buildCommissionEarnedHtml(data),
+      }).catch((err) => console.error("[authorizeBookingPayment] commission email failed", err));
+    }
   }
 
   const matchingUser = await prisma.user.findUnique({ where: { email: booking.email } });

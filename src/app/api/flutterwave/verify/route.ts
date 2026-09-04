@@ -5,7 +5,8 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { rateLimit } from "@/lib/rate-limit";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
-import { recordReferralCommissionIfApplicable } from "@/lib/referral-commission";
+import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
+import { buildCommissionEarnedHtml } from "@/lib/partner-email";
 
 const verifySchema = z.object({
   transactionId: z.string().min(1),
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
 
     const newTotalPaid = booking.amountPaid + paidAmount;
 
+    let commissionEmailData: CommissionEmailData | null = null;
     await prisma.$transaction(async (tx) => {
       const payment = await tx.bookingPayment.create({
         data: { bookingId: booking.id, amount: paidAmount, provider: "flutterwave", reference: transactionId },
@@ -108,7 +110,7 @@ export async function POST(req: NextRequest) {
           depositPaidAt: booking.depositPaidAt ?? new Date(),
         },
       });
-      await recordReferralCommissionIfApplicable(tx, {
+      commissionEmailData = await recordReferralCommissionIfApplicable(tx, {
         bookingUserId: booking.userId,
         bookingPaymentId: payment.id,
         paidAmountKobo: paidAmount,
@@ -158,6 +160,15 @@ export async function POST(req: NextRequest) {
           attachment,
         }),
       ]);
+
+      if (commissionEmailData) {
+        const data: CommissionEmailData = commissionEmailData;
+        sendBrevoEmail({
+          to: [{ email: data.partnerEmail, name: data.partnerName }],
+          subject: "You earned a referral commission",
+          htmlContent: buildCommissionEarnedHtml(data),
+        }).catch((err) => console.error("[flutterwave/verify] commission email failed", err));
+      }
     }
 
     return NextResponse.json({ ok: true, totalPaid: newTotalPaid, agreedAmount: booking.agreedAmount });

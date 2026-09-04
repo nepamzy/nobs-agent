@@ -4,6 +4,9 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { generateReferralCode } from "@/lib/referral-code";
+import { sendBrevoEmail } from "@/lib/brevo";
+import { buildPartnerWelcomeHtml } from "@/lib/partner-email";
+import { getSiteUrl } from "@/lib/env";
 
 const partnerSignupSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name.").max(150),
@@ -44,6 +47,18 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
     await prisma.referralPartner.create({
       data: { userId: user.id, referralCode },
     });
+
+    if (process.env.BREVO_API_KEY) {
+      await sendBrevoEmail({
+        to: [{ email, name }],
+        subject: "Welcome to NOBS Agent",
+        htmlContent: buildPartnerWelcomeHtml({
+          partnerName: name,
+          referralCode,
+          referralLink: `${getSiteUrl()}/signup?ref=${referralCode}`,
+        }),
+      }).catch((err) => console.error("[partner signup] welcome email failed", err));
+    }
 
     return { ok: true };
   } catch (err) {

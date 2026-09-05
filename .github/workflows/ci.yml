@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, upgrade-pass]
   pull_request:
-    branches: [main]
+    branches: [main, upgrade-pass]
 
 env:
   # Dummy values so `prisma generate` and `next build` can run without a

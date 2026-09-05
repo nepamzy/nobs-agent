@@ -85,9 +85,13 @@ export function SiteSearch() {
         onClick={() => setOpen(true)}
         aria-label="Search the site"
         title="Search (Ctrl+K)"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[var(--color-paper)] transition hover:border-[var(--color-brass)] hover:text-[var(--color-brass)]"
+        className="flex h-9 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-[var(--color-paper)] transition hover:border-[var(--color-brass)] hover:text-[var(--color-brass)] sm:w-44 sm:justify-start"
       >
-        <Search size={16} />
+        <Search size={16} className="shrink-0" />
+        <span className="hidden text-sm text-[var(--color-slate)] sm:inline">Search...</span>
+        <kbd className="ml-auto hidden rounded border border-white/10 px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-slate)] sm:inline">
+          Ctrl K
+        </kbd>
       </button>
 
       {open && (

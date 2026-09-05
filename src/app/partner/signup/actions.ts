@@ -8,6 +8,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { buildPartnerWelcomeHtml } from "@/lib/partner-email";
 import { getSiteUrl } from "@/lib/env";
 import { generateReferralAgreementPdf } from "@/lib/referral-agreement-pdf";
+import { REFERRAL_PARTNER_CAPACITY, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
 
 const partnerSignupSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name.").max(150),
@@ -35,6 +36,11 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
   const { name, email, phone, password } = parsed.data;
 
   try {
+    const currentCount = await getReferralPartnerCount();
+    if (currentCount >= REFERRAL_PARTNER_CAPACITY) {
+      return { ok: false, error: "Referral partner sign-ups are full. All spots are taken right now." };
+    }
+
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return { ok: false, error: "An account with this email already exists. Try signing in instead." };

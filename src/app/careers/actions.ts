@@ -31,9 +31,15 @@ export async function submitJobApplication(formData: FormData): Promise<ApplyRes
   }
 
   try {
-    const job = await prisma.job.findUnique({ where: { id: jobId } });
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      include: { _count: { select: { applications: true } } },
+    });
     if (!job || !job.active) {
       return { ok: false, error: "This posting is no longer accepting applications." };
+    }
+    if (job.capacity != null && job._count.applications >= job.capacity) {
+      return { ok: false, error: "This posting has reached its capacity and is no longer accepting applications." };
     }
 
     const application = await prisma.jobApplication.create({

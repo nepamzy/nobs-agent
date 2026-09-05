@@ -78,8 +78,14 @@ export default async function AdminCareersPage() {
                     href={`/admin/careers/postings/${job.id}/applications`}
                     className="relative inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--color-brass)]"
                   >
-                    <MessageSquare size={13} /> {job.applications.length} applicant
+                    <MessageSquare size={13} /> {job.applications.length}
+                    {job.capacity != null ? ` / ${job.capacity}` : ""} applicant
                     {job.applications.length === 1 ? "" : "s"}
+                    {job.capacity != null && job.applications.length >= job.capacity && (
+                      <span className="ml-1 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-red-400">
+                        Full
+                      </span>
+                    )}
                     {unreadCount > 0 && (
                       <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-brass)] text-[10px] font-bold text-[var(--color-ink)]">
                         {unreadCount}

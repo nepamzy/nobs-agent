@@ -19,6 +19,7 @@ const jobSchema = z.object({
   department: z.string().trim().max(100).optional().or(z.literal("")),
   location: z.string().trim().min(1).max(100),
   type: z.string().trim().min(1).max(50),
+  capacity: z.coerce.number().int().min(1).optional().or(z.literal("").transform(() => undefined)),
   description: z.string().trim().min(10),
   requirements: z.string().trim().optional().or(z.literal("")),
 });
@@ -35,6 +36,7 @@ export async function createJob(formData: FormData) {
     data: {
       ...data,
       department: data.department || null,
+      capacity: data.capacity ?? null,
       requirements: data.requirements || null,
       active: formData.get("active") === "on",
     },
@@ -61,6 +63,7 @@ export async function updateJob(formData: FormData) {
     data: {
       ...data,
       department: data.department || null,
+      capacity: data.capacity ?? null,
       requirements: data.requirements || null,
       active: formData.get("active") === "on",
     },

@@ -13,7 +13,15 @@ export const metadata: Metadata = {
 
 async function getOpenRoles() {
   try {
-    return await prisma.job.findMany({ where: { active: true }, orderBy: { createdAt: "desc" } });
+    const jobs = await prisma.job.findMany({
+      where: { active: true },
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { applications: true } } },
+    });
+    return jobs.map((job) => ({
+      ...job,
+      applicantCount: job._count.applications,
+    }));
   } catch {
     return [];
   }

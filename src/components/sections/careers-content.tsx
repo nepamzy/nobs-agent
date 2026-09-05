@@ -11,6 +11,8 @@ type Role = {
   department: string | null;
   location: string;
   type: string;
+  capacity: number | null;
+  applicantCount: number;
 };
 
 export function CareersContent({ roles }: { roles: Role[] }) {
@@ -32,29 +34,40 @@ export function CareersContent({ roles }: { roles: Role[] }) {
           </div>
         ) : (
           <ul className="mt-8 space-y-3">
-            {roles.map((role) => (
-              <li key={role.id}>
-                <Link
-                  href={`/careers/${role.id}`}
-                  className="glass group flex items-center justify-between rounded-xl px-5 py-4 transition hover:border-[var(--color-brass)]/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <Briefcase size={16} className="shrink-0 text-[var(--color-brass)]" />
-                    <div>
-                      <p className="font-medium">{role.title}</p>
-                      <p className="text-xs text-[var(--color-slate)]">
-                        {role.department ? `${role.department} \u00b7 ` : ""}
-                        {role.location} {"\u00b7"} {role.type}
-                      </p>
+            {roles.map((role) => {
+              const isFull = role.capacity != null && role.applicantCount >= role.capacity;
+              return (
+                <li key={role.id}>
+                  <Link
+                    href={`/careers/${role.id}`}
+                    className={`glass group flex items-center justify-between rounded-xl px-5 py-4 transition hover:border-[var(--color-brass)]/50 ${
+                      isFull ? "opacity-70" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Briefcase size={16} className="shrink-0 text-[var(--color-brass)]" />
+                      <div>
+                        <p className="font-medium">{role.title}</p>
+                        <p className="text-xs text-[var(--color-slate)]">
+                          {role.department ? `${role.department} \u00b7 ` : ""}
+                          {role.location} {"\u00b7"} {role.type}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <ArrowUpRight
-                    size={16}
-                    className="shrink-0 text-[var(--color-slate)] transition group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-[var(--color-brass)]"
-                  />
-                </Link>
-              </li>
-            ))}
+                    {isFull ? (
+                      <span className="shrink-0 rounded-full border border-red-400/40 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-red-400">
+                        Not available
+                      </span>
+                    ) : (
+                      <ArrowUpRight
+                        size={16}
+                        className="shrink-0 text-[var(--color-slate)] transition group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-[var(--color-brass)]"
+                      />
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

@@ -6,6 +6,7 @@ type JobFormValues = {
   department: string | null;
   location: string;
   type: string;
+  capacity: number | null;
   description: string;
   requirements: string | null;
   active: boolean;
@@ -64,6 +65,22 @@ export function JobForm({
             <option value="Contract" className="bg-[var(--color-ink)]">Contract</option>
           </select>
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="job-form-capacity" className={labelClass}>Capacity (max applicants, optional)</label>
+        <input
+          id="job-form-capacity"
+          name="capacity"
+          type="number"
+          min={1}
+          placeholder="Unlimited"
+          defaultValue={defaultValues?.capacity ?? undefined}
+          className={inputClass}
+        />
+        <p className="mt-1.5 text-xs text-[var(--color-slate)]">
+          Once applications hit this number, the posting shows as full and stops accepting new ones.
+        </p>
       </div>
 
       <div>

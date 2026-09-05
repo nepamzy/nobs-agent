@@ -412,6 +412,7 @@ model Job {
   department   String?
   location     String   @default("Remote")
   type         String   @default("Full-time") // "Full-time" | "Part-time" | "Contract"
+  capacity     Int? // max applicants accepted; null = unlimited
   description  String   @db.Text
   requirements String?  @db.Text
   active       Boolean  @default(true)

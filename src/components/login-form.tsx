@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { PasswordInput } from "@/components/password-input";
@@ -30,7 +30,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
       return;
     }
 
-    router.push(callbackUrl || "/dashboard");
+    // A middleman always lands on their own dashboard, regardless of
+    // callbackUrl, since they have no reason to end up on the client portal.
+    const session = await getSession();
+    const destination =
+      session?.user.role === "MIDDLEMAN" ? "/middleman/dashboard" : callbackUrl || "/dashboard";
+
+    router.push(destination);
     router.refresh();
   }
 

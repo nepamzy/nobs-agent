@@ -17,6 +17,7 @@ enum Role {
   ADMIN
   STAFF
   CLIENT
+  MIDDLEMAN
 }
 
 model User {

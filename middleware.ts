@@ -11,9 +11,25 @@ const { auth } = NextAuth(authConfig);
 const REFERRAL_COOKIE = "nobs_ref";
 const REFERRAL_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
+// The site now has a real custom domain — the old Vercel-assigned
+// subdomain still resolves (Vercel doesn't let that be turned off), so
+// it's redirected here instead, permanently, preserving path and query.
+// Deliberately only this one exact hostname, not every *.vercel.app —
+// branch preview deployments must keep working unredirected.
+const OLD_HOST = "nobs-agent-theta.vercel.app";
+const NEW_HOST = "nobs-agent.site";
+
 export default auth((req) => {
   const { pathname, searchParams } = req.nextUrl;
   const role = req.auth?.user?.role;
+
+  if (req.nextUrl.hostname === OLD_HOST) {
+    const redirectUrl = new URL(req.nextUrl);
+    redirectUrl.hostname = NEW_HOST;
+    redirectUrl.port = "";
+    redirectUrl.protocol = "https:";
+    return NextResponse.redirect(redirectUrl, 308);
+  }
 
   const isAdminRoute = pathname.startsWith("/admin");
   const isPortalRoute = pathname.startsWith("/dashboard");

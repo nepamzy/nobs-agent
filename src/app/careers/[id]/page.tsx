@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { ApplyForm } from "@/components/apply-form";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { CapacityGauge } from "@/components/capacity-gauge";
 
 export async function generateMetadata({
   params,
@@ -35,18 +34,12 @@ export default async function JobDetailPage({
 
   let job;
   try {
-    job = await prisma.job.findUnique({
-      where: { id },
-      include: { _count: { select: { applications: true } } },
-    });
+    job = await prisma.job.findUnique({ where: { id } });
   } catch {
     job = null;
   }
 
   if (!job || !job.active) notFound();
-
-  const applicantCount = job._count.applications;
-  const isFull = job.capacity != null && applicantCount >= job.capacity;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-24">
@@ -64,12 +57,6 @@ export default async function JobDetailPage({
       <h1 className="font-[family-name:var(--font-display)] text-3xl font-medium tracking-tight sm:text-4xl">
         {job.title}
       </h1>
-
-      {job.capacity != null && (
-        <div className="mt-6">
-          <CapacityGauge count={applicantCount} capacity={job.capacity} label={`${job.title} applicants`} />
-        </div>
-      )}
 
       <div className="mt-8 space-y-3 text-sm leading-relaxed text-[var(--color-slate)]">
         {job.description.split("\n\n").map((para: string, i: number) => (
@@ -93,16 +80,7 @@ export default async function JobDetailPage({
       <h2 className="mt-10 mb-4 font-[family-name:var(--font-display)] text-lg font-medium">
         Apply
       </h2>
-      {isFull ? (
-        <div className="glass rounded-2xl p-8 text-center">
-          <p className="font-medium text-red-400">Not available</p>
-          <p className="mt-2 text-sm text-[var(--color-slate)]">
-            This role has reached its capacity of {job.capacity} and is no longer accepting applications.
-          </p>
-        </div>
-      ) : (
-        <ApplyForm jobId={job.id} />
-      )}
+      <ApplyForm jobId={job.id} />
     </div>
   );
 }

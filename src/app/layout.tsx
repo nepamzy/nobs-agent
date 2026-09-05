@@ -65,7 +65,10 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   verification: {
-    google: "iXanHysCe6DfmzRZUPcdmu_8R8jQLLKnQ1Ku0osDwZw",
+    // Two codes: the original one verified the old vercel.app property,
+    // this new one verifies the nobs-agent.site Search Console property.
+    // Keeping both means neither property loses its verification.
+    google: ["iXanHysCe6DfmzRZUPcdmu_8R8jQLLKnQ1Ku0osDwZw", "dyNbMgWNYcYVKkAzXDGdrwsIU0FrbKfHg-B5k8fdQ_o"],
   },
 };
 

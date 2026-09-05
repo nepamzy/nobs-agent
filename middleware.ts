@@ -23,7 +23,14 @@ export default auth((req) => {
   const { pathname, searchParams } = req.nextUrl;
   const role = req.auth?.user?.role;
 
-  if (req.nextUrl.hostname === OLD_HOST) {
+  // Read the raw Host header, not req.nextUrl.hostname — confirmed via
+  // real production testing that Vercel normalizes nextUrl.hostname to
+  // the project's primary domain internally once one is configured, even
+  // when the client actually requested the old .vercel.app alias. The
+  // Host header still carries what the client really typed.
+  const requestHost = req.headers.get("host");
+
+  if (requestHost === OLD_HOST) {
     const redirectUrl = new URL(req.nextUrl);
     redirectUrl.hostname = NEW_HOST;
     redirectUrl.port = "";

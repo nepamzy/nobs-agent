@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { CurrencySwitcher } from "@/components/currency-switcher";
 import { LogoTripleTap } from "@/components/logo-triple-tap";
+import { SiteSearch } from "@/components/site-search";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { Menu, X, UserRound } from "lucide-react";
 
@@ -27,7 +28,11 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   const dashboardHref =
-    session?.user.role === "ADMIN" || session?.user.role === "STAFF" ? "/admin" : "/dashboard";
+    session?.user.role === "ADMIN" || session?.user.role === "STAFF"
+      ? "/admin"
+      : session?.user.role === "MIDDLEMAN"
+        ? "/middleman/dashboard"
+        : "/dashboard";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -62,6 +67,7 @@ export function SiteHeader() {
             <LanguageSwitcher />
             <CurrencySwitcher />
           </div>
+          <SiteSearch />
           <Link
             href={session ? dashboardHref : "/login"}
             aria-label={session ? "Go to your portal" : "Sign in"}

@@ -8,8 +8,11 @@ export function CookieConsentBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setVisible(readConsent() === null);
+    if (readConsent() !== null) return;
+    // Held back a beat so it doesn't compete with the hero's first paint —
+    // a first-time visitor sees the actual page before any notice banner.
+    const timer = setTimeout(() => setVisible(true), 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   // No longer a real accept/decline choice — analytics isn't conditional

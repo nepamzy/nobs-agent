@@ -3,7 +3,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { PriceDisplay } from "@/components/price-display";
 import { pricingGroups, type PricingTier } from "@/lib/data/pricing-detailed";
-import { Check, ArrowUpRight } from "lucide-react";
+import { aiAutomationTiers } from "@/lib/data/ai-automation-pricing";
+import { Check, ArrowUpRight, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -45,7 +46,7 @@ export default function PricingPage() {
 
       <div className="mx-auto max-w-6xl space-y-16 px-6 py-16">
         {pricingGroups.map((group) => (
-          <section key={group.id} id={group.id}>
+          <section key={group.id} id={group.id} className="scroll-mt-24">
             <h2 className="font-[family-name:var(--font-display)] text-2xl font-medium">
               {group.title}
             </h2>
@@ -101,6 +102,56 @@ export default function PricingPage() {
             </div>
           </section>
         ))}
+      </div>
+
+      <div className="mx-auto max-w-6xl px-6 pb-16">
+        <section id="ai-automation" className="scroll-mt-24">
+          <div className="flex items-center gap-2">
+            <Sparkles size={20} className="text-[var(--color-teal)]" />
+            <h2 className="font-[family-name:var(--font-display)] text-2xl font-medium">
+              AI Automation
+            </h2>
+            <span className="rounded-full border border-[var(--color-teal)]/50 px-2.5 py-1 text-[10px] uppercase tracking-wider text-[var(--color-teal)]">
+              New
+            </span>
+          </div>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--color-slate)]">
+            Custom-built AI, personalized to what you actually need it to do — a support
+            chat, an internal assistant, or a full agent that acts on your systems
+            directly. Every build is scoped to the client, so there&apos;s no fixed price
+            below yet — book a consultation and we&apos;ll quote the specific work.
+          </p>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-3">
+            {aiAutomationTiers.map((t) => (
+              <div key={t.id} className="glass flex flex-col rounded-2xl p-6">
+                <h3 className="font-[family-name:var(--font-display)] text-lg font-medium">
+                  {t.name}
+                </h3>
+                <p className="mt-1 text-xs uppercase tracking-wider text-[var(--color-teal)]">
+                  {t.audience}
+                </p>
+                <p className="mt-3 text-sm text-[var(--color-slate)]">{t.summary}</p>
+
+                <ul className="mt-5 flex-1 space-y-2.5">
+                  {t.inclusions.map((b) => (
+                    <li key={b} className="flex items-start gap-2 text-sm text-[var(--color-slate)]">
+                      <Check size={14} className="mt-0.5 shrink-0 text-[var(--color-teal)]" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/booking"
+                  className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full border border-[var(--color-teal)]/50 px-4 py-2.5 text-sm font-medium text-[var(--color-teal)] transition hover:border-[var(--color-teal)]"
+                >
+                  Get a custom quote <ArrowUpRight size={14} />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       <div className="mx-auto max-w-3xl px-6 pb-24">

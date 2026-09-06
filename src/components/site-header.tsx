@@ -19,6 +19,7 @@ const navKeyByHref: Record<string, string> = {
   "/pricing": "nav_pricing",
   "/blog": "nav_blog",
   "/contact": "nav_contact",
+  "/careers": "nav_careers",
 };
 
 export function SiteHeader() {

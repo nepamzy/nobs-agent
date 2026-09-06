@@ -31,19 +31,35 @@ function QuickLink({
   label,
   href,
   icon: Icon,
+  index,
 }: {
   label: string;
   href: string;
   icon: React.ComponentType<{ size?: number }>;
+  index: number;
 }) {
   return (
-    <Link
-      href={href}
-      className="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-ink-2)]/60 px-4 py-2 text-sm font-medium text-[var(--color-slate)] transition hover:border-[var(--color-brass)]/60 hover:text-[var(--color-brass)]"
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: [0, -6, 0] }}
+      transition={{
+        opacity: { duration: 0.5, delay: 0.5 + index * 0.06 },
+        y: {
+          duration: 3.2 + index * 0.3,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.5 + index * 0.25,
+        },
+      }}
     >
-      <Icon size={15} />
-      {label}
-    </Link>
+      <Link
+        href={href}
+        className="glass flex items-center gap-2.5 rounded-2xl border border-[var(--color-brass)]/35 px-5 py-3.5 text-base font-medium text-[var(--color-brass)] shadow-lg shadow-black/20 transition hover:border-[var(--color-brass)] hover:bg-[var(--color-brass)]/10"
+      >
+        <Icon size={19} />
+        {label}
+      </Link>
+    </motion.div>
   );
 }
 
@@ -87,7 +103,7 @@ export function Hero() {
 
       <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-16 md:pt-24">
         <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
-          {/* Left: copy, CTAs, stats, quick links */}
+          {/* Left: copy, CTAs, stats */}
           <div className="text-center lg:text-left">
             <motion.p
               initial={{ opacity: 0, y: 10 }}
@@ -141,15 +157,9 @@ export function Hero() {
               <StatCounter value={99} suffix=".9%" label={t("stat_uptime")} />
               <StatCounter value={1} suffix=" month" label={t("stat_launch")} note={t("stat_launch_note")} />
             </motion.div>
-
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
-              {quickLinks.map((link) => (
-                <QuickLink key={link.href} {...link} />
-              ))}
-            </div>
           </div>
 
-          {/* Right: the robot, given its own visual stage rather than being boxed in by nav pills */}
+          {/* Right: the robot, with the quick-nav pills floating directly beneath it */}
           <div className="relative">
             <div
               className="pointer-events-none absolute inset-0 -z-10 rounded-full opacity-60 blur-3xl"
@@ -171,6 +181,12 @@ export function Hero() {
               <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-slate)]/70">
                 Drag to rotate
               </p>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+              {quickLinks.map((link, index) => (
+                <QuickLink key={link.href} index={index} {...link} />
+              ))}
             </div>
           </div>
         </div>

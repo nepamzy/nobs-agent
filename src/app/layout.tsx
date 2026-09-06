@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     template: "%s | NOBS AGENT",
   },
   description:
-    "A full-stack software engineer building websites, platforms, and systems for schools, hospitals, hotels, dealerships, churches, and ambitious businesses across Africa.",
+    "A software and AI engineering studio building websites, platforms, systems, and custom AI automation for schools, hospitals, hotels, dealerships, churches, and ambitious businesses across Africa.",
   metadataBase: new URL(getSiteUrl()),
   alternates: {
     canonical: "/",

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { BookOpen, ArrowUpRight } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { RevealItem } from "@/components/reveal-item";
 
 export function ResourcesContent() {
   const { t } = useLanguage();
@@ -22,23 +23,24 @@ export function ResourcesContent() {
       <PageHeader eyebrow={t("nav_resources")} title={t("resources_title")} />
       <div className="mx-auto max-w-3xl px-6 pb-24">
         <div className="mt-8 space-y-4">
-          {resources.map((r) => (
-            <Link
-              key={r.href}
-              href={r.href}
-              className="glass group flex items-center justify-between gap-6 rounded-2xl p-6 transition hover:border-[var(--color-brass)]/50"
-            >
-              <div>
-                <h3 className="font-[family-name:var(--font-display)] text-lg font-medium">
-                  {r.title}
-                </h3>
-                <p className="mt-1 text-sm text-[var(--color-slate)]">{r.desc}</p>
-              </div>
-              <span className="flex shrink-0 items-center gap-1 text-sm text-[var(--color-brass)]">
-                {r.action}
-                <r.icon size={16} />
-              </span>
-            </Link>
+          {resources.map((r, i) => (
+            <RevealItem key={r.href} index={i}>
+              <Link
+                href={r.href}
+                className="glass group flex items-center justify-between gap-6 rounded-2xl p-6 transition hover:border-[var(--color-brass)]/50"
+              >
+                <div>
+                  <h3 className="font-[family-name:var(--font-display)] text-lg font-medium">
+                    {r.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-[var(--color-slate)]">{r.desc}</p>
+                </div>
+                <span className="flex shrink-0 items-center gap-1 text-sm text-[var(--color-brass)]">
+                  {r.action}
+                  <r.icon size={16} />
+                </span>
+              </Link>
+            </RevealItem>
           ))}
         </div>
       </div>

@@ -108,7 +108,7 @@ export function ContactForm() {
           maxLength={5000}
           rows={5}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-          placeholder="Tell me about the project, timeline, and budget range."
+          placeholder="Tell us about the project, timeline, and budget range."
         />
       </div>
 

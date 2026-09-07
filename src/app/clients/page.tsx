@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { getClients } from "@/lib/data/clients";
 import { Users } from "lucide-react";
+import { RevealItem } from "@/components/reveal-item";
 
 export const metadata: Metadata = {
   title: "Clients",
@@ -16,7 +17,7 @@ export default async function ClientsPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Clients" title="Who I've built for" />
+      <PageHeader eyebrow="Clients" title="Who we've built for" />
 
       {clients.length === 0 ? (
         <div className="mx-auto max-w-md px-6 py-24 text-center">
@@ -27,15 +28,15 @@ export default async function ClientsPage() {
         </div>
       ) : (
         <div className="mx-auto grid max-w-5xl gap-4 px-6 py-16 sm:grid-cols-2 lg:grid-cols-3">
-          {clients.map((client) => (
-            <div key={client.id} className="glass rounded-xl p-6">
+          {clients.map((client, i) => (
+            <RevealItem key={client.id} index={i} className="glass rounded-xl p-6">
               <p className="font-[family-name:var(--font-display)] text-lg font-bold uppercase tracking-wide">
                 {client.organization}
               </p>
               <p className="mt-1 text-xs uppercase tracking-wider text-[var(--color-brass)]">
                 {client.sector}
               </p>
-            </div>
+            </RevealItem>
           ))}
         </div>
       )}

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { ProjectCover } from "@/components/project-cover";
 import { getProjects } from "@/lib/data/projects";
 import { ArrowUpRight, FolderKanban } from "lucide-react";
+import { RevealItem } from "@/components/reveal-item";
 
 export const metadata: Metadata = {
   title: "Portfolio",
@@ -33,9 +34,9 @@ export default async function PortfolioPage() {
         </div>
       ) : (
         <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 sm:grid-cols-2">
-          {projects.map((project) => {
+          {projects.map((project, i) => {
             return (
-              <div key={project.slug} className="group flex flex-col">
+              <RevealItem key={project.slug} index={i} className="group glass flex flex-col rounded-2xl p-4">
                 <Link href={`/portfolio/${project.slug}`}>
                   <ProjectCover
                     slug={project.slug}
@@ -87,7 +88,7 @@ export default async function PortfolioPage() {
                     </Link>
                   )}
                 </div>
-              </div>
+              </RevealItem>
             );
           })}
         </div>

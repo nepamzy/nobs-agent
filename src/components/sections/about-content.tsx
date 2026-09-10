@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { useLanguage } from "@/lib/i18n/language-context";
 import type { Founder } from "@/lib/data/founder";
 import { isCloudinaryUrl } from "@/lib/is-cloudinary-url";
+import { PageHeader } from "@/components/page-header";
 
 function GithubIcon({ size = 16 }: { size?: number }) {
   return (
@@ -25,34 +27,47 @@ export function AboutContent({ founder }: { founder: Founder }) {
   const { t } = useLanguage();
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-24">
-      <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
-        {t("nav_about")}
-      </p>
-      <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-tight sm:text-5xl">
-        {t("about_title")}
-      </h1>
+    <div>
+      <PageHeader eyebrow={t("nav_about")} title={t("about_title")} />
 
-      <div className="mt-10 space-y-5 text-[var(--color-slate)]">
+      <div className="mx-auto max-w-4xl px-6 pt-4 pb-24">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5 }}
+        className="space-y-5 text-[var(--color-slate)]"
+      >
         <p>{t("about_p1")}</p>
         <p>{t("about_p2")}</p>
         <p>{t("about_p3")}</p>
-      </div>
+      </motion.div>
 
       <h2 className="mt-16 mb-6 font-[family-name:var(--font-display)] text-2xl font-medium">
         {t("about_bring_title")}
       </h2>
-      <div className="glass space-y-4 rounded-2xl p-8 text-[var(--color-slate)]">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5 }}
+        className="glass space-y-4 rounded-2xl p-8 text-[var(--color-slate)]"
+      >
         <p>{t("about_bring_p1")}</p>
         <p>{t("about_bring_p2")}</p>
         <p>{t("about_bring_p3")}</p>
         <p>{t("about_bring_p4")}</p>
-      </div>
+      </motion.div>
 
       <p className="mt-16 mb-6 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
         The Engineer Behind NOBS
       </p>
-      <div className="glass flex flex-col items-start gap-6 rounded-2xl p-8 sm:flex-row sm:items-center">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5 }}
+        className="glass flex flex-col items-start gap-6 rounded-2xl p-8 sm:flex-row sm:items-center">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border border-[var(--color-line)] bg-white/5">
           {founder.photoUrl && isCloudinaryUrl(founder.photoUrl) ? (
             <Image src={founder.photoUrl} alt={founder.name} fill sizes="96px" className="object-cover" />
@@ -93,6 +108,7 @@ export function AboutContent({ founder }: { founder: Founder }) {
             )}
           </div>
         </div>
+      </motion.div>
       </div>
     </div>
   );

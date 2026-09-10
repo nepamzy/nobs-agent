@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { togglePartnerSuspended } from "./actions";
+import { togglePartnerSuspended, updateReferralProgramSettingsAction } from "./actions";
+import { getReferralProgramSettings } from "@/lib/referral-program-settings";
 import { Ban, CheckCircle2, ArrowUpRight } from "lucide-react";
 
 async function getPartners() {
@@ -20,7 +21,10 @@ async function getPartners() {
 }
 
 export default async function AdminPartnersPage() {
-  const { partners, connected } = await getPartners();
+  const [{ partners, connected }, settings] = await Promise.all([
+    getPartners(),
+    getReferralProgramSettings(),
+  ]);
 
   return (
     <div>
@@ -31,6 +35,49 @@ export default async function AdminPartnersPage() {
         Everyone signed up under the referral partner program, and how many of their referrals have
         actually converted.
       </p>
+
+      <form
+        action={updateReferralProgramSettingsAction}
+        className="glass mt-6 flex flex-wrap items-end gap-6 rounded-xl p-5"
+      >
+        <div>
+          <label htmlFor="partnerCapacity" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            Referral partner slots
+          </label>
+          <input
+            id="partnerCapacity"
+            name="partnerCapacity"
+            type="number"
+            min={0}
+            max={100000}
+            defaultValue={settings.partnerCapacity}
+            className="w-32 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none transition focus:border-[var(--color-brass)]"
+          />
+        </div>
+
+        <label className="flex items-center gap-2.5 text-sm">
+          <input
+            type="checkbox"
+            name="multiLevelReferralsEnabled"
+            defaultChecked={settings.multiLevelReferralsEnabled}
+            className="h-4 w-4 accent-[var(--color-brass)]"
+          />
+          <span>
+            Approve multi-level referrals
+            <span className="block text-xs text-[var(--color-slate)]">
+              Off: a partner can only refer clients. On: a partner can also recruit other partners
+              (5% override, base tier only).
+            </span>
+          </span>
+        </label>
+
+        <button
+          type="submit"
+          className="rounded-full bg-[var(--color-brass)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+        >
+          Save
+        </button>
+      </form>
 
       {!connected && (
         <div className="glass mt-6 rounded-xl p-4 text-sm text-[var(--color-slate)]">

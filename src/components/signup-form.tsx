@@ -44,7 +44,11 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
       return;
     }
 
-    router.push("/dashboard");
+    // Land on the booking/consultation form first rather than straight on
+    // the dashboard — it's the natural next step for a brand-new client,
+    // but skippable (see booking/page.tsx's postSignup handling): they can
+    // always fill it in later from the nav instead.
+    router.push("/booking?postSignup=1");
     router.refresh();
   }
 

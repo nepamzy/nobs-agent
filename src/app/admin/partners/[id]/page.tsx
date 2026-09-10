@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { tierProgress } from "@/lib/referral-tier";
 import { disqualifyReferral, reinstateReferral, markCommissionPaidOut, resendPartnerAgreement } from "../actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
-import { Ban, RotateCcw, CheckCircle2, Mail } from "lucide-react";
+import { Ban, RotateCcw, CheckCircle2, Mail, ArrowUpRight, Users } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   PENDING: "text-[var(--color-slate)]",
@@ -29,6 +30,17 @@ async function getPartner(id: string) {
         },
         orderBy: { createdAt: "desc" },
       },
+      // Override commissions earned off people THIS partner recruited —
+      // see the matching comment in src/app/partner/(dashboard)/page.tsx.
+      overrideCommissions: { orderBy: { createdAt: "desc" }, include: { referral: { include: { partner: { include: { user: { select: { name: true } } } }, referredUser: { select: { name: true } } } } } },
+      // Recruiting tree: who recruited THIS partner (one link up), and
+      // who THIS partner has recruited (drill down further by following
+      // the same "View" link on any row — this page handles any id).
+      recruitedBy: { include: { user: { select: { name: true } } } },
+      recruits: {
+        include: { user: { select: { name: true, email: true } }, _count: { select: { referrals: true, recruits: true } } },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 }
@@ -50,7 +62,7 @@ export default async function AdminPartnerDetailPage({
   if (!partner) notFound();
 
   const progress = tierProgress(partner.paidReferralCount);
-  const allCommissions = partner.referrals.flatMap((r) => r.commissions);
+  const allCommissions = [...partner.referrals.flatMap((r) => r.commissions), ...partner.overrideCommissions];
   const totalEarned = allCommissions.reduce((sum, c) => sum + c.amount, 0);
   const totalPending = allCommissions.filter((c) => !c.paidOut).reduce((sum, c) => sum + c.amount, 0);
 
@@ -62,6 +74,17 @@ export default async function AdminPartnerDetailPage({
       <p className="mt-1 text-sm text-[var(--color-slate)]">
         {partner.user.email} · {partner.user.phone} · code <code>{partner.referralCode}</code>
       </p>
+      {partner.recruitedBy && (
+        <p className="mt-1 text-xs text-[var(--color-slate)]">
+          Recruited by{" "}
+          <Link
+            href={`/admin/partners/${partner.recruitedByPartnerId}`}
+            className="text-[var(--color-brass)] underline underline-offset-4"
+          >
+            {partner.recruitedBy.user.name}
+          </Link>
+        </p>
+      )}
 
       <form action={resendPartnerAgreement} className="mt-3">
         <input type="hidden" name="id" value={partner.id} />
@@ -102,6 +125,72 @@ export default async function AdminPartnerDetailPage({
           </p>
         </div>
       </div>
+
+      {partner.recruits.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-4 flex items-center gap-2 font-[family-name:var(--font-display)] text-lg font-medium">
+            <Users size={18} /> Referral partners recruited ({partner.recruits.length})
+          </h2>
+          <div className="space-y-3">
+            {partner.recruits.map((recruit) => (
+              <div key={recruit.id} className="glass flex flex-wrap items-center justify-between gap-3 rounded-xl p-5">
+                <div>
+                  <p className="font-medium">{recruit.user.name}</p>
+                  <p className="mt-1 text-xs text-[var(--color-slate)]">
+                    {recruit.user.email} · {recruit._count.referrals} client
+                    {recruit._count.referrals === 1 ? "" : "s"} · {recruit._count.recruits} recruit
+                    {recruit._count.recruits === 1 ? "" : "s"} of their own
+                  </p>
+                </div>
+                <Link
+                  href={`/admin/partners/${recruit.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--color-brass)]"
+                >
+                  View <ArrowUpRight size={13} />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {partner.overrideCommissions.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-4 font-[family-name:var(--font-display)] text-lg font-medium">
+            Override commissions received
+          </h2>
+          <div className="glass space-y-1.5 rounded-xl p-5">
+            {partner.overrideCommissions.map((commission) => (
+              <div key={commission.id} className="flex items-center justify-between text-xs">
+                <span className="text-[var(--color-slate)]">
+                  {new Date(commission.createdAt).toLocaleDateString()} — from{" "}
+                  {commission.referral.partner.user.name}&apos;s referral (
+                  {commission.referral.referredUser.name}) —{" "}
+                  <span className="font-[family-name:var(--font-mono)] text-[var(--color-brass)]">
+                    {formatNaira(commission.amount)}
+                  </span>
+                </span>
+                {commission.paidOut ? (
+                  <span className="inline-flex items-center gap-1 text-emerald-400">
+                    <CheckCircle2 size={12} /> Paid out
+                  </span>
+                ) : (
+                  <form action={markCommissionPaidOut}>
+                    <input type="hidden" name="commissionId" value={commission.id} />
+                    <input type="hidden" name="partnerId" value={partner.id} />
+                    <button
+                      type="submit"
+                      className="rounded-full border border-[var(--color-line)] px-2.5 py-1 transition hover:border-[var(--color-brass)]"
+                    >
+                      Mark paid out
+                    </button>
+                  </form>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-8 space-y-4">
         {partner.referrals.length === 0 && (

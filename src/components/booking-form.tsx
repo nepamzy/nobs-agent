@@ -146,7 +146,7 @@ export function BookingForm() {
           Request received.
         </p>
         <p className="text-sm text-[var(--color-slate)]">
-          Check your email for confirmation, I&apos;ll follow up within one business day
+          Check your email for confirmation, we&apos;ll follow up within one business day
           to lock in the exact time.
         </p>
       </div>

@@ -6,7 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
-import { buildCommissionEarnedHtml } from "@/lib/partner-email";
+import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
 
 const verifySchema = z.object({
   reference: z.string().min(1),
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     const newTotalPaid = booking.amountPaid + paidAmount;
 
-    let commissionEmailData: CommissionEmailData | null = null;
+    let commissionEmails: CommissionEmailData[] = [];
     await prisma.$transaction(async (tx) => {
       const payment = await tx.bookingPayment.create({
         data: { bookingId: booking.id, amount: paidAmount, provider: "paystack", reference },
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
           paystackReference: booking.paystackReference ?? reference,
         },
       });
-      commissionEmailData = await recordReferralCommissionIfApplicable(tx, {
+      commissionEmails = await recordReferralCommissionIfApplicable(tx, {
         bookingUserId: booking.userId,
         bookingPaymentId: payment.id,
         paidAmountKobo: paidAmount,
@@ -164,14 +164,24 @@ export async function POST(req: NextRequest) {
 
       // A partner-email hiccup shouldn't turn an already-successful payment
       // into an error response, unlike the client/admin receipt emails
-      // above which are load-bearing enough to let fail loudly.
-      if (commissionEmailData) {
-        const data: CommissionEmailData = commissionEmailData;
-        sendBrevoEmail({
-          to: [{ email: data.partnerEmail, name: data.partnerName }],
-          subject: "You earned a referral commission",
-          htmlContent: buildCommissionEarnedHtml(data),
-        }).catch((err) => console.error("[paystack/verify] commission email failed", err));
+      // above which are load-bearing enough to let fail loudly. Zero, one,
+      // or two of these — the referral's own partner and, separately,
+      // their recruiter (the override) — whichever have no subaccount to
+      // wait on (see recordReferralCommissionIfApplicable).
+      for (const data of commissionEmails) {
+        const send =
+          data.kind === "base"
+            ? sendBrevoEmail({
+                to: [{ email: data.partnerEmail, name: data.partnerName }],
+                subject: "You earned a referral commission",
+                htmlContent: buildCommissionEarnedHtml(data),
+              })
+            : sendBrevoEmail({
+                to: [{ email: data.partnerEmail, name: data.partnerName }],
+                subject: "You earned an override commission",
+                htmlContent: buildOverrideCommissionEarnedHtml(data),
+              });
+        send.catch((err) => console.error("[paystack/verify] commission email failed", err));
       }
     }
 

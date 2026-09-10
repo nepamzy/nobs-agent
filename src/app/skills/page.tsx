@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
+import { RevealItem } from "@/components/reveal-item";
 
 export const metadata: Metadata = {
   title: "Skills",
@@ -29,23 +31,19 @@ const stack = [
 
 export default function SkillsPage() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-20">
-      <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
-        Tech stack
-      </p>
-      <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-medium">
-        Tools I work with
-      </h1>
-      <p className="mt-4 max-w-lg text-[var(--color-slate)]">
-        A focused set of tools used to ship real, working systems, not a buzzword list.
-        Everything here is something NOBS AGENT actually builds with, on this platform
-        included.
-      </p>
+    <div>
+      <PageHeader
+        eyebrow="Tech stack"
+        title="Tools we work with"
+        description="A focused set of tools used to ship real, working systems, not a buzzword list. Everything here is something NOBS AGENT actually builds with, on this platform included."
+      />
 
-      <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-        {stack.map((t) => (
-          <div
+      <div className="mx-auto max-w-4xl px-6 pt-8 pb-20">
+      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        {stack.map((t, i) => (
+          <RevealItem
             key={t.name}
+            index={i}
             className="glass flex flex-col items-center gap-3 rounded-2xl p-5 text-center"
           >
             <div
@@ -55,7 +53,7 @@ export default function SkillsPage() {
               {t.tag}
             </div>
             <p className="text-sm text-[var(--color-paper)]">{t.name}</p>
-          </div>
+          </RevealItem>
         ))}
       </div>
 
@@ -77,6 +75,7 @@ export default function SkillsPage() {
           got built as fast and as solid as it did. No pretending otherwise. That&apos;s
           the whole point of the name.
         </p>
+      </div>
       </div>
     </div>
   );

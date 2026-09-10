@@ -7,6 +7,7 @@ import { HashScroll } from "@/components/hash-scroll";
 import { PriceDisplay } from "@/components/price-display";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { pricingGroups } from "@/lib/data/pricing-detailed";
+import { PageHeader } from "@/components/page-header";
 
 // Ongoing Care is recurring, not a one-time delivery, so it gets its own
 // timeline copy instead of a week range.
@@ -38,18 +39,15 @@ export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples
   }));
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-24">
+    <div>
       <HashScroll />
-      <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
-        {t("nav_services")}
-      </p>
-      <h1 className="max-w-2xl font-[family-name:var(--font-display)] text-4xl font-medium tracking-tight sm:text-5xl">
-        {t("services_page_title")}
-      </h1>
-      <p className="mt-4 max-w-lg text-sm text-[var(--color-slate)]">
-        {t("services_page_hint")}
-      </p>
+      <PageHeader
+        eyebrow={t("nav_services")}
+        title={t("services_page_title")}
+        description={t("services_page_hint")}
+      />
 
+      <div className="mx-auto max-w-3xl px-6 pt-4 pb-24">
       <div className="mt-14">
         <Carousel3D items={items} orientation="vertical" />
       </div>
@@ -130,6 +128,7 @@ export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

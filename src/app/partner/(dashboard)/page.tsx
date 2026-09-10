@@ -2,7 +2,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/env";
 import { tierProgress } from "@/lib/referral-tier";
-import { REFERRAL_PARTNER_CAPACITY, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
+import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
+import { getReferralProgramSettings } from "@/lib/referral-program-settings";
 import { ReferralLinkCopy } from "@/components/referral-link-copy";
 import { PayoutDetailsForm } from "@/components/payout-details-form";
 import { CapacityGauge } from "@/components/capacity-gauge";
@@ -32,6 +33,21 @@ function fetchPartnerData(userId: string) {
           commissions: true,
         },
         orderBy: { createdAt: "desc" },
+      },
+      // Override commissions earned off people THIS partner recruited —
+      // these live on a referral that belongs to someone else entirely
+      // (see ReferralCommission.recipientPartnerId), so they'd never show
+      // up via `referrals` above no matter how deep that include goes.
+      overrideCommissions: true,
+      // For the Tracking section: every partner THIS partner directly
+      // recruited, and each one's own direct client referrals — one level
+      // only, matching the same "direct recruit only" rule the override
+      // itself follows. A recruit's own recruits are never walked here.
+      recruits: {
+        include: {
+          user: { select: { name: true } },
+          referrals: { include: { referredUser: { select: { name: true } } } },
+        },
       },
     },
   });
@@ -71,11 +87,16 @@ export default async function PartnerDashboardPage() {
   }
 
   const referralLink = `${getSiteUrl()}/signup?ref=${partner.referralCode}`;
+  const recruitLink = `${getSiteUrl()}/partner/signup?ref=${partner.referralCode}`;
   const progress = tierProgress(partner.paidReferralCount);
-  const partnerCount = await getReferralPartnerCount();
+  const [partnerCount, partnerCapacity, programSettings] = await Promise.all([
+    getReferralPartnerCount(),
+    getReferralPartnerCapacity(),
+    getReferralProgramSettings(),
+  ]);
 
   const convertedReferrals = partner.referrals.filter((r) => r.status === "CONVERTED");
-  const allCommissions = partner.referrals.flatMap((r) => r.commissions);
+  const allCommissions = [...partner.referrals.flatMap((r) => r.commissions), ...partner.overrideCommissions];
   const totalEarned = allCommissions.reduce((sum, c) => sum + c.amount, 0);
   const totalPaidOut = allCommissions.filter((c) => c.paidOut).reduce((sum, c) => sum + c.amount, 0);
   const totalPending = totalEarned - totalPaidOut;
@@ -85,7 +106,7 @@ export default async function PartnerDashboardPage() {
       <div className="mb-6">
         <CapacityGauge
           count={partnerCount}
-          capacity={REFERRAL_PARTNER_CAPACITY}
+          capacity={partnerCapacity}
           label="Referral partners on the site"
         />
       </div>
@@ -106,6 +127,21 @@ export default async function PartnerDashboardPage() {
           <FileDown size={13} /> Download your Referral Partner Agreement
         </a>
       </div>
+
+      {programSettings.multiLevelReferralsEnabled && (
+        <div className="glass mt-6 rounded-2xl p-6">
+          <p className="mb-3 text-xs uppercase tracking-wider text-[var(--color-slate)]">
+            Recruit another referral partner
+          </p>
+          <ReferralLinkCopy link={recruitLink} />
+          <p className="mt-3 text-xs text-[var(--color-slate)]">
+            Anyone who signs up as a referral partner through this link is yours — every base-tier
+            commission they earn from a client THEY bring in also earns you a 5% override,
+            automatically. This only ever looks one level: you never earn anything off someone
+            they go on to recruit.
+          </p>
+        </div>
+      )}
 
       <div className="glass mt-6 rounded-2xl p-6">
         <p className="mb-3 text-xs uppercase tracking-wider text-[var(--color-slate)]">
@@ -154,6 +190,56 @@ export default async function PartnerDashboardPage() {
           </p>
         </div>
       </div>
+
+      {programSettings.multiLevelReferralsEnabled && (
+        <div className="glass mt-6 rounded-2xl p-6">
+          <h2 className="mb-1 font-[family-name:var(--font-display)] text-lg font-medium">
+            Tracking
+          </h2>
+          <p className="mb-4 text-xs text-[var(--color-slate)]">
+            {partner.referrals.length + partner.recruits.reduce((sum, r) => sum + r.referrals.length, 0)}{" "}
+            client{partner.referrals.length + partner.recruits.reduce((sum, r) => sum + r.referrals.length, 0) === 1 ? "" : "s"}{" "}
+            tracked across everyone you&apos;ve directly referred.
+          </p>
+
+          {partner.referrals.length === 0 && partner.recruits.every((r) => r.referrals.length === 0) ? (
+            <p className="text-sm text-[var(--color-slate)]">Nothing to show yet.</p>
+          ) : (
+            <div className="space-y-5">
+              {partner.referrals.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--color-brass)]">
+                    My Clients ({partner.referrals.length})
+                  </p>
+                  <ul className="space-y-1 text-sm">
+                    {partner.referrals.map((r) => (
+                      <li key={r.id} className="text-[var(--color-paper)]">
+                        {r.referredUser.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {partner.recruits
+                .filter((r) => r.referrals.length > 0)
+                .map((recruit) => (
+                  <div key={recruit.id}>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--color-brass)]">
+                      {recruit.user.name} ({recruit.referrals.length})
+                    </p>
+                    <ul className="space-y-1 text-sm">
+                      {recruit.referrals.map((r) => (
+                        <li key={r.id} className="text-[var(--color-paper)]">
+                          {r.referredUser.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="glass mt-8 rounded-2xl p-6">
         <h2 className="mb-4 font-[family-name:var(--font-display)] text-lg font-medium">

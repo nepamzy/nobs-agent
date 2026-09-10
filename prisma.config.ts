@@ -13,5 +13,12 @@ export default defineConfig({
   },
   datasource: {
     url: env("DATABASE_URL"),
+    // `env()` throws when the variable is missing, which is right for
+    // DATABASE_URL but wrong here — this is only ever read by `prisma
+    // migrate dev`/`diff` on a developer machine, and must stay optional
+    // so `prisma generate` (which runs on every `npm install`, including
+    // every Vercel build) doesn't fail when it's unset, which it always
+    // is in CI/deploys.
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
   },
 });

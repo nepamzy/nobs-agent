@@ -10,7 +10,7 @@ import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToUser } from "@/lib/push";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
-import { buildCommissionEarnedHtml } from "@/lib/partner-email";
+import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
 import type { BookingStatus } from "@prisma/client";
 
 export async function deleteBooking(formData: FormData) {
@@ -198,7 +198,7 @@ export async function authorizeBookingPayment(formData: FormData) {
   const newTotalPaid = booking.amountPaid + paidAmount;
   const reference = `manual-${crypto.randomUUID()}`;
 
-  let commissionEmailData: CommissionEmailData | null = null;
+  let commissionEmails: CommissionEmailData[] = [];
   await prisma.$transaction(async (tx) => {
     const payment = await tx.bookingPayment.create({
       data: {
@@ -223,7 +223,7 @@ export async function authorizeBookingPayment(formData: FormData) {
         depositPaidAt: booking.depositPaidAt ?? new Date(),
       },
     });
-    commissionEmailData = await recordReferralCommissionIfApplicable(tx, {
+    commissionEmails = await recordReferralCommissionIfApplicable(tx, {
       bookingUserId: booking.userId,
       bookingPaymentId: payment.id,
       paidAmountKobo: paidAmount,
@@ -284,13 +284,20 @@ export async function authorizeBookingPayment(formData: FormData) {
       });
     });
 
-    if (commissionEmailData) {
-      const data: CommissionEmailData = commissionEmailData;
-      sendBrevoEmail({
-        to: [{ email: data.partnerEmail, name: data.partnerName }],
-        subject: "You earned a referral commission",
-        htmlContent: buildCommissionEarnedHtml(data),
-      }).catch((err) => console.error("[authorizeBookingPayment] commission email failed", err));
+    for (const data of commissionEmails) {
+      const send =
+        data.kind === "base"
+          ? sendBrevoEmail({
+              to: [{ email: data.partnerEmail, name: data.partnerName }],
+              subject: "You earned a referral commission",
+              htmlContent: buildCommissionEarnedHtml(data),
+            })
+          : sendBrevoEmail({
+              to: [{ email: data.partnerEmail, name: data.partnerName }],
+              subject: "You earned an override commission",
+              htmlContent: buildOverrideCommissionEarnedHtml(data),
+            });
+      send.catch((err) => console.error("[authorizeBookingPayment] commission email failed", err));
     }
   }
 

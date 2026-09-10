@@ -373,9 +373,47 @@ model ReferralPartner {
   suspended         Boolean    @default(false)
   createdAt         DateTime   @default(now())
 
+  // Two-tier referral program: a partner can recruit another partner
+  // instead of (or as well as) referring clients directly. Only ever one
+  // level is looked at for payout purposes (see ReferralCommission's
+  // recipientPartnerId) — recruitedBy is stored so the admin drill-down UI
+  // can walk the full recruiting tree, and so the recruiter can be found
+  // when a recruit's own referral pays out. Gated behind
+  // ReferralProgramSettings.multiLevelReferralsEnabled — see that model.
+  recruitedByPartnerId String?
+  recruitedBy           ReferralPartner?  @relation("PartnerRecruits", fields: [recruitedByPartnerId], references: [id])
+  recruits               ReferralPartner[] @relation("PartnerRecruits")
+
+  // Cached Paystack Transaction Split code for the (this partner, this
+  // partner's recruiter) pair, created lazily the first time both have
+  // connected payout details. Reused on every subsequent payment instead
+  // of calling Paystack's split-create endpoint again.
+  paystackSplitCode String? @unique
+
   referrals         Referral[]
+  // Override commissions earned off referrals that belong to partners
+  // THIS partner recruited (see ReferralCommission.recipientPartnerId) —
+  // separate from `referrals`, which is only this partner's own direct
+  // client referrals.
+  overrideCommissions ReferralCommission[]
 
   @@index([referralCode])
+  @@index([recruitedByPartnerId])
+}
+
+// Single-row admin-editable settings for the referral partner program —
+// see src/lib/referral-program-settings.ts. Always read/written against
+// the fixed id "singleton"; a missing row means "use the defaults", so
+// nothing else needs to seed one.
+model ReferralProgramSettings {
+  id                          String   @id @default("singleton")
+  partnerCapacity             Int      @default(100)
+  // Off at launch: a middleman can only refer clients, not other
+  // middlemen, until the admin explicitly turns this on. See AGENTS.md /
+  // conversation history for why — the two-tier program ships dormant.
+  multiLevelReferralsEnabled  Boolean  @default(false)
+  updatedAt                   DateTime @updatedAt
+  updatedBy                   String?
 }
 
 enum ReferralStatus {
@@ -412,17 +450,29 @@ model ReferralCommission {
   // Not unique: a bonus-tier (20%) payment creates TWO rows against the
   // same BookingPayment — one for the base 10% (auto-split via Paystack
   // when the partner has a subaccount) and one for the extra 10% bonus
-  // portion (always manual, see isBonusPortion).
+  // portion (always manual, see isBonusPortion). A base-tier payment with
+  // a recruiting partner in the chain creates a THIRD row for the 5%
+  // override (see isOverridePortion) — never during the bonus tier, that
+  // stays a flat 80/20 between NOBS and whoever qualified for it.
   bookingPaymentId String
   bookingPayment   BookingPayment @relation(fields: [bookingPaymentId], references: [id])
   amount           Int            // kobo
   isBonusPortion   Boolean        @default(false)
+  isOverridePortion Boolean       @default(false)
+  // Who this specific row is owed to. Null means "the referral's own
+  // partner" (referral.partnerId) — true for every row before the
+  // two-tier program existed, and for every base/bonus row since. Only an
+  // override row sets this explicitly, to the recruiter one hop up —
+  // never the referral's own partner, and never further up the chain.
+  recipientPartnerId String?
+  recipientPartner   ReferralPartner? @relation(fields: [recipientPartnerId], references: [id])
   paidOut          Boolean        @default(false)
   paidOutAt        DateTime?
   createdAt        DateTime       @default(now())
 
   @@index([referralId])
   @@index([bookingPaymentId])
+  @@index([recipientPartnerId])
 }
 
 // ---------- Messaging & contact ----------

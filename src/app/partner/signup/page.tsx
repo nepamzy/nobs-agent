@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { PartnerSignupForm } from "@/components/partner-signup-form";
-import { REFERRAL_PARTNER_CAPACITY, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
+import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
 
 // The full/not-full state depends on a live DB count, so this page must
 // never be served from the static prerender cache built at deploy time.
@@ -16,8 +16,8 @@ export const metadata: Metadata = {
 };
 
 export default async function PartnerSignupPage() {
-  const count = await getReferralPartnerCount();
-  const isFull = count >= REFERRAL_PARTNER_CAPACITY;
+  const [count, capacity] = await Promise.all([getReferralPartnerCount(), getReferralPartnerCapacity()]);
+  const isFull = count >= capacity;
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-6 py-24">
@@ -36,7 +36,7 @@ export default async function PartnerSignupPage() {
         <div className="glass rounded-2xl p-8 text-center">
           <p className="font-medium text-red-400">Not available</p>
           <p className="mt-2 text-sm text-[var(--color-slate)]">
-            All {REFERRAL_PARTNER_CAPACITY} referral partner spots are taken right now. Check back later.
+            All {capacity} referral partner spots are taken right now. Check back later.
           </p>
         </div>
       ) : (

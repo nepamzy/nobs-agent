@@ -4,6 +4,8 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { sendBrevoEmail } from "@/lib/brevo";
+import { buildClientWelcomeHtml } from "@/lib/partner-email";
 
 const REFERRAL_COOKIE = "nobs_ref";
 
@@ -88,6 +90,14 @@ export async function createClientAccount(formData: FormData): Promise<SignupRes
 
     const rawRef = formData.get("ref");
     await linkReferralIfPresent(user.id, email, typeof rawRef === "string" && rawRef ? rawRef : null);
+
+    if (process.env.BREVO_API_KEY) {
+      await sendBrevoEmail({
+        to: [{ email, name }],
+        subject: "Welcome to NOBS Agent",
+        htmlContent: buildClientWelcomeHtml({ clientName: name }),
+      }).catch((err) => console.error("[signup] welcome email failed", err));
+    }
 
     return { ok: true };
   } catch (err) {

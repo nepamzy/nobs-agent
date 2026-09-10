@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { generateReferralAgreementPdf } from "@/lib/referral-agreement-pdf";
+import { updateReferralProgramSettings } from "@/lib/referral-program-settings";
 
 async function requireAdmin() {
   const session = await auth();
@@ -109,4 +110,32 @@ export async function markCommissionPaidOut(formData: FormData) {
     data: { paidOut: true, paidOutAt: new Date() },
   });
   if (typeof partnerId === "string") revalidatePath(`/admin/partners/${partnerId}`);
+}
+
+const settingsSchema = z.object({
+  partnerCapacity: z.coerce.number().int().min(0).max(100_000),
+  // Checkbox fields only appear in FormData at all when checked, so an
+  // unchecked box means this key is simply absent — handled at the call
+  // site below, not with a default here.
+  multiLevelReferralsEnabled: z.literal("on").optional(),
+});
+
+export async function updateReferralProgramSettingsAction(formData: FormData) {
+  const session = await requireAdmin();
+  const parsed = settingsSchema.safeParse({
+    partnerCapacity: formData.get("partnerCapacity"),
+    multiLevelReferralsEnabled: formData.get("multiLevelReferralsEnabled") ?? undefined,
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid settings.");
+
+  await updateReferralProgramSettings(
+    {
+      partnerCapacity: parsed.data.partnerCapacity,
+      multiLevelReferralsEnabled: parsed.data.multiLevelReferralsEnabled === "on",
+    },
+    session.user.email ?? session.user.id
+  );
+  revalidatePath("/admin/partners");
+  revalidatePath("/partner/signup");
+  revalidatePath("/partner");
 }

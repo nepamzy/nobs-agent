@@ -26,7 +26,11 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password.");
+      setError(
+        result.code === "account_suspended"
+          ? "This account has been suspended. Contact NOBS AGENT if you believe this is a mistake."
+          : "Invalid email or password."
+      );
       return;
     }
 

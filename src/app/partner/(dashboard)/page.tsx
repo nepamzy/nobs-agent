@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/env";
 import { tierProgress } from "@/lib/referral-tier";
-import { REFERRAL_PARTNER_CAPACITY, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
+import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
 import { ReferralLinkCopy } from "@/components/referral-link-copy";
 import { PayoutDetailsForm } from "@/components/payout-details-form";
 import { CapacityGauge } from "@/components/capacity-gauge";
@@ -72,7 +72,10 @@ export default async function PartnerDashboardPage() {
 
   const referralLink = `${getSiteUrl()}/signup?ref=${partner.referralCode}`;
   const progress = tierProgress(partner.paidReferralCount);
-  const partnerCount = await getReferralPartnerCount();
+  const [partnerCount, partnerCapacity] = await Promise.all([
+    getReferralPartnerCount(),
+    getReferralPartnerCapacity(),
+  ]);
 
   const convertedReferrals = partner.referrals.filter((r) => r.status === "CONVERTED");
   const allCommissions = partner.referrals.flatMap((r) => r.commissions);
@@ -85,7 +88,7 @@ export default async function PartnerDashboardPage() {
       <div className="mb-6">
         <CapacityGauge
           count={partnerCount}
-          capacity={REFERRAL_PARTNER_CAPACITY}
+          capacity={partnerCapacity}
           label="Referral partners on the site"
         />
       </div>

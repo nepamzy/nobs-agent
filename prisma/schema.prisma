@@ -294,6 +294,15 @@ model Booking {
   status        BookingStatus @default(PENDING)
   createdAt     DateTime      @default(now())
 
+  // ---- Terms & Conditions acceptance, captured at submission time ----
+  // Set only by the server (never trust a client-supplied timestamp/IP) the
+  // moment a booking is created — the checkbox on the booking form is
+  // `required`, so a booking can't be submitted without it. Null on
+  // bookings created before this was added; the agreement PDF falls back to
+  // a generic note for those instead of erroring.
+  termsAcceptedAt DateTime?
+  termsAcceptedIp String?
+
   // ---- Deposit / payment (set when admin confirms with an agreed price) ----
   // Amounts are stored in kobo (smallest NGN unit) to match Paystack's API
   // directly, ₦1,000 is stored as 100000. Avoids unit-conversion bugs at
@@ -305,6 +314,12 @@ model Booking {
   amountPaid        Int      @default(0) // running total actually received across all installments, in kobo
   paystackReference String?  @unique // kept for the first/deposit payment, for backward compatibility
   depositPaidAt     DateTime?
+  // Set (or re-set) the moment an admin confirms this booking with a price
+  // — i.e. the instant the data the Client Service Agreement is generated
+  // from becomes real. This is what the agreement is dated against, not
+  // `createdAt`, so the document always reflects when the CURRENT price was
+  // actually agreed, not when the booking was first requested.
+  confirmedAt       DateTime?
 
   payments BookingPayment[]
   files    BookingFile[]

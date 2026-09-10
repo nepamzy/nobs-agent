@@ -85,6 +85,10 @@ export async function confirmBookingWithDeposit(formData: FormData) {
       depositAmount,
       depositPaid: false,
       paystackReference: null,
+      // This action always sets a fresh agreed price, so it's always a
+      // (re-)confirmation of what's currently on the table — the Client
+      // Service Agreement is dated against this, not the original request.
+      confirmedAt: new Date(),
     },
   });
 
@@ -221,6 +225,10 @@ export async function authorizeBookingPayment(formData: FormData) {
         amountPaid: newTotalPaid,
         depositPaid: true,
         depositPaidAt: booking.depositPaidAt ?? new Date(),
+        // Only set the first time this booking is confirmed here — a
+        // later payment on an already-confirmed booking shouldn't shift
+        // the date the Client Service Agreement is dated against.
+        confirmedAt: booking.confirmedAt ?? new Date(),
       },
     });
     commissionEmails = await recordReferralCommissionIfApplicable(tx, {
@@ -360,6 +368,7 @@ export async function removeBookingPayment(formData: FormData) {
           depositPercentage: null,
           depositAmount: null,
           status: "PENDING",
+          confirmedAt: null,
         },
       }),
     ]);

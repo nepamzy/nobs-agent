@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
@@ -13,6 +14,9 @@ const briefSchema = z.object({
   meetingType: z.string().trim().min(1, "Select a meeting type."),
   scheduledFor: z.string().trim().min(1, "Pick a preferred date and time."),
   notes: z.string().trim().min(20, "A few sentences helps, at least 20 characters."),
+  // Checkbox is `required` in the UI; re-checked here since a server action
+  // can still be invoked directly with a hand-built FormData.
+  termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
 });
 
 export async function submitProjectBrief(formData: FormData) {
@@ -25,12 +29,15 @@ export async function submitProjectBrief(formData: FormData) {
     meetingType: formData.get("meetingType"),
     scheduledFor: formData.get("scheduledFor"),
     notes: formData.get("notes"),
+    termsAccepted: formData.get("termsAccepted"),
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
 
   const { serviceInterest, budgetRange, meetingType, scheduledFor, notes } = parsed.data;
 
   const client = await prisma.client.findUnique({ where: { userId: session.user.id } });
+  const requestHeaders = await headers();
+  const ip = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
   // Submitted briefs go through the exact same review path as a public
   // booking, one place for the studio to see and confirm new work,
@@ -47,6 +54,8 @@ export async function submitProjectBrief(formData: FormData) {
       scheduledFor: new Date(scheduledFor),
       notes,
       status: "PENDING",
+      termsAcceptedAt: new Date(),
+      termsAcceptedIp: ip,
     },
   });
 

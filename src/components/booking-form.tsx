@@ -4,6 +4,7 @@ import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
 import { Loader2, CheckCircle2, Paperclip, X } from "lucide-react";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { uploadBookingFile } from "@/app/dashboard/new-project/actions";
+import { TermsPanel } from "@/components/terms-panel";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -335,6 +336,24 @@ export function BookingForm() {
       </div>
 
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+
+      <TermsPanel />
+
+      <label className="flex items-start gap-2.5 text-xs text-[var(--color-slate)]">
+        <input
+          type="checkbox"
+          name="termsAccepted"
+          required
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-white/5 accent-[var(--color-brass)]"
+        />
+        <span>
+          I agree to the{" "}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[var(--color-brass)] underline underline-offset-4">
+            Terms and Conditions
+          </a>
+          . A booking can&apos;t be submitted without this.
+        </span>
+      </label>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 

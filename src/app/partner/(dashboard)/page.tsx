@@ -28,7 +28,14 @@ function fetchPartnerData(userId: string) {
       referrals: {
         include: {
           referredUser: {
-            select: { id: true, name: true, email: true, bookings: { select: { amountPaid: true } } },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              bookings: {
+                select: { id: true, status: true, agreedAmount: true, amountPaid: true },
+              },
+            },
           },
           commissions: true,
         },
@@ -212,11 +219,24 @@ export default async function PartnerDashboardPage() {
                     My Clients ({partner.referrals.length})
                   </p>
                   <ul className="space-y-1 text-sm">
-                    {partner.referrals.map((r) => (
-                      <li key={r.id} className="text-[var(--color-paper)]">
-                        {r.referredUser.name}
-                      </li>
-                    ))}
+                    {partner.referrals.map((r) => {
+                      const confirmedBooking = r.referredUser.bookings.find(
+                        (b) => b.status === "CONFIRMED" && b.agreedAmount
+                      );
+                      return (
+                        <li key={r.id} className="flex items-center justify-between gap-3 text-[var(--color-paper)]">
+                          <span>{r.referredUser.name}</span>
+                          {confirmedBooking && (
+                            <a
+                              href={`/api/bookings/${confirmedBooking.id}/agreement`}
+                              className="inline-flex items-center gap-1 text-xs text-[var(--color-brass)] underline underline-offset-4"
+                            >
+                              <FileDown size={11} /> Agreement
+                            </a>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}

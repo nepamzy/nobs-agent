@@ -18,6 +18,10 @@ const bookingSchema = z.object({
   }),
   notes: z.string().trim().max(3000).optional().or(z.literal("")),
   website: z.string().max(0).optional().or(z.literal("")), // honeypot
+  // Checkbox is `required` in the UI, but that only stops the browser form
+  // — enforced again here so hitting this API directly can't skip it, same
+  // reasoning as the auth check below.
+  termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
 });
 
 export async function POST(req: NextRequest) {
@@ -80,6 +84,10 @@ export async function POST(req: NextRequest) {
         scheduledFor: scheduledDate,
         notes: notes || null,
         status: "PENDING",
+        // Set server-side, never from the client — this is what the
+        // eventual Client Service Agreement cites as proof of acceptance.
+        termsAcceptedAt: new Date(),
+        termsAcceptedIp: ip,
       },
     });
 

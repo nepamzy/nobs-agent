@@ -468,11 +468,22 @@ model ReferralCommission {
   recipientPartner   ReferralPartner? @relation(fields: [recipientPartnerId], references: [id])
   paidOut          Boolean        @default(false)
   paidOutAt        DateTime?
+  // Set only when a Paystack subaccount was attached to this payment (an
+  // auto-payout is genuinely in flight) — Paystack settles a split to the
+  // linked bank account 1-2 business days later, never instantly, so the
+  // "you earned a commission" email/notification and the paidOut flip both
+  // wait until this passes (see the cron at
+  // src/app/api/cron/settle-commissions/route.ts). Null means there's no
+  // subaccount at all, so nothing to wait for — that case still fires
+  // immediately, it just says "you'll be paid manually" rather than
+  // implying money already moved.
+  autoSettlesAt    DateTime?
   createdAt        DateTime       @default(now())
 
   @@index([referralId])
   @@index([bookingPaymentId])
   @@index([recipientPartnerId])
+  @@index([paidOut, autoSettlesAt])
 }
 
 // ---------- Messaging & contact ----------

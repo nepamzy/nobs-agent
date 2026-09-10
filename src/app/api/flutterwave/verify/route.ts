@@ -6,7 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
-import { buildCommissionEarnedHtml } from "@/lib/partner-email";
+import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
 
 const verifySchema = z.object({
   transactionId: z.string().min(1),
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     const newTotalPaid = booking.amountPaid + paidAmount;
 
-    let commissionEmailData: CommissionEmailData | null = null;
+    let commissionEmails: CommissionEmailData[] = [];
     await prisma.$transaction(async (tx) => {
       const payment = await tx.bookingPayment.create({
         data: { bookingId: booking.id, amount: paidAmount, provider: "flutterwave", reference: transactionId },
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
           depositPaidAt: booking.depositPaidAt ?? new Date(),
         },
       });
-      commissionEmailData = await recordReferralCommissionIfApplicable(tx, {
+      commissionEmails = await recordReferralCommissionIfApplicable(tx, {
         bookingUserId: booking.userId,
         bookingPaymentId: payment.id,
         paidAmountKobo: paidAmount,
@@ -161,13 +161,20 @@ export async function POST(req: NextRequest) {
         }),
       ]);
 
-      if (commissionEmailData) {
-        const data: CommissionEmailData = commissionEmailData;
-        sendBrevoEmail({
-          to: [{ email: data.partnerEmail, name: data.partnerName }],
-          subject: "You earned a referral commission",
-          htmlContent: buildCommissionEarnedHtml(data),
-        }).catch((err) => console.error("[flutterwave/verify] commission email failed", err));
+      for (const data of commissionEmails) {
+        const send =
+          data.kind === "base"
+            ? sendBrevoEmail({
+                to: [{ email: data.partnerEmail, name: data.partnerName }],
+                subject: "You earned a referral commission",
+                htmlContent: buildCommissionEarnedHtml(data),
+              })
+            : sendBrevoEmail({
+                to: [{ email: data.partnerEmail, name: data.partnerName }],
+                subject: "You earned an override commission",
+                htmlContent: buildOverrideCommissionEarnedHtml(data),
+              });
+        send.catch((err) => console.error("[flutterwave/verify] commission email failed", err));
       }
     }
 

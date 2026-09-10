@@ -9,6 +9,7 @@ import { buildPartnerWelcomeHtml } from "@/lib/partner-email";
 import { getSiteUrl } from "@/lib/env";
 import { generateReferralAgreementPdf } from "@/lib/referral-agreement-pdf";
 import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
+import { getReferralProgramSettings } from "@/lib/referral-program-settings";
 
 const partnerSignupSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name.").max(150),
@@ -19,6 +20,26 @@ const partnerSignupSchema = z.object({
 });
 
 export type PartnerSignupResult = { ok: true } | { ok: false; error: string };
+
+// Only resolves to a recruiter id when the program is switched on AND the
+// code belongs to a real, non-suspended partner AND that partner isn't
+// the same email as the person signing up (no self-recruiting) — anything
+// else is a silent no-op, this account still gets created as a normal,
+// unrecruited partner rather than failing outright.
+async function resolveRecruiterId(refCode: string | null, newUserEmail: string): Promise<string | null> {
+  if (!refCode) return null;
+  const settings = await getReferralProgramSettings();
+  if (!settings.multiLevelReferralsEnabled) return null;
+
+  const recruiter = await prisma.referralPartner.findUnique({
+    where: { referralCode: refCode },
+    include: { user: true },
+  });
+  if (!recruiter || recruiter.suspended) return null;
+  if (recruiter.user.email.toLowerCase() === newUserEmail.toLowerCase()) return null;
+
+  return recruiter.id;
+}
 
 export async function createReferralPartnerAccount(formData: FormData): Promise<PartnerSignupResult> {
   const parsed = partnerSignupSchema.safeParse({
@@ -49,12 +70,18 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
     const passwordHash = await bcrypt.hash(password, 12);
     const referralCode = await generateReferralCode(name);
 
+    const rawRef = formData.get("ref");
+    const recruitedByPartnerId = await resolveRecruiterId(
+      typeof rawRef === "string" && rawRef ? rawRef : null,
+      email
+    );
+
     const user = await prisma.user.create({
       data: { name, email, phone, passwordHash, role: "REFERRER" },
     });
 
     const partner = await prisma.referralPartner.create({
-      data: { userId: user.id, referralCode },
+      data: { userId: user.id, referralCode, recruitedByPartnerId },
     });
 
     if (process.env.BREVO_API_KEY) {

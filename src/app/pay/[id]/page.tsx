@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { PaymentProviderSelect } from "@/components/payment-provider-select";
+import { PaymentReturnHandler } from "@/components/payment-return-handler";
+import { MIN_INSTALLMENT_KOBO } from "@/lib/payment-constants";
 import { CheckCircle2, CreditCard, Landmark, Smartphone } from "lucide-react";
 
 export async function generateMetadata({
@@ -23,17 +25,15 @@ function formatNaira(kobo: number) {
   return `₦${(kobo / 100).toLocaleString("en-NG")}`;
 }
 
-// A subsequent (post-deposit) payment still needs a sane floor so a client
-// can't send a 1-kobo "payment", ₦1,000 or whatever's left, whichever is
-// smaller.
-const MIN_INSTALLMENT_KOBO = 100_000;
-
 export default async function PayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ verify?: string }>;
 }) {
   const { id } = await params;
+  const { verify } = await searchParams;
 
   let booking;
   try {
@@ -43,26 +43,6 @@ export default async function PayPage({
   }
 
   if (!booking || !booking.agreedAmount || !booking.depositAmount) notFound();
-
-  // If this client was referred and their referrer has automatic payouts
-  // set up, their base commission auto-splits via Paystack's subaccount —
-  // see src/lib/paystack.ts for why this is always a fixed 10%, and
-  // src/lib/referral-commission.ts for how the bonus-tier extra (if any)
-  // still gets tracked for manual payout regardless.
-  let paystackSubaccountCode: string | null = null;
-  if (booking.userId) {
-    try {
-      const referral = await prisma.referral.findUnique({
-        where: { referredUserId: booking.userId },
-        include: { partner: true },
-      });
-      if (referral && referral.status !== "DISQUALIFIED" && !referral.partner.suspended) {
-        paystackSubaccountCode = referral.partner.paystackSubaccountCode;
-      }
-    } catch {
-      // Non-fatal — checkout proceeds without a split rather than blocking payment.
-    }
-  }
 
   const remaining = booking.agreedAmount - booking.amountPaid;
   const percentPaid = Math.round((booking.amountPaid / booking.agreedAmount) * 100);
@@ -74,6 +54,8 @@ export default async function PayPage({
 
   return (
     <div className="mx-auto max-w-lg px-6 py-24">
+      {verify && <PaymentReturnHandler bookingId={booking.id} reference={verify} />}
+
       <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
         Project payment
       </p>
@@ -140,7 +122,6 @@ export default async function PayPage({
             name={booking.fullName}
             minimumKobo={minimumForThisPayment}
             remainingKobo={remaining}
-            paystackSubaccountCode={paystackSubaccountCode}
           />
         )}
       </div>

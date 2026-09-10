@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { createReferralPartnerAccount } from "@/app/partner/signup/actions";
 import { PasswordInput } from "@/components/password-input";
 
-export function PartnerSignupForm() {
+export function PartnerSignupForm({ recruiterCode }: { recruiterCode?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +46,7 @@ export function PartnerSignupForm() {
 
   return (
     <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
+      {recruiterCode && <input type="hidden" name="ref" value={recruiterCode} />}
       <div>
         <label htmlFor="partner-signup-name" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Full name

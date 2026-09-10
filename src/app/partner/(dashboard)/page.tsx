@@ -199,7 +199,7 @@ export default async function PartnerDashboardPage() {
           <p className="mb-4 text-xs text-[var(--color-slate)]">
             {partner.referrals.length + partner.recruits.reduce((sum, r) => sum + r.referrals.length, 0)}{" "}
             client{partner.referrals.length + partner.recruits.reduce((sum, r) => sum + r.referrals.length, 0) === 1 ? "" : "s"}{" "}
-            tracked across everyone you've directly referred.
+            tracked across everyone you&apos;ve directly referred.
           </p>
 
           {partner.referrals.length === 0 && partner.recruits.every((r) => r.referrals.length === 0) ? (

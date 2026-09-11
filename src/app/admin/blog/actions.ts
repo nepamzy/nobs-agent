@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { fallbackPosts } from "@/lib/data/blog";
 
 async function requireAdmin() {
   const session = await auth();
@@ -106,6 +107,33 @@ export async function deletePost(formData: FormData) {
   if (typeof id !== "string") throw new Error("Missing post id.");
 
   await prisma.blogPost.delete({ where: { id } });
+  revalidatePath("/admin/blog");
+  revalidatePath("/blog");
+}
+
+// The public /blog page falls back to these same 14 sample articles
+// (src/lib/data/blog.ts) whenever the real table is empty, so a site with
+// zero authored posts still looks presentable. This turns them into real,
+// editable/deletable rows — safe to click more than once: skipDuplicates
+// means an already-imported post (matched by its slug) is left untouched,
+// never overwriting edits made to it since.
+export async function importFallbackPosts() {
+  await requireAdmin();
+
+  await prisma.blogPost.createMany({
+    data: fallbackPosts.map((p) => ({
+      title: p.title,
+      slug: p.slug,
+      excerpt: p.excerpt,
+      content: p.content.join("\n\n"),
+      category: p.category,
+      postType: p.postType === "build_log" ? "BUILD_LOG" : "ARTICLE",
+      published: true,
+      publishedAt: new Date(p.publishedAt),
+    })),
+    skipDuplicates: true,
+  });
+
   revalidatePath("/admin/blog");
   revalidatePath("/blog");
 }

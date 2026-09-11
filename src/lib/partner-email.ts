@@ -90,6 +90,80 @@ export function buildPartnerWelcomeHtml({
   );
 }
 
+// Sent right after buildPartnerWelcomeHtml (same email, next in the send
+// sequence — see sendPartnerWelcomeEmail) — deliberately generic rather
+// than personalized to a specific referral, since at signup a partner has
+// none yet. The "your client needs to book" point is phrased as the rule
+// (what triggers commission), not a nudge about someone specific.
+export function buildPartnerOnboardingChecklistHtml({ partnerName }: { partnerName: string }) {
+  return shell(
+    "A few things to set up this week",
+    `
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Hi ${partnerName}, a few things worth doing in your first week as a NOBS Agent referral partner:
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        <strong>1. Sign and send back your agreement.</strong> Your Referral Partner Agreement is
+        attached to the welcome email — please sign it and email the signed copy back to
+        nobsagent0@gmail.com within 7 days of registering.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        <strong>2. Remember what actually triggers your commission.</strong> Introducing someone is
+        step one, but your 10% only lands once they actually book and pay — not just when they sign
+        up. Once you refer someone, follow up and encourage them to complete their booking on the
+        site; the sooner they book, the sooner that commission lands.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        <strong>3. Join the Partner WhatsApp Channel.</strong> This is where we share tips on landing
+        and closing clients, post commission and program updates, and answer questions directly:
+        <a href="${getReferralWhatsAppChannelUrl()}" style="color: #a5822f;">${getReferralWhatsAppChannelUrl()}</a>
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        <strong>4. Install the app and turn on notifications.</strong> From your dashboard, tap
+        "Install app" to add NOBS Agent to your home screen like a real app, and turn on
+        "Enable notifications" so you're alerted the moment a referral converts or a commission lands.
+      </p>
+    `
+  );
+}
+
+// Sent by the bi-weekly cron (src/lib/referral-partner-booking-nudge.ts)
+// only when the partner currently has at least one referral whose
+// referred client hasn't created a booking yet — nudging about someone
+// who already booked (paid or not) would be pointless and confusing.
+export function buildPartnerBookingNudgeHtml({
+  partnerName,
+  unbookedClientNames,
+}: {
+  partnerName: string;
+  unbookedClientNames: string[];
+}) {
+  const clientList =
+    unbookedClientNames.length === 1
+      ? unbookedClientNames[0]
+      : unbookedClientNames.length === 2
+        ? `${unbookedClientNames[0]} and ${unbookedClientNames[1]}`
+        : `${unbookedClientNames.slice(0, -1).join(", ")}, and ${unbookedClientNames[unbookedClientNames.length - 1]}`;
+
+  return shell(
+    "A quick nudge on your referral",
+    `
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Hi ${partnerName}, you referred <strong>${clientList}</strong>, but they haven't booked a
+        consultation yet.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Your commission only lands once a referred client actually books and pays — introducing them
+        was step one, but nothing is earned until that booking happens. A quick follow-up now, just
+        checking in and encouraging them to complete their booking on the site, is often all it takes.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Share your referral link again if it's been a while — check your dashboard for it any time.
+      </p>
+    `
+  );
+}
+
 export function buildPartnerInactivityWarningHtml({ name }: { name: string }) {
   return shell(
     "Your seat — 1 month left",

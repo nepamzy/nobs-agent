@@ -1,5 +1,5 @@
 import { sendBrevoEmail } from "@/lib/brevo";
-import { buildPartnerWelcomeHtml } from "@/lib/partner-email";
+import { buildPartnerWelcomeHtml, buildPartnerOnboardingChecklistHtml } from "@/lib/partner-email";
 import { generateReferralAgreementPdf } from "@/lib/referral-agreement-pdf";
 import { getSiteUrl } from "@/lib/env";
 
@@ -38,5 +38,15 @@ export async function sendPartnerWelcomeEmail(params: {
       fromWaitlist: params.fromWaitlist,
     }),
     attachment: [{ name: "NOBS-Agent-Referral-Partner-Agreement.pdf", content: pdfBase64 }],
+  });
+
+  // Second, immediately following email — the onboarding checklist (sign
+  // & return the agreement, what actually triggers commission, join the
+  // channel, install the app). Kept as its own message rather than folded
+  // into the welcome email above so each stays short and skimmable.
+  await sendBrevoEmail({
+    to: [{ email: params.email, name: params.name }],
+    subject: "A few things to set up this week",
+    htmlContent: buildPartnerOnboardingChecklistHtml({ partnerName: params.name }),
   });
 }

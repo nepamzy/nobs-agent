@@ -7,6 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { generateReferralAgreementPdf } from "@/lib/referral-agreement-pdf";
 import { updateReferralProgramSettings } from "@/lib/referral-program-settings";
+import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
+import { promoteNextWaitlistEntry } from "@/lib/referral-partner-waitlist";
+import { lockReferralPartnerCapacity } from "@/lib/referral-partner-lock";
+import { sendPartnerWelcomeEmail } from "@/lib/send-partner-welcome-email";
 
 async function requireAdmin() {
   const session = await auth();
@@ -19,10 +23,45 @@ async function requireAdmin() {
 export async function togglePartnerSuspended(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id");
-  const suspended = formData.get("suspended") === "true";
+  const wasSuspended = formData.get("suspended") === "true";
   if (typeof id !== "string") throw new Error("Missing partner id.");
 
-  await prisma.referralPartner.update({ where: { id }, data: { suspended: !suspended } });
+  const newSuspended = !wasSuspended;
+
+  if (newSuspended) {
+    // Dropping a partner frees a seat — flip it, then offer that seat to
+    // whoever's been waiting longest on the waitlist.
+    await prisma.referralPartner.update({ where: { id }, data: { suspended: true } });
+
+    const promoted = await promoteNextWaitlistEntry();
+    if (promoted) {
+      await sendPartnerWelcomeEmail({
+        name: promoted.name,
+        email: promoted.email,
+        phone: promoted.phone,
+        referralCode: promoted.referralCode,
+        createdAt: promoted.createdAt,
+        fromWaitlist: true,
+      }).catch((err) => console.error("[togglePartnerSuspended] promoted-partner welcome email failed", err));
+    }
+  } else {
+    // Reactivating — locked so this can't race a concurrent promotion
+    // that just took the seat this partner is trying to come back into.
+    await prisma.$transaction(
+      async (tx) => {
+        await lockReferralPartnerCapacity(tx);
+        const [count, capacity] = await Promise.all([getReferralPartnerCount(tx), getReferralPartnerCapacity()]);
+        if (count >= capacity) {
+          throw new Error(
+            `Can't reactivate — all ${capacity} spots are currently filled. Raise the slot count on this page first if you want to bring them back.`
+          );
+        }
+        await tx.referralPartner.update({ where: { id }, data: { suspended: false } });
+      },
+      { timeout: 15000 }
+    );
+  }
+
   revalidatePath("/admin/partners");
   revalidatePath(`/admin/partners/${id}`);
 }

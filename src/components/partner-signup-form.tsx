@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock } from "lucide-react";
 import { createReferralPartnerAccount } from "@/app/partner/signup/actions";
 import { PasswordInput } from "@/components/password-input";
 
@@ -11,6 +11,7 @@ export function PartnerSignupForm({ recruiterCode }: { recruiterCode?: string })
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [waitlisted, setWaitlisted] = useState<{ position: number; statusUrl: string } | null>(null);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,6 +25,12 @@ export function PartnerSignupForm({ recruiterCode }: { recruiterCode?: string })
     if (!result.ok) {
       setError(result.error);
       setLoading(false);
+      return;
+    }
+
+    if (result.kind === "waitlisted") {
+      setLoading(false);
+      setWaitlisted({ position: result.position, statusUrl: result.statusUrl });
       return;
     }
 
@@ -42,6 +49,29 @@ export function PartnerSignupForm({ recruiterCode }: { recruiterCode?: string })
 
     router.push("/partner");
     router.refresh();
+  }
+
+  if (waitlisted) {
+    return (
+      <div className="glass flex flex-col items-center gap-3 rounded-2xl p-10 text-center">
+        <Clock className="text-[var(--color-brass)]" size={32} />
+        <p className="font-[family-name:var(--font-display)] text-xl font-medium">
+          You&apos;re number {waitlisted.position} on the waitlist.
+        </p>
+        <p className="text-sm text-[var(--color-slate)]">
+          All spots are taken right now. The moment one opens up, it goes to whoever&apos;s been
+          waiting longest — we&apos;ll email you automatically and your account will be ready, no
+          need to sign up again.
+        </p>
+        <p className="text-xs text-[var(--color-slate)]">
+          Check your position any time at{" "}
+          <a href={waitlisted.statusUrl} className="text-[var(--color-brass)] underline underline-offset-4">
+            this link
+          </a>{" "}
+          — it was also emailed to you.
+        </p>
+      </div>
+    );
   }
 
   return (

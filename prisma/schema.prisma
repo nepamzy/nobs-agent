@@ -431,6 +431,37 @@ model ReferralProgramSettings {
   updatedBy                   String?
 }
 
+// Holds everyone who applied while all ReferralPartner slots (capacity in
+// ReferralProgramSettings) were taken. No User/ReferralPartner row exists
+// for them yet — passwordHash is captured up front so promotion later
+// doesn't need to ask them to sign up again. Position in the queue is
+// always computed live (createdAt order among promotedAt: null rows), not
+// stored, so nothing needs renumbering when someone is promoted.
+// Promotion happens in src/lib/referral-partner-waitlist.ts, triggered the
+// moment a seat frees up (see togglePartnerSuspended in
+// src/app/admin/partners/actions.ts) — always inside the advisory-locked
+// transaction from src/lib/referral-partner-lock.ts, the same lock every
+// capacity-changing write goes through, so a seat can never be double-
+// promised under concurrent requests.
+model ReferralPartnerWaitlist {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  phone             String
+  passwordHash      String
+  // Raw ?ref= code captured at the moment they joined the waitlist,
+  // re-resolved to a recruiter at promotion time (not resolved up front)
+  // since the recruiter's standing, or the multi-level toggle itself, may
+  // have changed by the time a seat actually opens up, sometimes months
+  // later.
+  refCode           String?
+  promotedAt        DateTime?
+  promotedPartnerId String?   @unique
+  createdAt         DateTime  @default(now())
+
+  @@index([promotedAt, createdAt])
+}
+
 enum ReferralStatus {
   PENDING
   CONVERTED

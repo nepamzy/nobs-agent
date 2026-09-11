@@ -2,14 +2,11 @@
 
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
-import { generateReferralCode } from "@/lib/referral-code";
 import { sendBrevoEmail } from "@/lib/brevo";
-import { buildPartnerWelcomeHtml } from "@/lib/partner-email";
+import { buildWaitlistJoinedHtml } from "@/lib/partner-email";
 import { getSiteUrl } from "@/lib/env";
-import { generateReferralAgreementPdf } from "@/lib/referral-agreement-pdf";
-import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
-import { getReferralProgramSettings } from "@/lib/referral-program-settings";
+import { sendPartnerWelcomeEmail } from "@/lib/send-partner-welcome-email";
+import { attemptPartnerSignupOrWaitlist } from "@/lib/referral-partner-waitlist";
 
 const partnerSignupSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name.").max(150),
@@ -19,27 +16,10 @@ const partnerSignupSchema = z.object({
   agreedToTerms: z.literal("on", "You must agree to the Referral Partner Agreement and Privacy Policy."),
 });
 
-export type PartnerSignupResult = { ok: true } | { ok: false; error: string };
-
-// Only resolves to a recruiter id when the program is switched on AND the
-// code belongs to a real, non-suspended partner AND that partner isn't
-// the same email as the person signing up (no self-recruiting) — anything
-// else is a silent no-op, this account still gets created as a normal,
-// unrecruited partner rather than failing outright.
-async function resolveRecruiterId(refCode: string | null, newUserEmail: string): Promise<string | null> {
-  if (!refCode) return null;
-  const settings = await getReferralProgramSettings();
-  if (!settings.multiLevelReferralsEnabled) return null;
-
-  const recruiter = await prisma.referralPartner.findUnique({
-    where: { referralCode: refCode },
-    include: { user: true },
-  });
-  if (!recruiter || recruiter.suspended) return null;
-  if (recruiter.user.email.toLowerCase() === newUserEmail.toLowerCase()) return null;
-
-  return recruiter.id;
-}
+export type PartnerSignupResult =
+  | { ok: true; kind: "partner" }
+  | { ok: true; kind: "waitlisted"; position: number; statusUrl: string }
+  | { ok: false; error: string };
 
 export async function createReferralPartnerAccount(formData: FormData): Promise<PartnerSignupResult> {
   const parsed = partnerSignupSchema.safeParse({
@@ -57,59 +37,42 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
   const { name, email, phone, password } = parsed.data;
 
   try {
-    const [currentCount, capacity] = await Promise.all([getReferralPartnerCount(), getReferralPartnerCapacity()]);
-    if (currentCount >= capacity) {
-      return { ok: false, error: "Referral partner sign-ups are full. All spots are taken right now." };
-    }
+    const passwordHash = await bcrypt.hash(password, 12);
+    const rawRef = formData.get("ref");
+    const refCode = typeof rawRef === "string" && rawRef ? rawRef : null;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
+    // Never a hard "sorry, full" error at this point — capacity may have
+    // been read as full on the page render but freed up by the time this
+    // submits, or vice versa. Whichever is true right now, this always
+    // resolves to a concrete outcome: a live account or a waitlist spot.
+    const outcome = await attemptPartnerSignupOrWaitlist({ name, email, phone, passwordHash, refCode });
+
+    if (outcome.kind === "already_user") {
       return { ok: false, error: "An account with this email already exists. Try signing in instead." };
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
-    const referralCode = await generateReferralCode(name);
-
-    const rawRef = formData.get("ref");
-    const recruitedByPartnerId = await resolveRecruiterId(
-      typeof rawRef === "string" && rawRef ? rawRef : null,
-      email
-    );
-
-    const user = await prisma.user.create({
-      data: { name, email, phone, passwordHash, role: "REFERRER" },
-    });
-
-    const partner = await prisma.referralPartner.create({
-      data: { userId: user.id, referralCode, recruitedByPartnerId },
-    });
-
-    if (process.env.BREVO_API_KEY) {
-      // Effective Date on the agreement is the real account-creation
-      // timestamp, not "today" — matters if this PDF is ever regenerated
-      // later (e.g. redownloaded from the dashboard), it must always show
-      // the same date it did on day one, not the day it was redownloaded.
-      const pdfBytes = await generateReferralAgreementPdf({
-        partnerName: name,
-        partnerEmail: email,
-        partnerPhone: phone,
-        effectiveDate: partner.createdAt,
-      });
-      const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
-
-      await sendBrevoEmail({
-        to: [{ email, name }],
-        subject: "Welcome to NOBS Agent",
-        htmlContent: buildPartnerWelcomeHtml({
-          partnerName: name,
-          referralCode,
-          referralLink: `${getSiteUrl()}/signup?ref=${referralCode}`,
-        }),
-        attachment: [{ name: "NOBS-Agent-Referral-Partner-Agreement.pdf", content: pdfBase64 }],
-      }).catch((err) => console.error("[partner signup] welcome email failed", err));
+    if (outcome.kind === "waitlisted" || outcome.kind === "already_waitlisted") {
+      const statusUrl = `${getSiteUrl()}/partner/waitlist/${outcome.waitlistId}`;
+      if (outcome.kind === "waitlisted" && process.env.BREVO_API_KEY) {
+        await sendBrevoEmail({
+          to: [{ email: outcome.email, name: outcome.name }],
+          subject: "You're on the NOBS Agent referral partner waitlist",
+          htmlContent: buildWaitlistJoinedHtml({ name: outcome.name, position: outcome.position, statusUrl }),
+        }).catch((err) => console.error("[partner signup] waitlist email failed", err));
+      }
+      return { ok: true, kind: "waitlisted", position: outcome.position, statusUrl };
     }
 
-    return { ok: true };
+    // outcome.kind === "partner"
+    await sendPartnerWelcomeEmail({
+      name: outcome.name,
+      email: outcome.email,
+      phone: outcome.phone,
+      referralCode: outcome.referralCode,
+      createdAt: outcome.createdAt,
+    }).catch((err) => console.error("[partner signup] welcome email failed", err));
+
+    return { ok: true, kind: "partner" };
   } catch (err) {
     console.error("[partner signup] failed", err);
     return { ok: false, error: "Something went wrong creating your account. Please try again." };

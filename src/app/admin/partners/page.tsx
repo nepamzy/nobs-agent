@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { togglePartnerSuspended, updateReferralProgramSettingsAction } from "./actions";
 import { getReferralProgramSettings } from "@/lib/referral-program-settings";
-import { Ban, CheckCircle2, ArrowUpRight } from "lucide-react";
+import { listWaitlistEntries } from "@/lib/referral-partner-waitlist";
+import { Ban, CheckCircle2, ArrowUpRight, Clock } from "lucide-react";
 
 async function getPartners() {
   try {
@@ -21,9 +22,10 @@ async function getPartners() {
 }
 
 export default async function AdminPartnersPage() {
-  const [{ partners, connected }, settings] = await Promise.all([
+  const [{ partners, connected }, settings, waitlist] = await Promise.all([
     getPartners(),
     getReferralProgramSettings(),
+    listWaitlistEntries(),
   ]);
 
   return (
@@ -136,6 +138,35 @@ export default async function AdminPartnersPage() {
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-10">
+        <h2 className="flex items-center gap-2 font-[family-name:var(--font-display)] text-lg font-medium">
+          <Clock size={16} className="text-[var(--color-brass)]" /> Waitlist ({waitlist.length})
+        </h2>
+        <p className="mt-1 max-w-lg text-sm text-[var(--color-slate)]">
+          Everyone who applied while all slots were taken. First in line gets the next spot that
+          opens up, automatically — no action needed here.
+        </p>
+
+        {waitlist.length === 0 ? (
+          <p className="mt-4 text-sm text-[var(--color-slate)]">Nobody waiting right now.</p>
+        ) : (
+          <div className="mt-4 space-y-2">
+            {waitlist.map((entry) => (
+              <div key={entry.id} className="glass flex items-center justify-between gap-3 rounded-xl p-4">
+                <div>
+                  <p className="text-sm font-medium">
+                    #{entry.position} — {entry.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-[var(--color-slate)]">
+                    {entry.email} · {entry.phone} · joined {entry.createdAt.toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

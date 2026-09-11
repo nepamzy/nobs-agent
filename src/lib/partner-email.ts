@@ -49,16 +49,25 @@ export function buildPartnerWelcomeHtml({
   partnerName,
   referralCode,
   referralLink,
+  fromWaitlist = false,
 }: {
   partnerName: string;
   referralCode: string;
   referralLink: string;
+  // True when this account was just created off the waitlist (a seat
+  // opened up), rather than at normal signup — same email, different
+  // opening line so it doesn't read like they signed up twice.
+  fromWaitlist?: boolean;
 }) {
   return shell(
     "Welcome to NOBS Agent",
     `
       <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
-        Hi ${partnerName}, your referral partner account is live.
+        ${
+          fromWaitlist
+            ? `Hi ${partnerName}, a spot just opened up — you're off the waitlist and your referral partner account is live.`
+            : `Hi ${partnerName}, your referral partner account is live.`
+        }
       </p>
       <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
         Your referral code is <strong>${referralCode}</strong>. Share your link below —
@@ -72,6 +81,39 @@ export function buildPartnerWelcomeHtml({
         Add your payout account on your dashboard so your commission pays out
         automatically instead of waiting on a manual transfer.
       </p>
+    `
+  );
+}
+
+export function buildWaitlistJoinedHtml({
+  name,
+  position,
+  statusUrl,
+}: {
+  name: string;
+  position: number;
+  statusUrl: string;
+}) {
+  return shell(
+    "You're on the waitlist",
+    `
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Hi ${name}, all referral partner spots are taken right now, so we've added you to the
+        waitlist instead — nothing further to do.
+      </p>
+      <div style="margin: 20px 0; padding: 14px; background: #f7f2e7; border: 1px solid #e4b34355; font-family: Arial, sans-serif; font-size: 14px; text-align: center;">
+        You're number <strong>${position}</strong> in line.
+      </div>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        The moment a spot opens up, it goes to whoever's been waiting longest — we'll email you
+        automatically and your account will be ready to go, no need to sign up again.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        You can check your position any time here:
+      </p>
+      <div style="margin: 20px 0; padding: 14px; background: #f7f2e7; border: 1px solid #e4b34355; font-family: monospace; font-size: 13px; word-break: break-all;">
+        ${statusUrl}
+      </div>
     `
   );
 }

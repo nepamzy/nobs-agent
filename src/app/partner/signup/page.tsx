@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { PartnerSignupForm } from "@/components/partner-signup-form";
 import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
+import { getReferralPartnerWaitlistCount } from "@/lib/referral-partner-waitlist";
 import { prisma } from "@/lib/prisma";
 
 // The full/not-full state depends on a live DB count, so this page must
@@ -35,10 +36,11 @@ export default async function PartnerSignupPage({
   searchParams: Promise<{ ref?: string }>;
 }) {
   const { ref } = await searchParams;
-  const [count, capacity, linkSuspended] = await Promise.all([
+  const [count, capacity, linkSuspended, waitlistCount] = await Promise.all([
     getReferralPartnerCount(),
     getReferralPartnerCapacity(),
     isRefCodeSuspended(ref),
+    getReferralPartnerWaitlistCount(),
   ]);
   const isFull = count >= capacity;
 
@@ -55,23 +57,26 @@ export default async function PartnerSignupPage({
         Get your own referral link, earn commission on every paying client you bring, and unlock a
         higher rate after your 10th successful referral.
       </p>
-      {linkSuspended ? (
-        <div className="glass rounded-2xl p-8 text-center">
+      {linkSuspended && (
+        <div className="glass mb-6 rounded-2xl p-8 text-center">
           <p className="font-medium text-red-400">Account Suspended</p>
           <p className="mt-2 text-sm text-[var(--color-slate)]">
             This referral link is no longer active. You can still sign up below without it.
           </p>
         </div>
-      ) : isFull ? (
-        <div className="glass rounded-2xl p-8 text-center">
-          <p className="font-medium text-red-400">Not available</p>
+      )}
+
+      {isFull && (
+        <div className="glass mb-6 rounded-2xl p-6 text-center">
+          <p className="font-medium text-[var(--color-brass)]">All {capacity} spots are taken right now</p>
           <p className="mt-2 text-sm text-[var(--color-slate)]">
-            All {capacity} referral partner spots are taken right now. Check back later.
+            Sign up below to join the waitlist — you&apos;d be number {waitlistCount + 1} in line.
+            The moment a spot opens up, it goes to whoever&apos;s been waiting longest, automatically.
           </p>
         </div>
-      ) : (
-        <PartnerSignupForm recruiterCode={ref} />
       )}
+
+      <PartnerSignupForm recruiterCode={ref} />
     </div>
   );
 }

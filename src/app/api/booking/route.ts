@@ -7,23 +7,33 @@ import { auth } from "@/auth";
 import { checkBookingAvailability } from "@/lib/booking-availability";
 import { notifyAdminsPush } from "@/lib/push";
 import { createBookingCalendarEvent } from "@/lib/google-calendar";
+import { budgetOptionsForService } from "@/lib/booking-budget-options";
 
-const bookingSchema = z.object({
-  fullName: z.string().trim().min(2).max(100),
-  email: z.string().trim().email(),
-  serviceInterest: z.string().trim().min(2).max(150),
-  budgetRange: z.string().trim().min(1).max(50),
-  meetingType: z.enum(["video", "phone", "in-person"]),
-  scheduledFor: z.string().refine((v) => !Number.isNaN(Date.parse(v)), {
-    message: "Please choose a valid date and time.",
-  }),
-  notes: z.string().trim().max(3000).optional().or(z.literal("")),
-  website: z.string().max(0).optional().or(z.literal("")), // honeypot
-  // Checkbox is `required` in the UI, but that only stops the browser form
-  // — enforced again here so hitting this API directly can't skip it, same
-  // reasoning as the auth check below.
-  termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
-});
+const bookingSchema = z
+  .object({
+    fullName: z.string().trim().min(2).max(100),
+    email: z.string().trim().email(),
+    serviceInterest: z.string().trim().min(2).max(150),
+    budgetRange: z.string().trim().min(1).max(50),
+    meetingType: z.enum(["video", "phone", "in-person"]),
+    scheduledFor: z.string().refine((v) => !Number.isNaN(Date.parse(v)), {
+      message: "Please choose a valid date and time.",
+    }),
+    notes: z.string().trim().max(3000).optional().or(z.literal("")),
+    website: z.string().max(0).optional().or(z.literal("")), // honeypot
+    // Checkbox is `required` in the UI, but that only stops the browser form
+    // — enforced again here so hitting this API directly can't skip it, same
+    // reasoning as the auth check below.
+    termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
+  })
+  // The budget dropdown is only ever populated with options anchored to
+  // the chosen package's real /pricing minimum — re-checked here so the
+  // rule can't be bypassed by posting directly to this endpoint with a
+  // budget that doesn't actually belong to that package.
+  .refine((data) => budgetOptionsForService(data.serviceInterest).includes(data.budgetRange), {
+    message: "That budget doesn't match the selected package. Please pick again.",
+    path: ["budgetRange"],
+  });
 
 export async function POST(req: NextRequest) {
   // Booking requires an account, this is enforced here (not just in the

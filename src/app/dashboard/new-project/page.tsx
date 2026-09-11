@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { submitProjectBrief, cancelProjectBrief } from "./actions";
+import { cancelProjectBrief } from "./actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { BookingFileUpload } from "@/components/booking-file-upload";
 import { toDownloadUrl } from "@/lib/cloudinary-download";
-import { TermsPanel } from "@/components/terms-panel";
+import { NewProjectForm } from "@/components/new-project-form";
 import { CheckCircle2, ArrowUpRight, X } from "lucide-react";
 
 const NEW_STATUSES = ["SUBMITTED", "IN_REVIEW"];
@@ -19,29 +19,6 @@ const statusLabels: Record<string, string> = {
   REVISION: "Revision",
   DELIVERED: "Delivered",
 };
-
-const services = [
-  "School Portals",
-  "Hospital Systems",
-  "Church Websites",
-  "Hotel Booking",
-  "Restaurant Websites",
-  "Car Dealership Websites",
-  "eCommerce",
-  "Business Websites",
-  "Corporate Websites",
-  "Landing Pages",
-  "Real Estate Platforms",
-  "Custom Web Applications",
-  "UI/UX Design",
-  "Website Redesign",
-  "Website Maintenance",
-  "SEO",
-  "Branding",
-  "Not sure yet",
-];
-
-const budgets = ["Under ₦300k", "₦300k – ₦800k", "₦800k – ₦2m", "₦2m+"];
 
 async function getProjects(userId: string) {
   try {
@@ -194,114 +171,7 @@ export default async function ProjectsPage({
           file for you.
         </p>
 
-        <form action={submitProjectBrief} className="mt-6 space-y-5">
-          <div>
-            <label htmlFor="new-project-service-interest" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
-              What are you looking to build?
-            </label>
-            <select
-              id="new-project-service-interest"
-              name="serviceInterest"
-              required
-              defaultValue=""
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-            >
-              <option value="" disabled>Select one</option>
-              {services.map((s) => (
-                <option key={s} value={s} className="bg-[var(--color-ink)]">{s}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label htmlFor="new-project-budget-range" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
-                Budget range
-              </label>
-              <select
-                id="new-project-budget-range"
-                name="budgetRange"
-                required
-                defaultValue=""
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-              >
-                <option value="" disabled>Select one</option>
-                {budgets.map((b) => (
-                  <option key={b} value={b} className="bg-[var(--color-ink)]">{b}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="new-project-meeting-type" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
-                Meeting type
-              </label>
-              <select
-                id="new-project-meeting-type"
-                name="meetingType"
-                required
-                defaultValue=""
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-              >
-                <option value="" disabled>Select one</option>
-                <option value="video" className="bg-[var(--color-ink)]">Video call</option>
-                <option value="phone" className="bg-[var(--color-ink)]">Phone call</option>
-                <option value="in-person" className="bg-[var(--color-ink)]">In person (Kaduna)</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="new-project-scheduled-for" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
-              Preferred date & time
-            </label>
-            <input
-              id="new-project-scheduled-for"
-              name="scheduledFor"
-              type="datetime-local"
-              required
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="new-project-notes" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
-              Tell us about it
-            </label>
-            <textarea
-              id="new-project-notes"
-              name="notes"
-              required
-              rows={6}
-              placeholder="What are you building, who is it for, and what should it be able to do? Any deadlines or must-haves are useful here too."
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
-            />
-          </div>
-
-          <TermsPanel />
-
-          <label className="flex items-start gap-2.5 text-xs text-[var(--color-slate)]">
-            <input
-              type="checkbox"
-              name="termsAccepted"
-              required
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-white/5 accent-[var(--color-brass)]"
-            />
-            <span>
-              I agree to the{" "}
-              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[var(--color-brass)] underline underline-offset-4">
-                Terms and Conditions
-              </a>
-              . A booking can&apos;t be submitted without this.
-            </span>
-          </label>
-
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brass)] px-6 py-3 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-          >
-            Submit brief
-          </button>
-        </form>
+        <NewProjectForm />
       </div>
     </div>
   );

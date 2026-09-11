@@ -16,16 +16,18 @@ const REFERRAL_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 // it's redirected here instead, permanently, preserving path and query.
 // Deliberately only this one exact hostname, not every *.vercel.app —
 // branch preview deployments must keep working unredirected.
+//
+// www.nobs-agent.site is deliberately NOT redirected here even though it's
+// also a separate origin (separate Notification permission, separate push
+// subscription) — Vercel's own project-level domain redirect already
+// canonicalizes one of {www, apex} to the other ahead of this middleware.
+// Redirecting the opposite direction here fought it and produced a live
+// 308 redirect loop between the two hosts (confirmed in production
+// runtime logs immediately after this was added: the same path 308'd
+// repeatedly, multiple times a second). Whichever direction Vercel's
+// domain settings use is already canonical; don't duplicate it here.
 const NEW_HOST = "nobs-agent.site";
-// Every hostname that should permanently redirect to NEW_HOST. Both of
-// these are configured as valid aliases on the Vercel project, which
-// means the browser treats each as a genuinely separate origin — with
-// its own independent Notification permission and push subscription.
-// Without this redirect, granting "Enable notifications" on one host and
-// later landing on another (an old bookmark, someone typing "www.",
-// autocomplete) looks exactly like the permission was silently reset,
-// when really it just never existed on that other origin.
-const REDIRECT_HOSTS = ["nobs-agent-theta.vercel.app", "www.nobs-agent.site"];
+const REDIRECT_HOSTS = ["nobs-agent-theta.vercel.app"];
 
 export default auth((req) => {
   const { pathname, searchParams } = req.nextUrl;

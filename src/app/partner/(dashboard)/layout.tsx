@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { SignOutButton } from "@/components/sign-out-button";
+import { InstallButton } from "@/components/install-button";
 
 export default async function PartnerLayout({
   children,
@@ -23,7 +24,10 @@ export default async function PartnerLayout({
           </p>
           <p className="text-xs text-[var(--color-slate)]">{session.user.email}</p>
         </div>
-        <SignOutButton />
+        <div className="flex shrink-0 items-center gap-4">
+          <InstallButton />
+          <SignOutButton />
+        </div>
       </div>
       {children}
     </div>

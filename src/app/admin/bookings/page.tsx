@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { updateBookingStatus, confirmBookingWithDeposit } from "./actions";
+import { updateBookingStatus, confirmBookingWithDeposit, deleteBooking } from "./actions";
 import { BookingSearchList } from "@/components/admin/booking-search-list";
 import { AddBookingForm } from "@/components/admin/add-booking-form";
 
@@ -44,6 +44,7 @@ export default async function AdminBookingsPage() {
         rows={rows}
         confirmBookingWithDeposit={confirmBookingWithDeposit}
         updateBookingStatus={updateBookingStatus}
+        deleteBooking={deleteBooking}
       />
     </div>
   );

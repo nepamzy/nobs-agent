@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Check, X, CreditCard, CheckCircle2 } from "lucide-react";
+import { Search, Check, X, CreditCard, CheckCircle2, Trash2, Loader2 } from "lucide-react";
 
 const statusStyles: Record<string, string> = {
   PENDING: "border-[var(--color-brass)]/50 text-[var(--color-brass)]",
@@ -36,12 +36,33 @@ export function BookingSearchList({
   rows,
   confirmBookingWithDeposit,
   updateBookingStatus,
+  deleteBooking,
 }: {
   rows: BookingRow[];
   confirmBookingWithDeposit: (formData: FormData) => void;
   updateBookingStatus: (formData: FormData) => void;
+  deleteBooking: (formData: FormData) => Promise<void>;
 }) {
   const [query, setQuery] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(id: string, fullName: string) {
+    const confirmed = window.confirm(
+      `Delete ${fullName}'s booking permanently? This also removes its payment history. This can't be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(id);
+    const formData = new FormData();
+    formData.set("id", id);
+    try {
+      await deleteBooking(formData);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete booking.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const filtered = rows.filter((row) => {
     const haystack = `${row.fullName} ${row.email} ${row.serviceInterest}`.toLowerCase();
@@ -81,9 +102,24 @@ export function BookingSearchList({
                   Requested: {new Date(row.scheduledFor).toLocaleString()}
                 </p>
               </Link>
-              <span className={`rounded-full border px-2.5 py-1 text-xs ${statusStyles[row.status] ?? ""}`}>
-                {row.status}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full border px-2.5 py-1 text-xs ${statusStyles[row.status] ?? ""}`}>
+                  {row.status}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(row.id, row.fullName)}
+                  disabled={deletingId === row.id}
+                  title="Delete booking"
+                  className="inline-flex items-center gap-1 rounded-full border border-[var(--color-line)] p-1.5 text-[var(--color-slate)] transition hover:border-red-500/50 hover:text-red-400 disabled:opacity-60"
+                >
+                  {deletingId === row.id ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={13} />
+                  )}
+                </button>
+              </div>
             </div>
 
             {row.status === "PENDING" && (

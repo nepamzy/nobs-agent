@@ -205,7 +205,9 @@ const fallbackPostsRaw: (Omit<BlogPost, "postType"> & { postType?: PostType })[]
 // All fallback content is written as regular articles. Real build logs get
 // added the same way any real post does, via /admin/blog, with "Build Log"
 // selected as the content type.
-const fallbackPosts: BlogPost[] = fallbackPostsRaw.map((p) => ({
+// Exported so the "import as real posts" admin action (src/app/admin/blog/actions.ts)
+// can seed these into the database — the one place this content is written.
+export const fallbackPosts: BlogPost[] = fallbackPostsRaw.map((p) => ({
   ...p,
   postType: p.postType ?? "article",
 }));

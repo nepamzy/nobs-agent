@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { deletePost, togglePublished } from "./actions";
+import { deletePost, togglePublished, importFallbackPosts } from "./actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
-import { Plus, Eye, EyeOff, Trash2, Pencil } from "lucide-react";
+import { Plus, Eye, EyeOff, Trash2, Pencil, Download } from "lucide-react";
 
 type BlogPostRow = Awaited<ReturnType<typeof prisma.blogPost.findMany>>[number];
 
@@ -38,7 +38,20 @@ export default async function AdminBlogPage() {
       )}
 
       {connected && rows.length === 0 && (
-        <p className="mt-8 text-sm text-[var(--color-slate)]">No posts yet. Create the first one.</p>
+        <div className="glass mt-8 rounded-xl p-5 text-sm text-[var(--color-slate)]">
+          <p>
+            No real posts yet — what&apos;s showing on the public /blog page right now are 14
+            built-in sample articles, used only as a placeholder while this table is empty.
+          </p>
+          <form action={importFallbackPosts} className="mt-3">
+            <ConfirmSubmit
+              message="Import the 14 sample articles as real, editable posts? This adds them to the database as published — you can edit or delete any of them afterward."
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-4 py-2 text-xs font-medium transition hover:border-[var(--color-brass)]"
+            >
+              <Download size={13} /> Import the 14 sample articles as real posts
+            </ConfirmSubmit>
+          </form>
+        </div>
       )}
 
       <div className="mt-6 space-y-3">

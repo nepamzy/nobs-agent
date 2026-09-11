@@ -5,31 +5,9 @@ import { Loader2, CheckCircle2, Paperclip, X } from "lucide-react";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { uploadBookingFile } from "@/app/dashboard/new-project/actions";
 import { TermsPanel } from "@/components/terms-panel";
+import { services, budgetOptionsForService } from "@/lib/booking-budget-options";
 
 type Status = "idle" | "submitting" | "success" | "error";
-
-const services = [
-  "School Portals",
-  "Hospital Systems",
-  "Church Websites",
-  "Hotel Booking",
-  "Restaurant Websites",
-  "Car Dealership Websites",
-  "eCommerce",
-  "Business Websites",
-  "Corporate Websites",
-  "Landing Pages",
-  "Real Estate Platforms",
-  "Custom Web Applications",
-  "UI/UX Design",
-  "Website Redesign",
-  "Website Maintenance",
-  "SEO",
-  "Branding",
-  "Not sure yet",
-];
-
-const budgets = ["Under ₦300k", "₦300k – ₦800k", "₦800k – ₦2m", "₦2m+"];
 
 export function BookingForm() {
   const [status, setStatus] = useState<Status>("idle");
@@ -37,8 +15,25 @@ export function BookingForm() {
   const [showSignup, setShowSignup] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [serviceInterest, setServiceInterest] = useState("");
+  const [budgetRange, setBudgetRange] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const pendingDataRef = useRef<Record<string, unknown> | null>(null);
+
+  // A package's own budget options — anchored at that package's real
+  // /pricing minimum, or the single fixed monthly rate for Website
+  // Maintenance/SEO. Picking a new package always clears any previously
+  // selected amount, since it may no longer be a valid option.
+  const budgetOptions = serviceInterest ? budgetOptionsForService(serviceInterest) : [];
+
+  function handleServiceChange(e: ChangeEvent<HTMLSelectElement>) {
+    const next = e.target.value;
+    setServiceInterest(next);
+    const options = budgetOptionsForService(next);
+    // Recurring services resolve to exactly one valid amount — no reason
+    // to make someone click a dropdown with a single option in it.
+    setBudgetRange(options.length === 1 ? options[0] : "");
+  }
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     setSelectedFile(e.target.files?.[0] ?? null);
@@ -207,7 +202,8 @@ export function BookingForm() {
           id="booking-serviceInterest"
           name="serviceInterest"
           required
-          defaultValue=""
+          value={serviceInterest}
+          onChange={handleServiceChange}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
         >
           <option value="" disabled>
@@ -227,24 +223,35 @@ export function BookingForm() {
             htmlFor="booking-budgetRange"
             className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
           >
-            Budget range
+            Budget
           </label>
           <select
             id="booking-budgetRange"
             name="budgetRange"
             required
-            defaultValue=""
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+            disabled={!serviceInterest}
+            value={budgetRange}
+            onChange={(e) => setBudgetRange(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="" disabled>
-              Select one
+              {serviceInterest ? "Select one" : "Pick a package first"}
             </option>
-            {budgets.map((b) => (
+            {budgetOptions.map((b) => (
               <option key={b} value={b} className="bg-[var(--color-ink)]">
                 {b}
               </option>
             ))}
           </select>
+          {serviceInterest && budgetOptions.length > 1 && (
+            <p className="mt-1.5 text-xs text-[var(--color-slate)]">
+              Reflects this package&apos;s real starting price on{" "}
+              <a href="/pricing" target="_blank" rel="noopener noreferrer" className="text-[var(--color-brass)] underline underline-offset-4">
+                /pricing
+              </a>
+              .
+            </p>
+          )}
         </div>
         <div>
           <label

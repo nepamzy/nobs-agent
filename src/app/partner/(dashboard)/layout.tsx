@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { SignOutButton } from "@/components/sign-out-button";
 import { InstallButton } from "@/components/install-button";
+import { PushSubscribeButton } from "@/components/push-subscribe-button";
 
 export default async function PartnerLayout({
   children,
@@ -26,6 +27,7 @@ export default async function PartnerLayout({
         </div>
         <div className="flex shrink-0 items-center gap-4">
           <InstallButton />
+          <PushSubscribeButton className="flex items-center gap-2 text-sm text-[var(--color-slate)] transition hover:text-[var(--color-brass)]" />
           <SignOutButton />
         </div>
       </div>

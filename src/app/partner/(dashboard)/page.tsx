@@ -1,13 +1,13 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getSiteUrl } from "@/lib/env";
+import { getSiteUrl, getReferralWhatsAppChannelUrl } from "@/lib/env";
 import { tierProgress } from "@/lib/referral-tier";
 import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
 import { getReferralProgramSettings } from "@/lib/referral-program-settings";
 import { ReferralLinkCopy } from "@/components/referral-link-copy";
 import { PayoutDetailsForm } from "@/components/payout-details-form";
 import { CapacityGauge } from "@/components/capacity-gauge";
-import { CheckCircle2, FileDown } from "lucide-react";
+import { CheckCircle2, FileDown, MessageCircle } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   PENDING: "Pending",
@@ -127,12 +127,22 @@ export default async function PartnerDashboardPage() {
           Anyone who signs up through this link and becomes a paying client earns you commission —
           {" "}{progress.inBonusTier ? "you're currently in the 20% bonus tier." : `${progress.referralsUntilNextBonus} more paid referral${progress.referralsUntilNextBonus === 1 ? "" : "s"} until your next 20% bonus tier.`}
         </p>
-        <a
-          href="/api/partner/agreement"
-          className="mt-4 inline-flex items-center gap-2 text-xs text-[var(--color-brass)] underline underline-offset-4"
-        >
-          <FileDown size={13} /> Download your Referral Partner Agreement
-        </a>
+        <div className="mt-4 flex flex-wrap gap-4">
+          <a
+            href="/api/partner/agreement"
+            className="inline-flex items-center gap-2 text-xs text-[var(--color-brass)] underline underline-offset-4"
+          >
+            <FileDown size={13} /> Download your Referral Partner Agreement
+          </a>
+          <a
+            href={getReferralWhatsAppChannelUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs text-[var(--color-brass)] underline underline-offset-4"
+          >
+            <MessageCircle size={13} /> Join the Partner WhatsApp Channel
+          </a>
+        </div>
       </div>
 
       {programSettings.multiLevelReferralsEnabled && (

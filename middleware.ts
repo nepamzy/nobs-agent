@@ -16,8 +16,16 @@ const REFERRAL_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 // it's redirected here instead, permanently, preserving path and query.
 // Deliberately only this one exact hostname, not every *.vercel.app —
 // branch preview deployments must keep working unredirected.
-const OLD_HOST = "nobs-agent-theta.vercel.app";
 const NEW_HOST = "nobs-agent.site";
+// Every hostname that should permanently redirect to NEW_HOST. Both of
+// these are configured as valid aliases on the Vercel project, which
+// means the browser treats each as a genuinely separate origin — with
+// its own independent Notification permission and push subscription.
+// Without this redirect, granting "Enable notifications" on one host and
+// later landing on another (an old bookmark, someone typing "www.",
+// autocomplete) looks exactly like the permission was silently reset,
+// when really it just never existed on that other origin.
+const REDIRECT_HOSTS = ["nobs-agent-theta.vercel.app", "www.nobs-agent.site"];
 
 export default auth((req) => {
   const { pathname, searchParams } = req.nextUrl;
@@ -26,11 +34,11 @@ export default auth((req) => {
   // Read the raw Host header, not req.nextUrl.hostname — confirmed via
   // real production testing that Vercel normalizes nextUrl.hostname to
   // the project's primary domain internally once one is configured, even
-  // when the client actually requested the old .vercel.app alias. The
-  // Host header still carries what the client really typed.
+  // when the client actually requested a different alias. The Host
+  // header still carries what the client really typed.
   const requestHost = req.headers.get("host");
 
-  if (requestHost === OLD_HOST) {
+  if (requestHost && REDIRECT_HOSTS.includes(requestHost)) {
     const redirectUrl = new URL(req.nextUrl);
     redirectUrl.hostname = NEW_HOST;
     redirectUrl.port = "";

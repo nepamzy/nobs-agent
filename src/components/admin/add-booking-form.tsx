@@ -1,31 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ChangeEvent } from "react";
 import { Plus, X, Loader2, CheckCircle2 } from "lucide-react";
 import { createBookingManually } from "@/app/admin/bookings/actions";
-
-const services = [
-  "School Portals",
-  "Hospital Systems",
-  "Church Websites",
-  "Hotel Booking",
-  "Restaurant Websites",
-  "Car Dealership Websites",
-  "eCommerce",
-  "Business Websites",
-  "Corporate Websites",
-  "Landing Pages",
-  "Real Estate Platforms",
-  "Custom Web Applications",
-  "UI/UX Design",
-  "Website Redesign",
-  "Website Maintenance",
-  "SEO",
-  "Branding",
-  "Not sure yet",
-];
-
-const budgets = ["Under ₦300k", "₦300k – ₦800k", "₦800k – ₦2m", "₦2m+"];
+import { services, budgetOptionsForService } from "@/lib/booking-budget-options";
 
 const inputClass =
   "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[var(--color-brass)]";
@@ -37,6 +15,17 @@ export function AddBookingForm() {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [serviceInterest, setServiceInterest] = useState("");
+  const [budgetRange, setBudgetRange] = useState("");
+
+  const budgetOptions = serviceInterest ? budgetOptionsForService(serviceInterest) : [];
+
+  function handleServiceChange(e: ChangeEvent<HTMLSelectElement>) {
+    const next = e.target.value;
+    setServiceInterest(next);
+    const options = budgetOptionsForService(next);
+    setBudgetRange(options.length === 1 ? options[0] : "");
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,6 +41,8 @@ export function AddBookingForm() {
 
     setStatus("success");
     e.currentTarget.reset();
+    setServiceInterest("");
+    setBudgetRange("");
     setTimeout(() => {
       setStatus("idle");
       setOpen(false);
@@ -95,7 +86,7 @@ export function AddBookingForm() {
 
       <div>
         <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">What are they looking to build?</label>
-        <select name="serviceInterest" required defaultValue="" className={inputClass}>
+        <select name="serviceInterest" required value={serviceInterest} onChange={handleServiceChange} className={inputClass}>
           <option value="" disabled>Select one</option>
           {services.map((s) => (
             <option key={s} value={s} className="bg-[var(--color-ink)]">{s}</option>
@@ -105,10 +96,17 @@ export function AddBookingForm() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">Budget range</label>
-          <select name="budgetRange" required defaultValue="" className={inputClass}>
-            <option value="" disabled>Select one</option>
-            {budgets.map((b) => (
+          <label className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">Budget</label>
+          <select
+            name="budgetRange"
+            required
+            disabled={!serviceInterest}
+            value={budgetRange}
+            onChange={(e) => setBudgetRange(e.target.value)}
+            className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            <option value="" disabled>{serviceInterest ? "Select one" : "Pick a package first"}</option>
+            {budgetOptions.map((b) => (
               <option key={b} value={b} className="bg-[var(--color-ink)]">{b}</option>
             ))}
           </select>

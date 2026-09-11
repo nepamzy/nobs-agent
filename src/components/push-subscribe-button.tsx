@@ -10,10 +10,11 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-// Lets an admin/staff user enable "notify me like WhatsApp does" pushes
-// for new bookings and inbox messages. Shows nothing if push isn't
-// supported (older Safari, etc) rather than showing a dead button.
-export function PushSubscribeButton() {
+// Lets a signed-in user (admin/staff, client, or referral partner) enable
+// "notify me like WhatsApp does" pushes for the events relevant to their
+// role. Shows nothing if push isn't supported (older Safari, etc) rather
+// than showing a dead button.
+export function PushSubscribeButton({ className }: { className?: string } = {}) {
   const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -88,7 +89,10 @@ export function PushSubscribeButton() {
       type="button"
       onClick={subscribed ? unsubscribe : subscribe}
       disabled={busy}
-      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-slate)] transition hover:bg-white/5 hover:text-[var(--color-paper)] disabled:opacity-60"
+      className={
+        className ??
+        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-slate)] transition hover:bg-white/5 hover:text-[var(--color-paper)] disabled:opacity-60"
+      }
     >
       {subscribed ? <BellOff size={16} /> : <Bell size={16} />}
       {subscribed ? "Disable notifications" : "Enable notifications"}

@@ -1,4 +1,4 @@
-import { getSiteUrl } from "@/lib/env";
+import { getSiteUrl, getReferralWhatsAppChannelUrl } from "@/lib/env";
 
 function formatNaira(kobo: number) {
   return `₦${(kobo / 100).toLocaleString("en-NG")}`;
@@ -80,6 +80,11 @@ export function buildPartnerWelcomeHtml({
       <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
         Add your payout account on your dashboard so your commission pays out
         automatically instead of waiting on a manual transfer.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Join our <a href="${getReferralWhatsAppChannelUrl()}" style="color: #a5822f;">WhatsApp Channel</a> —
+        it's where we walk partners through how to actually run this side of the business,
+        share what's working, and post updates.
       </p>
     `
   );

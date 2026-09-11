@@ -8,17 +8,25 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { createBookingCalendarEvent, deleteBookingCalendarEvent } from "@/lib/google-calendar";
+import { budgetOptionsForService } from "@/lib/booking-budget-options";
 
-const briefSchema = z.object({
-  serviceInterest: z.string().trim().min(1, "Select what you're looking to build."),
-  budgetRange: z.string().trim().min(1, "Select a budget range."),
-  meetingType: z.string().trim().min(1, "Select a meeting type."),
-  scheduledFor: z.string().trim().min(1, "Pick a preferred date and time."),
-  notes: z.string().trim().min(20, "A few sentences helps, at least 20 characters."),
-  // Checkbox is `required` in the UI; re-checked here since a server action
-  // can still be invoked directly with a hand-built FormData.
-  termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
-});
+const briefSchema = z
+  .object({
+    serviceInterest: z.string().trim().min(1, "Select what you're looking to build."),
+    budgetRange: z.string().trim().min(1, "Select a budget range."),
+    meetingType: z.string().trim().min(1, "Select a meeting type."),
+    scheduledFor: z.string().trim().min(1, "Pick a preferred date and time."),
+    notes: z.string().trim().min(20, "A few sentences helps, at least 20 characters."),
+    // Checkbox is `required` in the UI; re-checked here since a server action
+    // can still be invoked directly with a hand-built FormData.
+    termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
+  })
+  // Re-checked server-side, same reasoning as /api/booking/route.ts — the
+  // budget must actually belong to the chosen package's real /pricing tiers.
+  .refine((data) => budgetOptionsForService(data.serviceInterest).includes(data.budgetRange), {
+    message: "That budget doesn't match the selected package. Please pick again.",
+    path: ["budgetRange"],
+  });
 
 export async function submitProjectBrief(formData: FormData) {
   const session = await auth();

@@ -96,44 +96,65 @@ export async function reinstateReferral(formData: FormData) {
   revalidatePath(`/admin/partners/${referral.partnerId}`);
 }
 
-export async function resendPartnerAgreement(formData: FormData) {
-  await requireAdmin();
+export type ResendAgreementResult =
+  | { ok: true; skipped: false }
+  // Email sending is configured OFF (no BREVO_API_KEY) on this deployment —
+  // the PDF was generated fine, but nothing was actually emailed. Distinct
+  // from a real failure so the admin isn't told "Sent!" when nothing sent.
+  | { ok: true; skipped: true }
+  | { ok: false; error: string };
+
+export async function resendPartnerAgreement(formData: FormData): Promise<ResendAgreementResult> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { ok: false, error: "Not authorized." };
+  }
+
   const id = formData.get("id");
-  if (typeof id !== "string") throw new Error("Missing partner id.");
+  if (typeof id !== "string") return { ok: false, error: "Missing partner id." };
 
   const partner = await prisma.referralPartner.findUnique({ where: { id }, include: { user: true } });
-  if (!partner) throw new Error("Partner not found.");
+  if (!partner) return { ok: false, error: "Partner not found." };
 
-  // Covers accounts created before this feature existed (their Effective
-  // Date will show their real, already-past account-creation date, same
-  // as it would if they'd downloaded it from their dashboard themselves).
-  const pdfBytes = await generateReferralAgreementPdf({
-    partnerName: partner.user.name,
-    partnerEmail: partner.user.email,
-    partnerPhone: partner.user.phone ?? "",
-    effectiveDate: partner.createdAt,
-  });
-  const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
+  try {
+    // Covers accounts created before this feature existed (their Effective
+    // Date will show their real, already-past account-creation date, same
+    // as it would if they'd downloaded it from their dashboard themselves).
+    const pdfBytes = await generateReferralAgreementPdf({
+      partnerName: partner.user.name,
+      partnerEmail: partner.user.email,
+      partnerPhone: partner.user.phone ?? "",
+      effectiveDate: partner.createdAt,
+    });
+    const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
-  await sendBrevoEmail({
-    to: [{ email: partner.user.email, name: partner.user.name }],
-    subject: "Your NOBS Agent Referral Partner Agreement",
-    htmlContent: `
-      <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; border: 1px solid #e4b34355; padding: 32px; color: #12151d;">
-        <p style="font-family: Arial, sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #a5822f; margin: 0 0 4px;">NOBS AGENT</p>
-        <h1 style="font-size: 22px; margin: 0 0 24px;">Your Referral Partner Agreement</h1>
-        <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
-          Hi ${partner.user.name}, your Referral Partner Agreement is attached, filled in with your
-          details. Please review, sign, and send a scanned or photographed copy back to
-          nobsagent0@gmail.com.
-        </p>
-        <p style="font-family: Arial, sans-serif; font-size: 11px; color: #999; margin-top: 32px;">
-          NOBS AGENT &middot; Kaduna, Nigeria, remote-first &middot; nobsagent0@gmail.com
-        </p>
-      </div>
-    `,
-    attachment: [{ name: "NOBS-Agent-Referral-Partner-Agreement.pdf", content: pdfBase64 }],
-  });
+    const result = await sendBrevoEmail({
+      to: [{ email: partner.user.email, name: partner.user.name }],
+      subject: "Your NOBS Agent Referral Partner Agreement",
+      htmlContent: `
+        <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; border: 1px solid #e4b34355; padding: 32px; color: #12151d;">
+          <p style="font-family: Arial, sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #a5822f; margin: 0 0 4px;">NOBS AGENT</p>
+          <h1 style="font-size: 22px; margin: 0 0 24px;">Your Referral Partner Agreement</h1>
+          <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+            Hi ${partner.user.name}, your Referral Partner Agreement is attached, filled in with your
+            details. Please review, sign, and send a scanned or photographed copy back to
+            nobsagent0@gmail.com.
+          </p>
+          <p style="font-family: Arial, sans-serif; font-size: 11px; color: #999; margin-top: 32px;">
+            NOBS AGENT &middot; Kaduna, Nigeria, remote-first &middot; nobsagent0@gmail.com
+          </p>
+        </div>
+      `,
+      attachment: [{ name: "NOBS-Agent-Referral-Partner-Agreement.pdf", content: pdfBase64 }],
+    });
+
+    const skipped = Boolean(result && typeof result === "object" && "skipped" in result && result.skipped);
+    return skipped ? { ok: true, skipped: true } : { ok: true, skipped: false };
+  } catch (err) {
+    console.error("[resendPartnerAgreement] failed", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to send the agreement email." };
+  }
 }
 
 export async function markCommissionPaidOut(formData: FormData) {

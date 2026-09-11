@@ -1,19 +1,30 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getReferralPartnerCount } from "@/lib/referral-partner-capacity";
 
 async function getStats() {
   try {
-    const [projects, posts, clients, unhandledInquiries, pendingBookings] = await Promise.all([
-      prisma.project.count(),
-      prisma.blogPost.count(),
-      prisma.client.count(),
-      prisma.contactMessage.count({ where: { handled: false } }),
-      prisma.booking.count({ where: { status: "PENDING" } }),
-    ]);
-    return { projects, posts, clients, unhandledInquiries, pendingBookings, connected: true };
+    const [projects, posts, clients, unhandledInquiries, pendingBookings, referralPartners] =
+      await Promise.all([
+        prisma.project.count(),
+        prisma.blogPost.count(),
+        prisma.client.count(),
+        prisma.contactMessage.count({ where: { handled: false } }),
+        prisma.booking.count({ where: { status: "PENDING" } }),
+        getReferralPartnerCount(),
+      ]);
+    return { projects, posts, clients, unhandledInquiries, pendingBookings, referralPartners, connected: true };
   } catch {
     // Expected until DATABASE_URL points at a live, migrated database.
-    return { projects: 0, posts: 0, clients: 0, unhandledInquiries: 0, pendingBookings: 0, connected: false };
+    return {
+      projects: 0,
+      posts: 0,
+      clients: 0,
+      unhandledInquiries: 0,
+      pendingBookings: 0,
+      referralPartners: 0,
+      connected: false,
+    };
   }
 }
 
@@ -26,6 +37,7 @@ export default async function AdminOverviewPage() {
     { label: "Clients", value: stats.clients, href: "/admin/clients" },
     { label: "Unhandled inquiries", value: stats.unhandledInquiries, href: "/admin/inbox" },
     { label: "Pending bookings", value: stats.pendingBookings, href: "/admin/bookings" },
+    { label: "Referral partners", value: stats.referralPartners, href: "/admin/partners" },
   ];
 
   return (
@@ -42,7 +54,7 @@ export default async function AdminOverviewPage() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {cards.map((c) => (
           <Link key={c.label} href={c.href} className="glass rounded-2xl p-6 transition hover:border-[var(--color-brass)]/50">
             <p className="font-[family-name:var(--font-mono)] text-3xl font-medium text-[var(--color-brass)]">

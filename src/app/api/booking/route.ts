@@ -6,6 +6,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { auth } from "@/auth";
 import { checkBookingAvailability } from "@/lib/booking-availability";
 import { notifyAdminsPush } from "@/lib/push";
+import { createBookingCalendarEvent } from "@/lib/google-calendar";
 
 const bookingSchema = z.object({
   fullName: z.string().trim().min(2).max(100),
@@ -90,6 +91,25 @@ export async function POST(req: NextRequest) {
         termsAcceptedIp: ip,
       },
     });
+
+    // Best-effort — a client's booking must never fail because the
+    // studio's calendar integration is unconfigured or Google is
+    // unreachable, so this is caught and logged, never rethrown.
+    try {
+      const eventId = await createBookingCalendarEvent({
+        fullName,
+        email,
+        serviceInterest,
+        meetingType,
+        scheduledFor: scheduledDate,
+        notes,
+      });
+      if (eventId) {
+        await prisma.booking.update({ where: { id: booking.id }, data: { calendarEventId: eventId } });
+      }
+    } catch (err) {
+      console.error("[booking] calendar event creation failed", err);
+    }
 
     // Push notification to admin devices, "like WhatsApp", even if no one
     // has the site/app open right now.

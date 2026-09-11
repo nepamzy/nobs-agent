@@ -11,7 +11,105 @@ import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToUser } from "@/lib/push";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
 import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
+import { createBookingCalendarEvent } from "@/lib/google-calendar";
 import type { BookingStatus } from "@prisma/client";
+
+// ---------- Manually logging a booking taken outside the site ----------
+// For a client who called, messaged on WhatsApp, or was booked in person —
+// the same Booking row everything else in the app already works from
+// (confirm-with-price, payments, the client's own dashboard if they later
+// sign up), just entered by staff instead of submitted through the public
+// form. No Terms-and-Conditions acceptance is recorded here (there was no
+// online click-through to record) — the studio's own verbal/WhatsApp
+// agreement with the client is what this row documents.
+
+const manualBookingSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter the client's name.").max(100),
+  email: z.string().trim().email("Enter a valid email."),
+  serviceInterest: z.string().trim().min(2, "Select what they're looking to build.").max(150),
+  budgetRange: z.string().trim().min(1, "Select a budget range."),
+  meetingType: z.enum(["video", "phone", "in-person"]),
+  scheduledFor: z.string().refine((v) => !Number.isNaN(Date.parse(v)), {
+    message: "Pick a valid date and time.",
+  }),
+  notes: z.string().trim().max(3000).optional().or(z.literal("")),
+});
+
+export type CreateBookingManuallyResult = { ok: true } | { ok: false; error: string };
+
+export async function createBookingManually(formData: FormData): Promise<CreateBookingManuallyResult> {
+  const session = await auth();
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {
+    return { ok: false, error: "Not authorized." };
+  }
+
+  const parsed = manualBookingSchema.safeParse({
+    fullName: formData.get("fullName"),
+    email: formData.get("email"),
+    serviceInterest: formData.get("serviceInterest"),
+    budgetRange: formData.get("budgetRange"),
+    meetingType: formData.get("meetingType"),
+    scheduledFor: formData.get("scheduledFor"),
+    notes: formData.get("notes"),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const { fullName, email, serviceInterest, budgetRange, meetingType, scheduledFor, notes } = parsed.data;
+  const scheduledDate = new Date(scheduledFor);
+
+  try {
+    // If this email already has an account, link the booking to it (and
+    // their Client record, if any) so it shows up in their own dashboard
+    // too — same as a booking made through the public form while signed
+    // in. A phone-in lead with no account yet just gets userId/clientId
+    // left null, same as any other unlinked booking already supported
+    // elsewhere in this schema.
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingClient = existingUser
+      ? await prisma.client.findUnique({ where: { userId: existingUser.id } })
+      : null;
+
+    const booking = await prisma.booking.create({
+      data: {
+        userId: existingUser?.id,
+        clientId: existingClient?.id,
+        fullName,
+        email,
+        serviceInterest,
+        budgetRange,
+        meetingType,
+        scheduledFor: scheduledDate,
+        notes: notes || null,
+        status: "PENDING",
+      },
+    });
+
+    try {
+      const eventId = await createBookingCalendarEvent({
+        fullName,
+        email,
+        serviceInterest,
+        meetingType,
+        scheduledFor: scheduledDate,
+        notes,
+      });
+      if (eventId) {
+        await prisma.booking.update({ where: { id: booking.id }, data: { calendarEventId: eventId } });
+      }
+    } catch (err) {
+      console.error("[createBookingManually] calendar event creation failed", err);
+    }
+
+    revalidatePath("/admin/bookings");
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (err) {
+    console.error("[createBookingManually] failed", err);
+    return { ok: false, error: "Something went wrong creating the booking. Please try again." };
+  }
+}
 
 export async function deleteBooking(formData: FormData) {
   const session = await auth();

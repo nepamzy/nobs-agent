@@ -303,6 +303,14 @@ model Booking {
   termsAcceptedAt DateTime?
   termsAcceptedIp String?
 
+  // Google Calendar event id for this booking's scheduled consultation
+  // (see src/lib/google-calendar.ts) — stored so a reschedule updates the
+  // SAME event in place and a cancellation removes it, instead of the
+  // calendar accumulating duplicate/stale entries. Null whenever the
+  // integration isn't configured or the create call failed; booking
+  // creation never fails because of this, it's a best-effort side effect.
+  calendarEventId String?
+
   // ---- Deposit / payment (set when admin confirms with an agreed price) ----
   // Amounts are stored in kobo (smallest NGN unit) to match Paystack's API
   // directly, ₦1,000 is stored as 100000. Avoids unit-conversion bugs at

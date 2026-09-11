@@ -25,7 +25,7 @@ async function getPartner(id: string) {
       referrals: {
         include: {
           referredUser: {
-            select: { name: true, email: true, bookings: { select: { amountPaid: true } } },
+            select: { name: true, email: true, bookings: { select: { id: true, amountPaid: true } } },
           },
           commissions: { orderBy: { createdAt: "desc" } },
         },
@@ -66,6 +66,10 @@ export default async function AdminPartnerDetailPage({
   const allCommissions = [...partner.referrals.flatMap((r) => r.commissions), ...partner.overrideCommissions];
   const totalEarned = allCommissions.reduce((sum, c) => sum + c.amount, 0);
   const totalPending = allCommissions.filter((c) => !c.paidOut).reduce((sum, c) => sum + c.amount, 0);
+  // "Booked" means a Booking record exists at all, regardless of status or
+  // payment — distinct from paidReferralCount, which only counts referrals
+  // that have actually paid. A client can book without having paid yet.
+  const bookedCount = partner.referrals.filter((r) => r.referredUser.bookings.length > 0).length;
 
   return (
     <div>
@@ -89,7 +93,16 @@ export default async function AdminPartnerDetailPage({
 
       <ResendAgreementButton partnerId={partner.id} />
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="glass rounded-2xl p-6">
+          <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">Booked referrals</p>
+          <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
+            {bookedCount}
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-slate)]">
+            Has created a booking, whether or not they&apos;ve paid yet
+          </p>
+        </div>
         <div className="glass rounded-2xl p-6">
           <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">Paid referrals</p>
           <p className="mt-2 font-[family-name:var(--font-mono)] text-3xl text-[var(--color-brass)]">
@@ -206,7 +219,9 @@ export default async function AdminPartnerDetailPage({
                     </span>
                   </p>
                   <p className="mt-1 text-xs text-[var(--color-slate)]">
-                    {referral.referredUser.email} · paid {formatNaira(totalPaidByClient)}
+                    {referral.referredUser.email} ·{" "}
+                    {referral.referredUser.bookings.length > 0 ? "booked" : "not booked yet"} · paid{" "}
+                    {formatNaira(totalPaidByClient)}
                     {referral.commissionRatePercent ? ` · ${referral.commissionRatePercent}% rate` : ""}
                   </p>
                   {referral.status === "DISQUALIFIED" && referral.disqualifiedReason && (

@@ -127,6 +127,43 @@ export function buildPartnerOnboardingChecklistHtml({ partnerName }: { partnerNa
   );
 }
 
+// Sent by the bi-weekly cron (src/lib/referral-partner-booking-nudge.ts)
+// only when the partner currently has at least one referral whose
+// referred client hasn't created a booking yet — nudging about someone
+// who already booked (paid or not) would be pointless and confusing.
+export function buildPartnerBookingNudgeHtml({
+  partnerName,
+  unbookedClientNames,
+}: {
+  partnerName: string;
+  unbookedClientNames: string[];
+}) {
+  const clientList =
+    unbookedClientNames.length === 1
+      ? unbookedClientNames[0]
+      : unbookedClientNames.length === 2
+        ? `${unbookedClientNames[0]} and ${unbookedClientNames[1]}`
+        : `${unbookedClientNames.slice(0, -1).join(", ")}, and ${unbookedClientNames[unbookedClientNames.length - 1]}`;
+
+  return shell(
+    "A quick nudge on your referral",
+    `
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Hi ${partnerName}, you referred <strong>${clientList}</strong>, but they haven't booked a
+        consultation yet.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Your commission only lands once a referred client actually books and pays — introducing them
+        was step one, but nothing is earned until that booking happens. A quick follow-up now, just
+        checking in and encouraging them to complete their booking on the site, is often all it takes.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Share your referral link again if it's been a while — check your dashboard for it any time.
+      </p>
+    `
+  );
+}
+
 export function buildPartnerInactivityWarningHtml({ name }: { name: string }) {
   return shell(
     "Your seat — 1 month left",

@@ -11,7 +11,12 @@ async function getPartners() {
       orderBy: { createdAt: "desc" },
       include: {
         user: { select: { name: true, email: true } },
-        referrals: { select: { status: true } },
+        referrals: {
+          select: {
+            status: true,
+            referredUser: { select: { bookings: { select: { id: true }, take: 1 } } },
+          },
+        },
         _count: { select: { referrals: true } },
       },
     });
@@ -35,7 +40,7 @@ export default async function AdminPartnersPage() {
       </h1>
       <p className="mt-2 max-w-lg text-sm text-[var(--color-slate)]">
         Everyone signed up under the referral partner program, and how many of their referrals have
-        actually converted.
+        booked a consultation versus actually converted (paid).
       </p>
 
       <form
@@ -96,6 +101,7 @@ export default async function AdminPartnersPage() {
       <div className="mt-6 space-y-3">
         {partners.map((partner) => {
           const converted = partner.referrals.filter((r) => r.status === "CONVERTED").length;
+          const booked = partner.referrals.filter((r) => r.referredUser.bookings.length > 0).length;
           return (
             <div key={partner.id} className="glass rounded-xl p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -119,7 +125,7 @@ export default async function AdminPartnersPage() {
                   <p className="mt-1 text-xs text-[var(--color-slate)]">
                     {partner.user.email} · code <code>{partner.referralCode}</code> ·{" "}
                     {partner._count.referrals} referral{partner._count.referrals === 1 ? "" : "s"},{" "}
-                    {converted} paid
+                    {booked} booked, {converted} paid
                   </p>
                 </div>
 

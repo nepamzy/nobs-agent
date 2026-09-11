@@ -409,6 +409,17 @@ model ReferralPartner {
   // once for the same month.
   lastActivityCheckedMonth String?
 
+  // ---- Bi-weekly "nudge your client to book" reminder ----
+  // Checked by the daily cron in src/app/api/cron/nudge-unbooked-referrals
+  // (src/lib/referral-partner-booking-nudge.ts). Anchored to each partner's
+  // own signup date rather than a shared calendar date, since partners
+  // don't all sign up at the start of a month. Advances by 14 days on
+  // every check regardless of whether an email actually went out that
+  // cycle (an email only sends if the partner currently has a referral
+  // with no booking yet) — so the cadence stays fixed even in a quiet
+  // cycle, instead of re-checking again the very next day.
+  lastReferralNudgeCheckedAt DateTime?
+
   // Two-tier referral program: a partner can recruit another partner
   // instead of (or as well as) referring clients directly. Only ever one
   // level is looked at for payout purposes (see ReferralCommission's

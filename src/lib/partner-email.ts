@@ -90,6 +90,43 @@ export function buildPartnerWelcomeHtml({
   );
 }
 
+// Sent right after buildPartnerWelcomeHtml (same email, next in the send
+// sequence — see sendPartnerWelcomeEmail) — deliberately generic rather
+// than personalized to a specific referral, since at signup a partner has
+// none yet. The "your client needs to book" point is phrased as the rule
+// (what triggers commission), not a nudge about someone specific.
+export function buildPartnerOnboardingChecklistHtml({ partnerName }: { partnerName: string }) {
+  return shell(
+    "A few things to set up this week",
+    `
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Hi ${partnerName}, a few things worth doing in your first week as a NOBS Agent referral partner:
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        <strong>1. Sign and send back your agreement.</strong> Your Referral Partner Agreement is
+        attached to the welcome email — please sign it and email the signed copy back to
+        nobsagent0@gmail.com within 7 days of registering.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        <strong>2. Remember what actually triggers your commission.</strong> Introducing someone is
+        step one, but your 10% only lands once they actually book and pay — not just when they sign
+        up. Once you refer someone, follow up and encourage them to complete their booking on the
+        site; the sooner they book, the sooner that commission lands.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        <strong>3. Join the Partner WhatsApp Channel.</strong> This is where we share tips on landing
+        and closing clients, post commission and program updates, and answer questions directly:
+        <a href="${getReferralWhatsAppChannelUrl()}" style="color: #a5822f;">${getReferralWhatsAppChannelUrl()}</a>
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        <strong>4. Install the app and turn on notifications.</strong> From your dashboard, tap
+        "Install app" to add NOBS Agent to your home screen like a real app, and turn on
+        "Enable notifications" so you're alerted the moment a referral converts or a commission lands.
+      </p>
+    `
+  );
+}
+
 export function buildPartnerInactivityWarningHtml({ name }: { name: string }) {
   return shell(
     "Your seat — 1 month left",

@@ -85,6 +85,43 @@ export function buildPartnerWelcomeHtml({
   );
 }
 
+export function buildPartnerInactivityWarningHtml({ name }: { name: string }) {
+  return shell(
+    "Your seat — 1 month left",
+    `
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Hi ${name}, you haven't had a paying referral in the last two calendar months.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Referral partner spots are capped, and under the Referral Partner Agreement, going three
+        consecutive months with no paying referral means your seat is given up to the next person
+        on the waitlist. One more month like this and that happens automatically — a single paying
+        referral in the next 30 days resets the count and keeps your seat.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Share your referral link again if it's been a while — check your dashboard for it any time.
+      </p>
+    `
+  );
+}
+
+export function buildPartnerSuspendedForInactivityHtml({ name }: { name: string }) {
+  return shell(
+    "Your referral partner seat has been paused",
+    `
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Hi ${name}, your referral partner account has been suspended after three consecutive
+        calendar months with no paying referral, per the Referral Partner Agreement. Your seat has
+        been offered to the next person on the waitlist.
+      </p>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+        Any commission you already earned is unaffected. Reach out to nobsagent0@gmail.com if
+        you'd like to discuss reinstatement should a spot open up again.
+      </p>
+    `
+  );
+}
+
 export function buildWaitlistJoinedHtml({
   name,
   position,

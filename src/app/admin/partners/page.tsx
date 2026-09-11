@@ -107,6 +107,14 @@ export default async function AdminPartnersPage() {
                         Suspended
                       </span>
                     )}
+                    {!partner.suspended && partner.consecutiveInactiveMonths > 0 && (
+                      <span
+                        className="ml-2 rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] uppercase tracking-wider text-amber-400"
+                        title="No paying referral in this many consecutive calendar months — 3 auto-suspends"
+                      >
+                        {partner.consecutiveInactiveMonths}/3 inactive months
+                      </span>
+                    )}
                   </p>
                   <p className="mt-1 text-xs text-[var(--color-slate)]">
                     {partner.user.email} · code <code>{partner.referralCode}</code> ·{" "}

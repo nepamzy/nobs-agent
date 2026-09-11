@@ -388,6 +388,19 @@ model ReferralPartner {
   suspended         Boolean    @default(false)
   createdAt         DateTime   @default(now())
 
+  // ---- Monthly activity enforcement (Agreement clause 7.5) ----
+  // Checked by the monthly cron in src/app/api/cron/check-partner-activity
+  // (src/lib/referral-partner-activity.ts). Counts consecutive calendar
+  // months with zero converted referrals; a month with at least one resets
+  // it to 0. Reaching 3 auto-suspends the partner (freeing their seat for
+  // the waitlist) — see suspendPartnerAndPromoteNext in
+  // src/lib/referral-partner-suspension.ts.
+  consecutiveInactiveMonths Int      @default(0)
+  // "YYYY-MM" of the last calendar month this partner was evaluated for —
+  // guards against double-processing if the cron ever fires more than
+  // once for the same month.
+  lastActivityCheckedMonth String?
+
   // Two-tier referral program: a partner can recruit another partner
   // instead of (or as well as) referring clients directly. Only ever one
   // level is looked at for payout purposes (see ReferralCommission's

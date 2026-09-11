@@ -8,9 +8,8 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { generateReferralAgreementPdf } from "@/lib/referral-agreement-pdf";
 import { updateReferralProgramSettings } from "@/lib/referral-program-settings";
 import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
-import { promoteNextWaitlistEntry } from "@/lib/referral-partner-waitlist";
 import { lockReferralPartnerCapacity } from "@/lib/referral-partner-lock";
-import { sendPartnerWelcomeEmail } from "@/lib/send-partner-welcome-email";
+import { suspendPartnerAndPromoteNext } from "@/lib/referral-partner-suspension";
 
 async function requireAdmin() {
   const session = await auth();
@@ -30,20 +29,19 @@ export async function togglePartnerSuspended(formData: FormData) {
 
   if (newSuspended) {
     // Dropping a partner frees a seat — flip it, then offer that seat to
-    // whoever's been waiting longest on the waitlist.
-    await prisma.referralPartner.update({ where: { id }, data: { suspended: true } });
+    // whoever's been waiting longest on the waitlist. A manual admin
+    // suspend doesn't email the partner (assumed already communicated
+    // directly); the automated inactivity path does — see
+    // suspendPartnerAndPromoteNext.
+    const partner = await prisma.referralPartner.findUnique({ where: { id }, include: { user: true } });
+    if (!partner) throw new Error("Partner not found.");
 
-    const promoted = await promoteNextWaitlistEntry();
-    if (promoted) {
-      await sendPartnerWelcomeEmail({
-        name: promoted.name,
-        email: promoted.email,
-        phone: promoted.phone,
-        referralCode: promoted.referralCode,
-        createdAt: promoted.createdAt,
-        fromWaitlist: true,
-      }).catch((err) => console.error("[togglePartnerSuspended] promoted-partner welcome email failed", err));
-    }
+    await suspendPartnerAndPromoteNext({
+      partnerId: id,
+      partnerName: partner.user.name,
+      partnerEmail: partner.user.email,
+      reason: "manual",
+    });
   } else {
     // Reactivating — locked so this can't race a concurrent promotion
     // that just took the seat this partner is trying to come back into.

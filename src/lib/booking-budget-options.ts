@@ -7,6 +7,10 @@ import { pricingGroups } from "@/lib/data/pricing-detailed";
 // safe to import from a client component.
 
 export const services = [
+  // Listed first, deliberately — someone who doesn't yet know which
+  // package they need shouldn't have to scroll past every option to find
+  // the one that fits them, in any of the three forms this list feeds.
+  "Not sure yet",
   "School Portals",
   "Hospital Systems",
   "Church Websites",
@@ -24,7 +28,6 @@ export const services = [
   "Website Maintenance",
   "SEO",
   "Branding",
-  "Not sure yet",
 ] as const;
 
 // Shown for "Not sure yet" — the only case where we genuinely don't know

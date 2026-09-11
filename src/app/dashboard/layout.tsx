@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { SignOutButton } from "@/components/sign-out-button";
 import { PushSubscribeButton } from "@/components/push-subscribe-button";
+import { InstallButton } from "@/components/install-button";
 import { DashboardInbox } from "@/components/dashboard-inbox";
 import {
   LayoutDashboard,
@@ -78,6 +79,7 @@ export default async function DashboardLayout({
           ))}
         </nav>
         <div className="mt-4 flex items-center gap-3 border-t border-[var(--color-line)] pt-4 md:mt-8 md:flex-col md:items-start md:gap-2">
+          <InstallButton className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-slate)] transition hover:bg-white/5 hover:text-[var(--color-paper)]" />
           <PushSubscribeButton />
           <SignOutButton />
         </div>

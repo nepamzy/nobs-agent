@@ -5,6 +5,8 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { rateLimit } from "@/lib/rate-limit";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
+import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
+import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
 
 const verifySchema = z.object({
   reference: z.string().min(1),
@@ -89,11 +91,12 @@ export async function POST(req: NextRequest) {
 
     const newTotalPaid = booking.amountPaid + paidAmount;
 
-    await prisma.$transaction([
-      prisma.bookingPayment.create({
+    let commissionEmails: CommissionEmailData[] = [];
+    await prisma.$transaction(async (tx) => {
+      const payment = await tx.bookingPayment.create({
         data: { bookingId: booking.id, amount: paidAmount, provider: "paystack", reference },
-      }),
-      prisma.booking.update({
+      });
+      await tx.booking.update({
         where: { id: booking.id },
         data: {
           amountPaid: newTotalPaid,
@@ -101,8 +104,21 @@ export async function POST(req: NextRequest) {
           depositPaidAt: booking.depositPaidAt ?? new Date(),
           paystackReference: booking.paystackReference ?? reference,
         },
-      }),
-    ]);
+      });
+      commissionEmails = await recordReferralCommissionIfApplicable(tx, {
+        bookingUserId: booking.userId,
+        bookingPaymentId: payment.id,
+        paidAmountKobo: paidAmount,
+      });
+    }, { timeout: 15000 });
+    // Prisma's default interactive-transaction timeout is 5s — this
+    // transaction now does meaningfully more work than when it was first
+    // written (referral lookup, tier locking, commission + notification
+    // rows), and hit that default under real network latency to the
+    // database during testing. A timed-out commit here after Paystack has
+    // already charged the client would be a real, dangerous split: money
+    // taken, nothing recorded. 15s gives real headroom without masking a
+    // genuinely broken query if one ever creeps in.
 
     if (process.env.BREVO_API_KEY) {
       const receiptHtml = buildReceiptHtml({
@@ -145,6 +161,28 @@ export async function POST(req: NextRequest) {
           attachment,
         }),
       ]);
+
+      // A partner-email hiccup shouldn't turn an already-successful payment
+      // into an error response, unlike the client/admin receipt emails
+      // above which are load-bearing enough to let fail loudly. Zero, one,
+      // or two of these — the referral's own partner and, separately,
+      // their recruiter (the override) — whichever have no subaccount to
+      // wait on (see recordReferralCommissionIfApplicable).
+      for (const data of commissionEmails) {
+        const send =
+          data.kind === "base"
+            ? sendBrevoEmail({
+                to: [{ email: data.partnerEmail, name: data.partnerName }],
+                subject: "You earned a referral commission",
+                htmlContent: buildCommissionEarnedHtml(data),
+              })
+            : sendBrevoEmail({
+                to: [{ email: data.partnerEmail, name: data.partnerName }],
+                subject: "You earned an override commission",
+                htmlContent: buildOverrideCommissionEarnedHtml(data),
+              });
+        send.catch((err) => console.error("[paystack/verify] commission email failed", err));
+      }
     }
 
     return NextResponse.json({ ok: true, totalPaid: newTotalPaid, agreedAmount: booking.agreedAmount });

@@ -54,6 +54,7 @@ export default async function DashboardPaymentsPage() {
             depositAmount: number | null;
             depositPercentage: number | null;
             amountPaid: number;
+            status: string;
           }) => {
             const total = b.agreedAmount ?? 0;
             const paid = b.amountPaid;
@@ -82,6 +83,14 @@ export default async function DashboardPaymentsPage() {
                         className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--color-brass)]"
                       >
                         <FileDown size={13} /> Invoice
+                      </a>
+                    )}
+                    {b.status === "CONFIRMED" && (
+                      <a
+                        href={`/api/bookings/${b.id}/agreement`}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--color-brass)]"
+                      >
+                        <FileDown size={13} /> Agreement
                       </a>
                     )}
                     {fullyPaid ? (

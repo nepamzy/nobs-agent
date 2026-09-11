@@ -47,7 +47,7 @@ export function PaymentProviderSelect({
       </div>
 
       {provider === "paystack" ? (
-        <PayButton bookingId={bookingId} email={email} minimumKobo={minimumKobo} remainingKobo={remainingKobo} />
+        <PayButton bookingId={bookingId} minimumKobo={minimumKobo} remainingKobo={remainingKobo} />
       ) : (
         <FlutterwaveButton
           bookingId={bookingId}

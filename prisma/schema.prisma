@@ -17,6 +17,7 @@ enum Role {
   ADMIN
   STAFF
   CLIENT
+  REFERRER
 }
 
 model User {
@@ -42,6 +43,8 @@ model User {
   passwordResetTokens PasswordResetToken[]
   pushSubscriptions PushSubscription[]
   paymentsAuthorized BookingPayment[] @relation("PaymentAuthorizedBy")
+  referralPartner ReferralPartner?
+  referral        Referral?
 }
 
 // Web Push subscription (one row per browser/device the user enabled
@@ -291,6 +294,23 @@ model Booking {
   status        BookingStatus @default(PENDING)
   createdAt     DateTime      @default(now())
 
+  // ---- Terms & Conditions acceptance, captured at submission time ----
+  // Set only by the server (never trust a client-supplied timestamp/IP) the
+  // moment a booking is created — the checkbox on the booking form is
+  // `required`, so a booking can't be submitted without it. Null on
+  // bookings created before this was added; the agreement PDF falls back to
+  // a generic note for those instead of erroring.
+  termsAcceptedAt DateTime?
+  termsAcceptedIp String?
+
+  // Google Calendar event id for this booking's scheduled consultation
+  // (see src/lib/google-calendar.ts) — stored so a reschedule updates the
+  // SAME event in place and a cancellation removes it, instead of the
+  // calendar accumulating duplicate/stale entries. Null whenever the
+  // integration isn't configured or the create call failed; booking
+  // creation never fails because of this, it's a best-effort side effect.
+  calendarEventId String?
+
   // ---- Deposit / payment (set when admin confirms with an agreed price) ----
   // Amounts are stored in kobo (smallest NGN unit) to match Paystack's API
   // directly, ₦1,000 is stored as 100000. Avoids unit-conversion bugs at
@@ -302,6 +322,12 @@ model Booking {
   amountPaid        Int      @default(0) // running total actually received across all installments, in kobo
   paystackReference String?  @unique // kept for the first/deposit payment, for backward compatibility
   depositPaidAt     DateTime?
+  // Set (or re-set) the moment an admin confirms this booking with a price
+  // — i.e. the instant the data the Client Service Agreement is generated
+  // from becomes real. This is what the agreement is dated against, not
+  // `createdAt`, so the document always reflects when the CURRENT price was
+  // actually agreed, not when the booking was first requested.
+  confirmedAt       DateTime?
 
   payments BookingPayment[]
   files    BookingFile[]
@@ -324,6 +350,8 @@ model BookingPayment {
   authorizedBy       User?    @relation("PaymentAuthorizedBy", fields: [authorizedByUserId], references: [id])
   priorGatewayStatus String?  // snapshot, e.g. "PENDING" or "no gateway confirmation"
   note               String?  @db.Text
+
+  referralCommissions ReferralCommission[]
 }
 
 model BookingFile {
@@ -334,6 +362,195 @@ model BookingFile {
   fileName       String
   uploadedByRole Role
   createdAt      DateTime @default(now())
+}
+
+// ---------- Referral partner program ----------
+// A partner (Role = REFERRER) gets a shareable code; a prospective client
+// who signs up through that link becomes a Referral (see middleware.ts for
+// cookie capture and src/app/signup/actions.ts for the link between them).
+// Commission is recorded per BookingPayment, not per Referral, since a
+// client can pay in installments and each installment earns commission
+// separately — see src/lib/referral-tier.ts for the rate math and the
+// three payment-transaction call sites (Paystack/Flutterwave verify,
+// admin manual authorization) for where ReferralCommission rows are created.
+
+model ReferralPartner {
+  id                String     @id @default(cuid())
+  userId            String     @unique
+  user              User       @relation(fields: [userId], references: [id])
+  referralCode      String     @unique
+  // Lifetime count of referrals that have made at least one payment, used
+  // to compute which commission tier the NEXT converting referral lands
+  // in. Never decremented except by the admin "clear test data" reset.
+  paidReferralCount Int        @default(0)
+  bankDetails       String?    @db.Text
+  // Paystack payout automation — set once the partner completes the
+  // "Payout details" flow on their dashboard. bankCode/accountNumber are
+  // what was submitted; accountName is what Paystack resolved it to
+  // (shown back to the partner for confirmation before saving).
+  bankCode                String?
+  accountNumber           String?
+  accountName             String?
+  paystackSubaccountCode  String?    @unique
+  subaccountSetupAt       DateTime?
+  suspended         Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+
+  // ---- Monthly activity enforcement (Agreement clause 7.5) ----
+  // Checked by the monthly cron in src/app/api/cron/check-partner-activity
+  // (src/lib/referral-partner-activity.ts). Counts consecutive calendar
+  // months with zero converted referrals; a month with at least one resets
+  // it to 0. Reaching 3 auto-suspends the partner (freeing their seat for
+  // the waitlist) — see suspendPartnerAndPromoteNext in
+  // src/lib/referral-partner-suspension.ts.
+  consecutiveInactiveMonths Int      @default(0)
+  // "YYYY-MM" of the last calendar month this partner was evaluated for —
+  // guards against double-processing if the cron ever fires more than
+  // once for the same month.
+  lastActivityCheckedMonth String?
+
+  // Two-tier referral program: a partner can recruit another partner
+  // instead of (or as well as) referring clients directly. Only ever one
+  // level is looked at for payout purposes (see ReferralCommission's
+  // recipientPartnerId) — recruitedBy is stored so the admin drill-down UI
+  // can walk the full recruiting tree, and so the recruiter can be found
+  // when a recruit's own referral pays out. Gated behind
+  // ReferralProgramSettings.multiLevelReferralsEnabled — see that model.
+  recruitedByPartnerId String?
+  recruitedBy           ReferralPartner?  @relation("PartnerRecruits", fields: [recruitedByPartnerId], references: [id])
+  recruits               ReferralPartner[] @relation("PartnerRecruits")
+
+  // Cached Paystack Transaction Split code for the (this partner, this
+  // partner's recruiter) pair, created lazily the first time both have
+  // connected payout details. Reused on every subsequent payment instead
+  // of calling Paystack's split-create endpoint again.
+  paystackSplitCode String? @unique
+
+  referrals         Referral[]
+  // Override commissions earned off referrals that belong to partners
+  // THIS partner recruited (see ReferralCommission.recipientPartnerId) —
+  // separate from `referrals`, which is only this partner's own direct
+  // client referrals.
+  overrideCommissions ReferralCommission[]
+
+  @@index([referralCode])
+  @@index([recruitedByPartnerId])
+}
+
+// Single-row admin-editable settings for the referral partner program —
+// see src/lib/referral-program-settings.ts. Always read/written against
+// the fixed id "singleton"; a missing row means "use the defaults", so
+// nothing else needs to seed one.
+model ReferralProgramSettings {
+  id                          String   @id @default("singleton")
+  partnerCapacity             Int      @default(100)
+  // Off at launch: a middleman can only refer clients, not other
+  // middlemen, until the admin explicitly turns this on. See AGENTS.md /
+  // conversation history for why — the two-tier program ships dormant.
+  multiLevelReferralsEnabled  Boolean  @default(false)
+  updatedAt                   DateTime @updatedAt
+  updatedBy                   String?
+}
+
+// Holds everyone who applied while all ReferralPartner slots (capacity in
+// ReferralProgramSettings) were taken. No User/ReferralPartner row exists
+// for them yet — passwordHash is captured up front so promotion later
+// doesn't need to ask them to sign up again. Position in the queue is
+// always computed live (createdAt order among promotedAt: null rows), not
+// stored, so nothing needs renumbering when someone is promoted.
+// Promotion happens in src/lib/referral-partner-waitlist.ts, triggered the
+// moment a seat frees up (see togglePartnerSuspended in
+// src/app/admin/partners/actions.ts) — always inside the advisory-locked
+// transaction from src/lib/referral-partner-lock.ts, the same lock every
+// capacity-changing write goes through, so a seat can never be double-
+// promised under concurrent requests.
+model ReferralPartnerWaitlist {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  phone             String
+  passwordHash      String
+  // Raw ?ref= code captured at the moment they joined the waitlist,
+  // re-resolved to a recruiter at promotion time (not resolved up front)
+  // since the recruiter's standing, or the multi-level toggle itself, may
+  // have changed by the time a seat actually opens up, sometimes months
+  // later.
+  refCode           String?
+  promotedAt        DateTime?
+  promotedPartnerId String?   @unique
+  createdAt         DateTime  @default(now())
+
+  @@index([promotedAt, createdAt])
+}
+
+enum ReferralStatus {
+  PENDING
+  CONVERTED
+  DISQUALIFIED
+}
+
+model Referral {
+  id             String         @id @default(cuid())
+  partnerId      String
+  partner        ReferralPartner @relation(fields: [partnerId], references: [id])
+  referredUserId String         @unique
+  referredUser   User           @relation(fields: [referredUserId], references: [id])
+  status         ReferralStatus @default(PENDING)
+  // Locked in the moment this referral first pays, based on where it fell
+  // in the partner's paidReferralCount sequence at that instant. Later
+  // referrals crossing into bonus territory don't change this.
+  commissionRatePercent       Int?
+  tierPositionAtQualification Int?
+  disqualifiedReason String?   @db.Text
+  createdAt      DateTime      @default(now())
+  convertedAt    DateTime?
+
+  commissions    ReferralCommission[]
+
+  @@index([partnerId])
+}
+
+model ReferralCommission {
+  id               String         @id @default(cuid())
+  referralId       String
+  referral         Referral       @relation(fields: [referralId], references: [id])
+  // Not unique: a bonus-tier (20%) payment creates TWO rows against the
+  // same BookingPayment — one for the base 10% (auto-split via Paystack
+  // when the partner has a subaccount) and one for the extra 10% bonus
+  // portion (always manual, see isBonusPortion). A base-tier payment with
+  // a recruiting partner in the chain creates a THIRD row for the 5%
+  // override (see isOverridePortion) — never during the bonus tier, that
+  // stays a flat 80/20 between NOBS and whoever qualified for it.
+  bookingPaymentId String
+  bookingPayment   BookingPayment @relation(fields: [bookingPaymentId], references: [id])
+  amount           Int            // kobo
+  isBonusPortion   Boolean        @default(false)
+  isOverridePortion Boolean       @default(false)
+  // Who this specific row is owed to. Null means "the referral's own
+  // partner" (referral.partnerId) — true for every row before the
+  // two-tier program existed, and for every base/bonus row since. Only an
+  // override row sets this explicitly, to the recruiter one hop up —
+  // never the referral's own partner, and never further up the chain.
+  recipientPartnerId String?
+  recipientPartner   ReferralPartner? @relation(fields: [recipientPartnerId], references: [id])
+  paidOut          Boolean        @default(false)
+  paidOutAt        DateTime?
+  // Set only when a Paystack subaccount was attached to this payment (an
+  // auto-payout is genuinely in flight) — Paystack settles a split to the
+  // linked bank account 1-2 business days later, never instantly, so the
+  // "you earned a commission" email/notification and the paidOut flip both
+  // wait until this passes (see the cron at
+  // src/app/api/cron/settle-commissions/route.ts). Null means there's no
+  // subaccount at all, so nothing to wait for — that case still fires
+  // immediately, it just says "you'll be paid manually" rather than
+  // implying money already moved.
+  autoSettlesAt    DateTime?
+  createdAt        DateTime       @default(now())
+
+  @@index([referralId])
+  @@index([bookingPaymentId])
+  @@index([recipientPartnerId])
+  @@index([paidOut, autoSettlesAt])
 }
 
 // ---------- Messaging & contact ----------

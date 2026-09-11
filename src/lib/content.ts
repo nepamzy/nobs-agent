@@ -13,12 +13,13 @@ export const siteContent = {
     { label: "Pricing", href: "/pricing" },
     { label: "Blog", href: "/blog" },
     { label: "Contact", href: "/contact" },
+    { label: "Careers", href: "/careers" },
   ],
   hero: {
-    eyebrow: "Full-stack software engineer",
+    eyebrow: "Software & AI Engineering Studio",
     title: "Institutions building their next chapter deserve infrastructure, not templates.",
     subtitle:
-      "I design and build the websites, portals, and systems that schools, hospitals, hotels, dealerships, and growing businesses run on, engineered to the same standard as the platforms you use every day.",
+      "We design and build the websites, portals, systems, and custom AI automation that schools, hospitals, hotels, dealerships, and growing businesses run on, engineered to the same standard as the platforms you use every day.",
     primaryCta: { label: "Start a project", href: "/booking" },
     secondaryCta: { label: "View the work", href: "/portfolio" },
     stats: [
@@ -44,7 +45,7 @@ export const siteContent = {
       { name: "Discover", desc: "Scope, users, and success metrics defined before a line of code is written." },
       { name: "Design", desc: "Interface and system architecture designed together, not in sequence." },
       { name: "Build", desc: "Weekly demos against a live staging environment, you watch it come together." },
-      { name: "Operate", desc: "Launch, handover, and a maintenance plan so the system keeps working after I'm gone." },
+      { name: "Operate", desc: "Launch, handover, and a maintenance plan so the system keeps working long after handover." },
     ],
   },
   cta: {

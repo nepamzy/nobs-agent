@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/settle-commissions",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/check-partner-activity",
+      "schedule": "0 7 1 * *"
+    }
+  ]
+}

@@ -3,9 +3,11 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { createBookingCalendarEvent, deleteBookingCalendarEvent } from "@/lib/google-calendar";
 
 const briefSchema = z.object({
   serviceInterest: z.string().trim().min(1, "Select what you're looking to build."),
@@ -13,6 +15,9 @@ const briefSchema = z.object({
   meetingType: z.string().trim().min(1, "Select a meeting type."),
   scheduledFor: z.string().trim().min(1, "Pick a preferred date and time."),
   notes: z.string().trim().min(20, "A few sentences helps, at least 20 characters."),
+  // Checkbox is `required` in the UI; re-checked here since a server action
+  // can still be invoked directly with a hand-built FormData.
+  termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
 });
 
 export async function submitProjectBrief(formData: FormData) {
@@ -25,30 +30,55 @@ export async function submitProjectBrief(formData: FormData) {
     meetingType: formData.get("meetingType"),
     scheduledFor: formData.get("scheduledFor"),
     notes: formData.get("notes"),
+    termsAccepted: formData.get("termsAccepted"),
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
 
   const { serviceInterest, budgetRange, meetingType, scheduledFor, notes } = parsed.data;
 
   const client = await prisma.client.findUnique({ where: { userId: session.user.id } });
+  const requestHeaders = await headers();
+  const ip = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+
+  const fullName = session.user.name ?? "Client";
+  const email = session.user.email ?? "";
+  const scheduledDate = new Date(scheduledFor);
 
   // Submitted briefs go through the exact same review path as a public
   // booking, one place for the studio to see and confirm new work,
   // rather than a separate, parallel system with its own review UI.
-  await prisma.booking.create({
+  const booking = await prisma.booking.create({
     data: {
       userId: session.user.id,
       clientId: client?.id,
-      fullName: session.user.name ?? "Client",
-      email: session.user.email ?? "",
+      fullName,
+      email,
       serviceInterest,
       budgetRange,
       meetingType,
-      scheduledFor: new Date(scheduledFor),
+      scheduledFor: scheduledDate,
       notes,
       status: "PENDING",
+      termsAcceptedAt: new Date(),
+      termsAcceptedIp: ip,
     },
   });
+
+  try {
+    const eventId = await createBookingCalendarEvent({
+      fullName,
+      email,
+      serviceInterest,
+      meetingType,
+      scheduledFor: scheduledDate,
+      notes,
+    });
+    if (eventId) {
+      await prisma.booking.update({ where: { id: booking.id }, data: { calendarEventId: eventId } });
+    }
+  } catch (err) {
+    console.error("[submitProjectBrief] calendar event creation failed", err);
+  }
 
   if (process.env.BREVO_API_KEY && process.env.STUDIO_NOTIFICATION_EMAIL) {
     await sendBrevoEmail({
@@ -82,6 +112,14 @@ export async function cancelProjectBrief(formData: FormData) {
   }
 
   await prisma.booking.update({ where: { id: bookingId }, data: { status: "CANCELLED" } });
+
+  if (booking.calendarEventId) {
+    try {
+      await deleteBookingCalendarEvent(booking.calendarEventId);
+    } catch (err) {
+      console.error("[cancelProjectBrief] calendar event deletion failed", err);
+    }
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/admin/bookings");

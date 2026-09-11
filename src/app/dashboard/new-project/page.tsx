@@ -5,6 +5,7 @@ import { submitProjectBrief, cancelProjectBrief } from "./actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { BookingFileUpload } from "@/components/booking-file-upload";
 import { toDownloadUrl } from "@/lib/cloudinary-download";
+import { TermsPanel } from "@/components/terms-panel";
 import { CheckCircle2, ArrowUpRight, X } from "lucide-react";
 
 const NEW_STATUSES = ["SUBMITTED", "IN_REVIEW"];
@@ -275,6 +276,24 @@ export default async function ProjectsPage({
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
             />
           </div>
+
+          <TermsPanel />
+
+          <label className="flex items-start gap-2.5 text-xs text-[var(--color-slate)]">
+            <input
+              type="checkbox"
+              name="termsAccepted"
+              required
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-white/5 accent-[var(--color-brass)]"
+            />
+            <span>
+              I agree to the{" "}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[var(--color-brass)] underline underline-offset-4">
+                Terms and Conditions
+              </a>
+              . A booking can&apos;t be submitted without this.
+            </span>
+          </label>
 
           <button
             type="submit"

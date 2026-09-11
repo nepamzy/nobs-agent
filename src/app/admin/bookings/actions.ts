@@ -9,7 +9,107 @@ import { getSiteUrl } from "@/lib/env";
 import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToUser } from "@/lib/push";
+import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
+import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
+import { createBookingCalendarEvent } from "@/lib/google-calendar";
 import type { BookingStatus } from "@prisma/client";
+
+// ---------- Manually logging a booking taken outside the site ----------
+// For a client who called, messaged on WhatsApp, or was booked in person —
+// the same Booking row everything else in the app already works from
+// (confirm-with-price, payments, the client's own dashboard if they later
+// sign up), just entered by staff instead of submitted through the public
+// form. No Terms-and-Conditions acceptance is recorded here (there was no
+// online click-through to record) — the studio's own verbal/WhatsApp
+// agreement with the client is what this row documents.
+
+const manualBookingSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter the client's name.").max(100),
+  email: z.string().trim().email("Enter a valid email."),
+  serviceInterest: z.string().trim().min(2, "Select what they're looking to build.").max(150),
+  budgetRange: z.string().trim().min(1, "Select a budget range."),
+  meetingType: z.enum(["video", "phone", "in-person"]),
+  scheduledFor: z.string().refine((v) => !Number.isNaN(Date.parse(v)), {
+    message: "Pick a valid date and time.",
+  }),
+  notes: z.string().trim().max(3000).optional().or(z.literal("")),
+});
+
+export type CreateBookingManuallyResult = { ok: true } | { ok: false; error: string };
+
+export async function createBookingManually(formData: FormData): Promise<CreateBookingManuallyResult> {
+  const session = await auth();
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {
+    return { ok: false, error: "Not authorized." };
+  }
+
+  const parsed = manualBookingSchema.safeParse({
+    fullName: formData.get("fullName"),
+    email: formData.get("email"),
+    serviceInterest: formData.get("serviceInterest"),
+    budgetRange: formData.get("budgetRange"),
+    meetingType: formData.get("meetingType"),
+    scheduledFor: formData.get("scheduledFor"),
+    notes: formData.get("notes"),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const { fullName, email, serviceInterest, budgetRange, meetingType, scheduledFor, notes } = parsed.data;
+  const scheduledDate = new Date(scheduledFor);
+
+  try {
+    // If this email already has an account, link the booking to it (and
+    // their Client record, if any) so it shows up in their own dashboard
+    // too — same as a booking made through the public form while signed
+    // in. A phone-in lead with no account yet just gets userId/clientId
+    // left null, same as any other unlinked booking already supported
+    // elsewhere in this schema.
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingClient = existingUser
+      ? await prisma.client.findUnique({ where: { userId: existingUser.id } })
+      : null;
+
+    const booking = await prisma.booking.create({
+      data: {
+        userId: existingUser?.id,
+        clientId: existingClient?.id,
+        fullName,
+        email,
+        serviceInterest,
+        budgetRange,
+        meetingType,
+        scheduledFor: scheduledDate,
+        notes: notes || null,
+        status: "PENDING",
+      },
+    });
+
+    try {
+      const eventId = await createBookingCalendarEvent({
+        fullName,
+        email,
+        serviceInterest,
+        meetingType,
+        scheduledFor: scheduledDate,
+        notes,
+      });
+      if (eventId) {
+        await prisma.booking.update({ where: { id: booking.id }, data: { calendarEventId: eventId } });
+      }
+    } catch (err) {
+      console.error("[createBookingManually] calendar event creation failed", err);
+    }
+
+    revalidatePath("/admin/bookings");
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (err) {
+    console.error("[createBookingManually] failed", err);
+    return { ok: false, error: "Something went wrong creating the booking. Please try again." };
+  }
+}
 
 export async function deleteBooking(formData: FormData) {
   const session = await auth();
@@ -83,6 +183,10 @@ export async function confirmBookingWithDeposit(formData: FormData) {
       depositAmount,
       depositPaid: false,
       paystackReference: null,
+      // This action always sets a fresh agreed price, so it's always a
+      // (re-)confirmation of what's currently on the table — the Client
+      // Service Agreement is dated against this, not the original request.
+      confirmedAt: new Date(),
     },
   });
 
@@ -196,8 +300,9 @@ export async function authorizeBookingPayment(formData: FormData) {
   const newTotalPaid = booking.amountPaid + paidAmount;
   const reference = `manual-${crypto.randomUUID()}`;
 
-  await prisma.$transaction([
-    prisma.bookingPayment.create({
+  let commissionEmails: CommissionEmailData[] = [];
+  await prisma.$transaction(async (tx) => {
+    const payment = await tx.bookingPayment.create({
       data: {
         bookingId: booking.id,
         amount: paidAmount,
@@ -207,8 +312,8 @@ export async function authorizeBookingPayment(formData: FormData) {
         priorGatewayStatus: priorStatus,
         note: note || null,
       },
-    }),
-    prisma.booking.update({
+    });
+    await tx.booking.update({
       where: { id: booking.id },
       data: {
         status: "CONFIRMED",
@@ -218,9 +323,20 @@ export async function authorizeBookingPayment(formData: FormData) {
         amountPaid: newTotalPaid,
         depositPaid: true,
         depositPaidAt: booking.depositPaidAt ?? new Date(),
+        // Only set the first time this booking is confirmed here — a
+        // later payment on an already-confirmed booking shouldn't shift
+        // the date the Client Service Agreement is dated against.
+        confirmedAt: booking.confirmedAt ?? new Date(),
       },
-    }),
-  ]);
+    });
+    commissionEmails = await recordReferralCommissionIfApplicable(tx, {
+      bookingUserId: booking.userId,
+      bookingPaymentId: payment.id,
+      paidAmountKobo: paidAmount,
+    });
+  }, { timeout: 15000 });
+  // See the matching comment in src/app/api/paystack/verify/route.ts —
+  // same reasoning, same fix.
 
   // Everything downstream matches the normal Paystack-verified flow
   // exactly: same receipt builder, same emails, same dashboard notification.
@@ -273,6 +389,22 @@ export async function authorizeBookingPayment(formData: FormData) {
         if (r.status === "rejected") console.error("[authorizeBookingPayment] email failed", r.reason);
       });
     });
+
+    for (const data of commissionEmails) {
+      const send =
+        data.kind === "base"
+          ? sendBrevoEmail({
+              to: [{ email: data.partnerEmail, name: data.partnerName }],
+              subject: "You earned a referral commission",
+              htmlContent: buildCommissionEarnedHtml(data),
+            })
+          : sendBrevoEmail({
+              to: [{ email: data.partnerEmail, name: data.partnerName }],
+              subject: "You earned an override commission",
+              htmlContent: buildOverrideCommissionEarnedHtml(data),
+            });
+      send.catch((err) => console.error("[authorizeBookingPayment] commission email failed", err));
+    }
   }
 
   const matchingUser = await prisma.user.findUnique({ where: { email: booking.email } });
@@ -334,6 +466,7 @@ export async function removeBookingPayment(formData: FormData) {
           depositPercentage: null,
           depositAmount: null,
           status: "PENDING",
+          confirmedAt: null,
         },
       }),
     ]);

@@ -201,7 +201,7 @@ export default async function ProjectDetailPage({
             Building something similar?
           </h3>
           <p className="mt-1 text-sm text-[var(--color-slate)]">
-            Tell me the shape of the problem, I&apos;ll tell you what it takes.
+            Tell us the shape of the problem, we&apos;ll tell you what it takes.
           </p>
         </div>
         <Link

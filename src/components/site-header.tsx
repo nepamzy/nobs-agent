@@ -8,6 +8,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { CurrencySwitcher } from "@/components/currency-switcher";
 import { LogoTripleTap } from "@/components/logo-triple-tap";
+import { BackButton } from "@/components/back-button";
+import { SiteSearch } from "@/components/site-search";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { Menu, X, UserRound } from "lucide-react";
 
@@ -18,6 +20,7 @@ const navKeyByHref: Record<string, string> = {
   "/pricing": "nav_pricing",
   "/blog": "nav_blog",
   "/contact": "nav_contact",
+  "/careers": "nav_careers",
 };
 
 export function SiteHeader() {
@@ -27,7 +30,11 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   const dashboardHref =
-    session?.user.role === "ADMIN" || session?.user.role === "STAFF" ? "/admin" : "/dashboard";
+    session?.user.role === "ADMIN" || session?.user.role === "STAFF"
+      ? "/admin"
+      : session?.user.role === "REFERRER"
+        ? "/partner"
+        : "/dashboard";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -42,8 +49,11 @@ export function SiteHeader() {
         scrolled ? "glass" : "bg-transparent border-b border-transparent"
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <LogoTripleTap brand={siteContent.brand} />
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <LogoTripleTap brand={siteContent.brand} />
+        </div>
 
         <nav className="hidden items-center gap-8 md:flex">
           {siteContent.nav.map((item) => (
@@ -62,6 +72,7 @@ export function SiteHeader() {
             <LanguageSwitcher />
             <CurrencySwitcher />
           </div>
+          <SiteSearch />
           <Link
             href={session ? dashboardHref : "/login"}
             aria-label={session ? "Go to your portal" : "Sign in"}

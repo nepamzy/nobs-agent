@@ -6,6 +6,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { auth } from "@/auth";
 import { checkBookingAvailability } from "@/lib/booking-availability";
 import { notifyAdminsPush } from "@/lib/push";
+import { createBookingCalendarEvent } from "@/lib/google-calendar";
 
 const bookingSchema = z.object({
   fullName: z.string().trim().min(2).max(100),
@@ -18,6 +19,10 @@ const bookingSchema = z.object({
   }),
   notes: z.string().trim().max(3000).optional().or(z.literal("")),
   website: z.string().max(0).optional().or(z.literal("")), // honeypot
+  // Checkbox is `required` in the UI, but that only stops the browser form
+  // — enforced again here so hitting this API directly can't skip it, same
+  // reasoning as the auth check below.
+  termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
 });
 
 export async function POST(req: NextRequest) {
@@ -80,8 +85,31 @@ export async function POST(req: NextRequest) {
         scheduledFor: scheduledDate,
         notes: notes || null,
         status: "PENDING",
+        // Set server-side, never from the client — this is what the
+        // eventual Client Service Agreement cites as proof of acceptance.
+        termsAcceptedAt: new Date(),
+        termsAcceptedIp: ip,
       },
     });
+
+    // Best-effort — a client's booking must never fail because the
+    // studio's calendar integration is unconfigured or Google is
+    // unreachable, so this is caught and logged, never rethrown.
+    try {
+      const eventId = await createBookingCalendarEvent({
+        fullName,
+        email,
+        serviceInterest,
+        meetingType,
+        scheduledFor: scheduledDate,
+        notes,
+      });
+      if (eventId) {
+        await prisma.booking.update({ where: { id: booking.id }, data: { calendarEventId: eventId } });
+      }
+    } catch (err) {
+      console.error("[booking] calendar event creation failed", err);
+    }
 
     // Push notification to admin devices, "like WhatsApp", even if no one
     // has the site/app open right now.

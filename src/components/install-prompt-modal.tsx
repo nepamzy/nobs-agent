@@ -38,13 +38,15 @@ export function InstallPromptModal() {
 
       // Give the browser a moment to actually deliver the event before
       // deciding there's nothing to offer, it can arrive slightly after
-      // page load.
+      // page load. Also spaced out from the cookie banner's own dismissal
+      // so it doesn't feel like one overlay was instantly swapped for
+      // another right after the visitor just closed something.
       setTimeout(() => {
         if (deferredPrompt.current) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
           setVisible(true);
         }
-      }, 800);
+      }, 1800);
     }
     window.addEventListener("nobs-consent-changed", handleConsentChanged);
     return () => window.removeEventListener("nobs-consent-changed", handleConsentChanged);

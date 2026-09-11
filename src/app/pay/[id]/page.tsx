@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { PaymentProviderSelect } from "@/components/payment-provider-select";
+import { PaymentReturnHandler } from "@/components/payment-return-handler";
+import { MIN_INSTALLMENT_KOBO } from "@/lib/payment-constants";
 import { CheckCircle2, CreditCard, Landmark, Smartphone } from "lucide-react";
 
 export async function generateMetadata({
@@ -23,17 +25,15 @@ function formatNaira(kobo: number) {
   return `₦${(kobo / 100).toLocaleString("en-NG")}`;
 }
 
-// A subsequent (post-deposit) payment still needs a sane floor so a client
-// can't send a 1-kobo "payment", ₦1,000 or whatever's left, whichever is
-// smaller.
-const MIN_INSTALLMENT_KOBO = 100_000;
-
 export default async function PayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ verify?: string }>;
 }) {
   const { id } = await params;
+  const { verify } = await searchParams;
 
   let booking;
   try {
@@ -54,6 +54,8 @@ export default async function PayPage({
 
   return (
     <div className="mx-auto max-w-lg px-6 py-24">
+      {verify && <PaymentReturnHandler bookingId={booking.id} reference={verify} />}
+
       <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
         Project payment
       </p>

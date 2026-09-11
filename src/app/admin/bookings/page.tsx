@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { updateBookingStatus, confirmBookingWithDeposit } from "./actions";
 import { BookingSearchList } from "@/components/admin/booking-search-list";
+import { AddBookingForm } from "@/components/admin/add-booking-form";
 
 type BookingRow = Awaited<ReturnType<typeof prisma.booking.findMany>>[number];
 
@@ -32,6 +33,8 @@ export default async function AdminBookingsPage() {
           <code className="rounded bg-white/10 px-1.5 py-0.5">DATABASE_URL</code> is live.
         </div>
       )}
+
+      {connected && <AddBookingForm />}
 
       {connected && rows.length === 0 && (
         <p className="mt-8 text-sm text-[var(--color-slate)]">No booking requests yet.</p>

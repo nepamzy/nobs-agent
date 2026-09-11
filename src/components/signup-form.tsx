@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { createClientAccount } from "@/app/signup/actions";
 import { PasswordInput } from "@/components/password-input";
 
-export function SignupForm() {
+export function SignupForm({ referralCode }: { referralCode?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +44,17 @@ export function SignupForm() {
       return;
     }
 
-    router.push("/dashboard");
+    // Land on the booking/consultation form first rather than straight on
+    // the dashboard — it's the natural next step for a brand-new client,
+    // but skippable (see booking/page.tsx's postSignup handling): they can
+    // always fill it in later from the nav instead.
+    router.push("/booking?postSignup=1");
     router.refresh();
   }
 
   return (
     <form onSubmit={handleSubmit} className="glass space-y-5 rounded-2xl p-8">
+      {referralCode && <input type="hidden" name="ref" value={referralCode} />}
       <div>
         <label htmlFor="signup-name" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Full name

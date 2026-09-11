@@ -1,9 +1,11 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { ContactForm } from "@/components/contact-form";
 import { AuthGate } from "@/components/auth-gate";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { PageHeader } from "@/components/page-header";
 
 export function ContactContent() {
   const { t } = useLanguage();
@@ -11,17 +13,13 @@ export function ContactContent() {
   const phone = process.env.NEXT_PUBLIC_CONTACT_PHONE || "Set NEXT_PUBLIC_CONTACT_PHONE in .env";
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-24">
-      <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
-        {t("nav_contact")}
-      </p>
-      <h1 className="max-w-xl font-[family-name:var(--font-display)] text-4xl font-medium tracking-tight sm:text-5xl">
-        {t("contact_title")}
-      </h1>
+    <div>
+      <PageHeader eyebrow={t("nav_contact")} title={t("contact_title")} />
 
+      <div className="mx-auto max-w-5xl px-6 pt-4 pb-24">
       <div className="mt-16 grid gap-12 lg:grid-cols-5">
         <div className="lg:col-span-2">
-          <div className="space-y-6">
+          <div className="glass space-y-6 rounded-2xl p-6">
             <div className="flex items-start gap-3">
               <Mail size={18} className="mt-0.5 text-[var(--color-brass)]" />
               <div>
@@ -96,8 +94,14 @@ export function ContactContent() {
               title: "Build Begins",
               desc: "Work starts once the proposal is agreed, with regular updates.",
             },
-          ].map((s) => (
-            <div key={s.step}>
+          ].map((s, i) => (
+            <motion.div
+              key={s.step}
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.5, delay: i * 0.08 }}
+            >
               <p className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-brass)]">
                 {s.step}
               </p>
@@ -105,9 +109,10 @@ export function ContactContent() {
                 {s.title}
               </h3>
               <p className="mt-1.5 text-sm text-[var(--color-slate)]">{s.desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

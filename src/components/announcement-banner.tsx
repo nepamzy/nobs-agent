@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
+const DISMISSED_KEY = "nobs_announcement_dismissed";
+
 export function AnnouncementBanner() {
   const { t } = useLanguage();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDismissed(localStorage.getItem(DISMISSED_KEY) === "true");
+  }, []);
+
+  function handleDismiss() {
+    localStorage.setItem(DISMISSED_KEY, "true");
+    setDismissed(true);
+  }
 
   if (dismissed) return null;
 
@@ -19,7 +31,7 @@ export function AnnouncementBanner() {
       </Link>
       <button
         type="button"
-        onClick={() => setDismissed(true)}
+        onClick={handleDismiss}
         aria-label="Dismiss"
         className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-[var(--color-ink)]/70 transition hover:text-[var(--color-ink)]"
       >

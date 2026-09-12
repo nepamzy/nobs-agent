@@ -7,10 +7,10 @@ on:
     branches: [main, upgrade-pass]
 
 env:
-  # Dummy values so `prisma generate` and `next build` can run without a
-  # real database or auth secret — the app is written to fall back to
-  # sample data when Prisma can't reach a database (see README), and
   # Auth.js only needs AUTH_SECRET to be present, not valid, to build.
+  # DATABASE_URL points at the postgres service container below — the
+  # build now runs `prisma migrate deploy`, which needs a real reachable
+  # database, not just a well-formed connection string.
   DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
   AUTH_SECRET: "ci-build-secret-not-for-production-use-only"
   NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
@@ -18,6 +18,20 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 

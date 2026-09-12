@@ -10,6 +10,11 @@ const applySchema = z.object({
   jobId: z.string().min(1),
   name: z.string().trim().min(2, "Enter your name.").max(150),
   email: z.string().trim().email("Enter a valid email."),
+  phone: z.string().trim().min(7, "Enter a valid phone number.").max(20),
+  location: z.string().trim().min(2, "Enter your current location.").max(150),
+  portfolioUrl: z.string().trim().url("Enter a valid URL.").max(300).optional().or(z.literal("")),
+  experience: z.string().trim().max(2000).optional().or(z.literal("")),
+  source: z.string().trim().min(1, "Let us know how you heard about this role."),
   coverLetter: z.string().trim().min(20, "A few sentences about why you're a fit helps."),
   resumeUrl: z.string().trim().min(1, "A resume attachment is required.").url("Please attach a resume before submitting."),
   website: z.string().max(0).optional().or(z.literal("")), // honeypot
@@ -23,7 +28,8 @@ export async function submitJobApplication(formData: FormData): Promise<ApplyRes
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { jobId, name, email, coverLetter, resumeUrl } = parsed.data;
+  const { jobId, name, email, phone, location, portfolioUrl, experience, source, coverLetter, resumeUrl } =
+    parsed.data;
 
   const { success: withinLimit } = rateLimit(`job-apply:${email}`, 3, 60 * 60_000);
   if (!withinLimit) {
@@ -41,6 +47,11 @@ export async function submitJobApplication(formData: FormData): Promise<ApplyRes
         jobId,
         name,
         email,
+        phone,
+        location,
+        portfolioUrl: portfolioUrl || null,
+        experience: experience || null,
+        source,
         coverLetter,
         resumeUrl: resumeUrl || null,
       },
@@ -69,7 +80,18 @@ export async function submitJobApplication(formData: FormData): Promise<ApplyRes
         sendBrevoEmail({
           to: [{ email: process.env.STUDIO_NOTIFICATION_EMAIL || "hello@nobsagent.com" }],
           subject: `New application: ${job.title}, from ${name}`,
-          htmlContent: `<p>${name} (${email}) applied for <strong>${job.title}</strong>.</p><p>${coverLetter.replace(/\n/g, "<br>")}</p>${resumeUrl ? `<p><a href="${resumeUrl}">View resume</a></p>` : ""}`,
+          htmlContent: `
+            <p>${name} (${email}) applied for <strong>${job.title}</strong>.</p>
+            <ul>
+              <li><strong>Phone:</strong> ${phone}</li>
+              <li><strong>Location:</strong> ${location}</li>
+              <li><strong>Heard about this role via:</strong> ${source}</li>
+              ${portfolioUrl ? `<li><strong>Portfolio/LinkedIn:</strong> <a href="${portfolioUrl}">${portfolioUrl}</a></li>` : ""}
+            </ul>
+            ${experience ? `<p><strong>Relevant experience:</strong><br>${experience.replace(/\n/g, "<br>")}</p>` : ""}
+            <p><strong>Why them:</strong><br>${coverLetter.replace(/\n/g, "<br>")}</p>
+            ${resumeUrl ? `<p><a href="${resumeUrl}">View resume</a></p>` : ""}
+          `,
         }),
       ]);
     }

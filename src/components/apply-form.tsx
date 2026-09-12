@@ -67,6 +67,91 @@ export function ApplyForm({ jobId }: { jobId: string }) {
         </div>
       </div>
 
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor="apply-phone" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            Phone number
+          </label>
+          <input
+            id="apply-phone"
+            name="phone"
+            type="tel"
+            required
+            minLength={7}
+            maxLength={20}
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+          />
+        </div>
+        <div>
+          <label htmlFor="apply-location" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            Current location
+          </label>
+          <input
+            id="apply-location"
+            name="location"
+            required
+            minLength={2}
+            maxLength={150}
+            placeholder="City, country"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor="apply-source" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            How did you hear about this role?
+          </label>
+          <select
+            id="apply-source"
+            name="source"
+            required
+            defaultValue=""
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+          >
+            <option value="" disabled>
+              Select one
+            </option>
+            <option value="LinkedIn">LinkedIn</option>
+            <option value="Jobberman">Jobberman</option>
+            <option value="HotNigerianJobs">HotNigerianJobs</option>
+            <option value="MyJobMag">MyJobMag</option>
+            <option value="Jobzilla NG">Jobzilla NG</option>
+            <option value="Referral from someone">Referral from someone</option>
+            <option value="Word of mouth">Word of mouth</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label htmlFor="apply-portfolio" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+            LinkedIn or portfolio (optional)
+          </label>
+          <input
+            id="apply-portfolio"
+            name="portfolioUrl"
+            type="url"
+            maxLength={300}
+            placeholder="https://"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="apply-experience" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
+          Relevant experience (optional)
+        </label>
+        <textarea
+          id="apply-experience"
+          name="experience"
+          rows={4}
+          maxLength={2000}
+          placeholder="Roles, projects, or skills relevant to this one"
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+        />
+      </div>
+
       <div>
         <label htmlFor="apply-cover-letter" className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]">
           Why you, for this role

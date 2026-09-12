@@ -43,7 +43,16 @@ export default async function JobApplicationsPage({
         <p className="text-sm text-[var(--color-slate)]">No applications yet.</p>
       ) : (
         <div className="space-y-2">
-          {job.applications.map((app: { id: string; name: string; email: string; status: string; messages: unknown[] }) => (
+          {job.applications.map(
+            (app: {
+              id: string;
+              name: string;
+              email: string;
+              phone: string | null;
+              source: string | null;
+              status: string;
+              messages: unknown[];
+            }) => (
             <Link
               key={app.id}
               href={`/admin/careers/applications/${app.id}`}
@@ -52,7 +61,9 @@ export default async function JobApplicationsPage({
               <div>
                 <p className="font-medium">{app.name}</p>
                 <p className="text-xs text-[var(--color-slate)]">
-                  {app.email} · {app.status}
+                  {app.email}
+                  {app.phone ? ` · ${app.phone}` : ""} · {app.status}
+                  {app.source ? ` · via ${app.source}` : ""}
                 </p>
               </div>
               <div className="flex items-center gap-2">

@@ -459,6 +459,11 @@ model ReferralProgramSettings {
   // middlemen, until the admin explicitly turns this on. See AGENTS.md /
   // conversation history for why — the two-tier program ships dormant.
   multiLevelReferralsEnabled  Boolean  @default(false)
+  // On by default so existing behavior is unchanged until an admin flips
+  // it off. Off blocks only cold/direct signups at /partner/signup — a
+  // valid, non-suspended referral code (?ref=...) always bypasses this,
+  // no matter how old the referring partner's account is.
+  directPartnerSignupEnabled  Boolean  @default(true)
   updatedAt                   DateTime @updatedAt
   updatedBy                   String?
 }
@@ -658,14 +663,22 @@ enum ApplicationStatus {
 }
 
 model JobApplication {
-  id          String            @id @default(cuid())
-  jobId       String
-  job         Job               @relation(fields: [jobId], references: [id])
-  name        String
-  email       String
-  coverLetter String            @db.Text
-  resumeUrl   String?
-  status      ApplicationStatus @default(RECEIVED)
+  id           String            @id @default(cuid())
+  jobId        String
+  job          Job               @relation(fields: [jobId], references: [id])
+  name         String
+  email        String
+  phone        String?
+  location     String?
+  portfolioUrl String?
+  experience   String?           @db.Text
+  // Free-text "how did you hear about this role?" — Jobberman, LinkedIn,
+  // a referral partner's link, etc. Lets us see who's actually arriving
+  // through each job board versus word of mouth.
+  source       String?
+  coverLetter  String            @db.Text
+  resumeUrl    String?
+  status       ApplicationStatus @default(RECEIVED)
   // No account needed to view or continue the conversation, this token is
   // the applicant's private key, emailed to them, same pattern as the
   // payment page's booking id.

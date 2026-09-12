@@ -21,7 +21,8 @@ async function getPartners() {
       },
     });
     return { partners, connected: true };
-  } catch {
+  } catch (err) {
+    console.error("[admin/partners] getPartners failed", err);
     return { partners: [], connected: false };
   }
 }

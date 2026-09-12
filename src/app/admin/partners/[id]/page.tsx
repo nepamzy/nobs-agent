@@ -56,7 +56,8 @@ export default async function AdminPartnerDetailPage({
   let partner;
   try {
     partner = await getPartner(id);
-  } catch {
+  } catch (err) {
+    console.error("[admin/partners/[id]] getPartner failed", err);
     partner = null;
   }
 

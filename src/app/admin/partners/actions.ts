@@ -176,6 +176,7 @@ const settingsSchema = z.object({
   // unchecked box means this key is simply absent — handled at the call
   // site below, not with a default here.
   multiLevelReferralsEnabled: z.literal("on").optional(),
+  directPartnerSignupEnabled: z.literal("on").optional(),
 });
 
 export async function updateReferralProgramSettingsAction(formData: FormData) {
@@ -183,6 +184,7 @@ export async function updateReferralProgramSettingsAction(formData: FormData) {
   const parsed = settingsSchema.safeParse({
     partnerCapacity: formData.get("partnerCapacity"),
     multiLevelReferralsEnabled: formData.get("multiLevelReferralsEnabled") ?? undefined,
+    directPartnerSignupEnabled: formData.get("directPartnerSignupEnabled") ?? undefined,
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid settings.");
 
@@ -190,6 +192,7 @@ export async function updateReferralProgramSettingsAction(formData: FormData) {
     {
       partnerCapacity: parsed.data.partnerCapacity,
       multiLevelReferralsEnabled: parsed.data.multiLevelReferralsEnabled === "on",
+      directPartnerSignupEnabled: parsed.data.directPartnerSignupEnabled === "on",
     },
     session.user.email ?? session.user.id
   );

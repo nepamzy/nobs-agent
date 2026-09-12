@@ -459,6 +459,11 @@ model ReferralProgramSettings {
   // middlemen, until the admin explicitly turns this on. See AGENTS.md /
   // conversation history for why — the two-tier program ships dormant.
   multiLevelReferralsEnabled  Boolean  @default(false)
+  // On by default so existing behavior is unchanged until an admin flips
+  // it off. Off blocks only cold/direct signups at /partner/signup — a
+  // valid, non-suspended referral code (?ref=...) always bypasses this,
+  // no matter how old the referring partner's account is.
+  directPartnerSignupEnabled  Boolean  @default(true)
   updatedAt                   DateTime @updatedAt
   updatedBy                   String?
 }

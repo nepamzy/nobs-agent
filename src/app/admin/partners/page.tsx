@@ -79,6 +79,23 @@ export default async function AdminPartnersPage() {
           </span>
         </label>
 
+        <label className="flex items-center gap-2.5 text-sm">
+          <input
+            type="checkbox"
+            name="directPartnerSignupEnabled"
+            defaultChecked={settings.directPartnerSignupEnabled}
+            className="h-4 w-4 accent-[var(--color-brass)]"
+          />
+          <span>
+            Open direct signup on /partner/signup
+            <span className="block text-xs text-[var(--color-slate)]">
+              Off: the &quot;Middleman&quot; tile on /careers and any visit without a referral link
+              shows a closed message instead of the form. Existing partners&apos; own referral links
+              (?ref=...) keep working either way.
+            </span>
+          </span>
+        </label>
+
         <button
           type="submit"
           className="rounded-full bg-[var(--color-brass)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"

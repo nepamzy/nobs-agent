@@ -5,11 +5,13 @@ const SETTINGS_ID = "singleton";
 export type ReferralProgramSettings = {
   partnerCapacity: number;
   multiLevelReferralsEnabled: boolean;
+  directPartnerSignupEnabled: boolean;
 };
 
 const DEFAULTS: ReferralProgramSettings = {
   partnerCapacity: 100,
   multiLevelReferralsEnabled: false,
+  directPartnerSignupEnabled: true,
 };
 
 // Falls back to DEFAULTS on any read failure (no row yet, DB hiccup) —
@@ -19,7 +21,11 @@ export async function getReferralProgramSettings(): Promise<ReferralProgramSetti
   try {
     const row = await prisma.referralProgramSettings.findUnique({ where: { id: SETTINGS_ID } });
     if (!row) return DEFAULTS;
-    return { partnerCapacity: row.partnerCapacity, multiLevelReferralsEnabled: row.multiLevelReferralsEnabled };
+    return {
+      partnerCapacity: row.partnerCapacity,
+      multiLevelReferralsEnabled: row.multiLevelReferralsEnabled,
+      directPartnerSignupEnabled: row.directPartnerSignupEnabled,
+    };
   } catch {
     return DEFAULTS;
   }

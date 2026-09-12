@@ -64,7 +64,8 @@ async function getPartnerData(userId: string) {
   try {
     const partner = await fetchPartnerData(userId);
     return { partner, connected: true };
-  } catch {
+  } catch (err) {
+    console.error("[partner/dashboard] getPartnerData failed", err);
     return { partner: null, connected: false };
   }
 }

@@ -663,14 +663,22 @@ enum ApplicationStatus {
 }
 
 model JobApplication {
-  id          String            @id @default(cuid())
-  jobId       String
-  job         Job               @relation(fields: [jobId], references: [id])
-  name        String
-  email       String
-  coverLetter String            @db.Text
-  resumeUrl   String?
-  status      ApplicationStatus @default(RECEIVED)
+  id           String            @id @default(cuid())
+  jobId        String
+  job          Job               @relation(fields: [jobId], references: [id])
+  name         String
+  email        String
+  phone        String?
+  location     String?
+  portfolioUrl String?
+  experience   String?           @db.Text
+  // Free-text "how did you hear about this role?" — Jobberman, LinkedIn,
+  // a referral partner's link, etc. Lets us see who's actually arriving
+  // through each job board versus word of mouth.
+  source       String?
+  coverLetter  String            @db.Text
+  resumeUrl    String?
+  status       ApplicationStatus @default(RECEIVED)
   // No account needed to view or continue the conversation, this token is
   // the applicant's private key, emailed to them, same pattern as the
   // payment page's booking id.

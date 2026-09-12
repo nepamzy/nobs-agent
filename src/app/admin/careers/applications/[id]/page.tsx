@@ -48,10 +48,49 @@ export default async function AdminApplicationDetailPage({
           <p className="mt-1 text-sm text-[var(--color-slate)]">
             {application.email} · Applied for {application.job.title}
           </p>
+          <dl className="mt-3 grid max-w-md grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+            {application.phone && (
+              <>
+                <dt className="text-[var(--color-slate)]">Phone</dt>
+                <dd>{application.phone}</dd>
+              </>
+            )}
+            {application.location && (
+              <>
+                <dt className="text-[var(--color-slate)]">Location</dt>
+                <dd>{application.location}</dd>
+              </>
+            )}
+            {application.source && (
+              <>
+                <dt className="text-[var(--color-slate)]">Heard about this via</dt>
+                <dd>{application.source}</dd>
+              </>
+            )}
+            {application.portfolioUrl && (
+              <>
+                <dt className="text-[var(--color-slate)]">Portfolio/LinkedIn</dt>
+                <dd>
+                  <a
+                    href={application.portfolioUrl}
+                    className="text-[var(--color-brass)] underline underline-offset-4"
+                  >
+                    {application.portfolioUrl}
+                  </a>
+                </dd>
+              </>
+            )}
+          </dl>
+          {application.experience && (
+            <div className="mt-3 max-w-md">
+              <p className="text-sm text-[var(--color-slate)]">Relevant experience</p>
+              <p className="mt-1 text-sm whitespace-pre-wrap">{application.experience}</p>
+            </div>
+          )}
           {application.resumeUrl && (
             <a
               href={toDownloadUrl(application.resumeUrl, "resume.pdf")}
-              className="mt-2 inline-flex items-center gap-1.5 text-sm text-[var(--color-brass)] underline underline-offset-4"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm text-[var(--color-brass)] underline underline-offset-4"
             >
               <FileText size={14} /> View resume
             </a>

@@ -11,7 +11,6 @@ import {
   Star,
   CalendarClock,
   ClipboardList,
-  Plus,
 } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -90,12 +89,6 @@ export default async function AdminClientDetailPage({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href={`/admin/clients/${id}/briefs/new`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium transition hover:border-[var(--color-brass)]"
-            >
-              <Plus size={14} /> New brief
-            </Link>
             {client.user && (
               <Link
                 href={`/admin/messages/${client.user.id}`}
@@ -187,10 +180,10 @@ export default async function AdminClientDetailPage({
               <ClipboardList size={16} /> Briefs ({briefs.length})
             </h2>
             <Link
-              href={`/admin/clients/${id}/briefs/new`}
+              href="/admin/scoping-book"
               className="text-xs text-[var(--color-brass)] underline underline-offset-4"
             >
-              New brief
+              Scoping Book
             </Link>
           </div>
           {briefs.length === 0 ? (

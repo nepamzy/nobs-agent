@@ -17,6 +17,7 @@ import {
   BarChart3,
   UserCircle,
   Handshake,
+  ClipboardList,
 } from "lucide-react";
 
 const navItems = [
@@ -26,6 +27,7 @@ const navItems = [
   { label: "Founder Profile", href: "/admin/founder", icon: UserCircle },
   { label: "Blog", href: "/admin/blog", icon: Newspaper },
   { label: "Clients", href: "/admin/clients", icon: Users },
+  { label: "Scoping Book", href: "/admin/scoping-book", icon: ClipboardList },
   { label: "Careers", href: "/admin/careers", icon: Briefcase },
   { label: "Partners", href: "/admin/partners", icon: Handshake },
   { label: "Inbox", href: "/admin/inbox", icon: Mail },

@@ -110,17 +110,17 @@ export function ApplyForm({ jobId }: { jobId: string }) {
             defaultValue=""
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
           >
-            <option value="" disabled>
+            <option value="" disabled className="bg-[var(--color-ink)]">
               Select one
             </option>
-            <option value="LinkedIn">LinkedIn</option>
-            <option value="Jobberman">Jobberman</option>
-            <option value="HotNigerianJobs">HotNigerianJobs</option>
-            <option value="MyJobMag">MyJobMag</option>
-            <option value="Jobzilla NG">Jobzilla NG</option>
-            <option value="Referral from someone">Referral from someone</option>
-            <option value="Word of mouth">Word of mouth</option>
-            <option value="Other">Other</option>
+            <option value="LinkedIn" className="bg-[var(--color-ink)]">LinkedIn</option>
+            <option value="Jobberman" className="bg-[var(--color-ink)]">Jobberman</option>
+            <option value="HotNigerianJobs" className="bg-[var(--color-ink)]">HotNigerianJobs</option>
+            <option value="MyJobMag" className="bg-[var(--color-ink)]">MyJobMag</option>
+            <option value="Jobzilla NG" className="bg-[var(--color-ink)]">Jobzilla NG</option>
+            <option value="Referral from someone" className="bg-[var(--color-ink)]">Referral from someone</option>
+            <option value="Word of mouth" className="bg-[var(--color-ink)]">Word of mouth</option>
+            <option value="Other" className="bg-[var(--color-ink)]">Other</option>
           </select>
         </div>
         <div>

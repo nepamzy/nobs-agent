@@ -21,7 +21,14 @@ type TestimonialRow = Awaited<ReturnType<typeof fetchTestimonials>>[number];
 async function getData() {
   try {
     const [clients, testimonials] = await Promise.all([
-      prisma.client.findMany({ orderBy: { createdAt: "desc" } }),
+      prisma.client.findMany({
+        // Keep entries with no linked account at all (marketing-only rows)
+        // and entries whose account hasn't been deleted — a deleted
+        // account's old Client row stays in the database (for a later
+        // "link past info" reattach) but shouldn't clutter the live list.
+        where: { OR: [{ userId: null }, { user: { deletedAt: null } }] },
+        orderBy: { createdAt: "desc" },
+      }),
       fetchTestimonials(),
     ]);
     return { clients, testimonials, connected: true };

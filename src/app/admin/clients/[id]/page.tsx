@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { deleteUserAccount, linkPastAccount } from "@/app/admin/accounts/actions";
+import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -11,6 +13,8 @@ import {
   Star,
   CalendarClock,
   ClipboardList,
+  Trash2,
+  Link2,
 } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -96,6 +100,19 @@ export default async function AdminClientDetailPage({
               >
                 <MessageSquare size={14} /> Message
               </Link>
+            )}
+            {client.user && !client.user.deletedAt && (
+              <form action={deleteUserAccount}>
+                <input type="hidden" name="userId" value={client.user.id} />
+                <input type="hidden" name="redirectTo" value="/admin/clients" />
+                <ConfirmSubmit
+                  message={`Delete ${client.user.name}'s account? Their email frees up for a new signup immediately. Past bookings and payments stay on file, just unlinked from a live account — you can reattach them later from a new account's "Link previous account" section.`}
+                  title="Delete account"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium transition hover:border-red-500/50 hover:text-red-400"
+                >
+                  <Trash2 size={14} /> Delete account
+                </ConfirmSubmit>
+              </form>
             )}
           </div>
         </div>
@@ -303,6 +320,35 @@ export default async function AdminClientDetailPage({
           )}
         </div>
       </div>
+
+      {client.user && !client.user.deletedAt && (
+        <div className="glass mt-6 rounded-2xl p-6">
+          <h2 className="flex items-center gap-1.5 font-[family-name:var(--font-display)] text-lg font-medium">
+            <Link2 size={16} /> Link a previous account
+          </h2>
+          <p className="mt-1 max-w-lg text-sm text-[var(--color-slate)]">
+            If this person had an account before that was deleted, find it by the phone
+            number or email it used — their past bookings (and their old Client record, if
+            it&apos;s not already spoken for) reattach to this account.
+          </p>
+          <form action={linkPastAccount} className="mt-4 flex flex-wrap gap-2">
+            <input type="hidden" name="newUserId" value={client.user.id} />
+            <input type="hidden" name="redirectTo" value={`/admin/clients/${id}`} />
+            <input
+              name="lookup"
+              placeholder="Old phone number or email"
+              className="min-w-[220px] flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
+            />
+            <ConfirmSubmit
+              message="Reattach that account's past bookings (and Client record, if free) to this one? This can't be undone from here."
+              title="Link"
+              className="rounded-lg bg-[var(--color-brass)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+            >
+              Link
+            </ConfirmSubmit>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

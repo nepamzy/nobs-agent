@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { ArrowUpRight, Briefcase, Handshake, Lock } from "lucide-react";
+import { ArrowUpRight, Briefcase, Handshake } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 type Role = {
@@ -23,16 +23,20 @@ export function CareersContent({ roles }: { roles: Role[] }) {
       <div className="mx-auto max-w-2xl px-6">
         <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">{t("careers_path_title")}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="glass flex flex-col gap-3 rounded-xl p-5 opacity-60">
+          <Link
+            href="/careers/worker"
+            className="glass group flex flex-col gap-3 rounded-xl p-5 transition hover:border-[var(--color-brass)]/50"
+          >
             <div className="flex items-center gap-3">
               <Briefcase size={16} className="shrink-0 text-[var(--color-slate)]" />
               <p className="font-medium">{t("careers_path_worker")}</p>
             </div>
             <p className="text-xs text-[var(--color-slate)]">{t("careers_path_worker_desc")}</p>
-            <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-1 text-[10px] uppercase tracking-wider text-[var(--color-slate)]">
-              <Lock size={10} /> {t("careers_path_unavailable")}
+            <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium transition group-hover:border-[var(--color-brass)]">
+              {t("careers_path_worker_cta")}
+              <ArrowUpRight size={12} />
             </span>
-          </div>
+          </Link>
 
           <Link
             href="/partner/signup"

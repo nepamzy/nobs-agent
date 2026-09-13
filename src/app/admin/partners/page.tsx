@@ -8,6 +8,7 @@ import { Ban, CheckCircle2, ArrowUpRight, Clock } from "lucide-react";
 async function getPartners() {
   try {
     const partners = await prisma.referralPartner.findMany({
+      where: { user: { deletedAt: null } },
       orderBy: { createdAt: "desc" },
       include: {
         user: { select: { name: true, email: true } },

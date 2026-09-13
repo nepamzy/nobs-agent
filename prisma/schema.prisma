@@ -32,6 +32,14 @@ model User {
   emailNotifications Boolean @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  // Set by an admin "delete account" action instead of a real row delete —
+  // email gets swapped out (freeing it for a fresh signup) and the password
+  // invalidated, but the row stays so Bookings, Messages, and referral
+  // commission history already tied to it never break or vanish. The
+  // original email is kept in `originalEmail` so a later "link past info"
+  // action on a new account can find this one again.
+  deletedAt     DateTime?
+  originalEmail String?
 
   client        Client?
   projects      Project[]      @relation("ProjectClient")

@@ -188,6 +188,22 @@ model Client {
   projects     Project[]
   testimonials Testimonial[]
   bookings     Booking[]
+  briefs       ClientBrief[]
+}
+
+model ClientBrief {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  packageKey  String
+  packageName String
+  // Snapshot of the question set answered, [{ group, question, checked, comment }] —
+  // a point-in-time copy, not a live join to src/lib/data/scoping-book.ts, so
+  // editing that file later never rewrites a brief that's already been filled in.
+  answers     Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
 }
 
 model Testimonial {

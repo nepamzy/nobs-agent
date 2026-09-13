@@ -7,7 +7,7 @@ import { removeBookingPayment } from "../actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { BookingFileUpload } from "@/components/booking-file-upload";
 import { toDownloadUrl } from "@/lib/cloudinary-download";
-import { ArrowLeft, Mail, Calendar, Video, DollarSign } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Calendar, Video, DollarSign } from "lucide-react";
 
 function formatNaira(kobo: number) {
   return `₦${(kobo / 100).toLocaleString("en-NG")}`;
@@ -24,7 +24,7 @@ export default async function AdminBookingDetailPage({
   try {
     booking = await prisma.booking.findUnique({
       where: { id },
-      include: { payments: true, files: { orderBy: { createdAt: "desc" } } },
+      include: { payments: true, files: { orderBy: { createdAt: "desc" } }, user: true },
     });
   } catch {
     booking = null;
@@ -50,6 +50,11 @@ export default async function AdminBookingDetailPage({
             <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--color-slate)]">
               <Mail size={12} /> {booking.email}
             </p>
+            {booking.user?.phone && (
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--color-slate)]">
+                <Phone size={12} /> {booking.user.phone}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-slate)]">

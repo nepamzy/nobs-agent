@@ -10,6 +10,8 @@ import {
   CreditCard,
   Star,
   CalendarClock,
+  ClipboardList,
+  Plus,
 } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -31,7 +33,7 @@ async function getClientDetail(id: string) {
   });
   if (!client) return null;
 
-  const [projects, testimonials, bookings, messages] = await Promise.all([
+  const [projects, testimonials, bookings, messages, briefs] = await Promise.all([
     prisma.project.findMany({ where: { clientId: id }, orderBy: { updatedAt: "desc" } }),
     prisma.testimonial.findMany({ where: { clientId: id }, orderBy: { createdAt: "desc" } }),
     client.userId
@@ -44,9 +46,10 @@ async function getClientDetail(id: string) {
           take: 10,
         })
       : Promise.resolve([]),
+    prisma.clientBrief.findMany({ where: { clientId: id }, orderBy: { createdAt: "desc" } }),
   ]);
 
-  return { client, projects, testimonials, bookings, messages };
+  return { client, projects, testimonials, bookings, messages, briefs };
 }
 
 export default async function AdminClientDetailPage({
@@ -64,7 +67,7 @@ export default async function AdminClientDetailPage({
   }
 
   if (!data) notFound();
-  const { client, projects, testimonials, bookings, messages } = data;
+  const { client, projects, testimonials, bookings, messages, briefs } = data;
   const totalPaid = bookings.reduce((sum, b) => sum + b.amountPaid, 0);
 
   return (
@@ -86,14 +89,22 @@ export default async function AdminClientDetailPage({
               {client.organization ?? "No organization on file"} · {client.sector ?? "No sector on file"}
             </p>
           </div>
-          {client.user && (
+          <div className="flex items-center gap-2">
             <Link
-              href={`/admin/messages/${client.user.id}`}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+              href={`/admin/clients/${id}/briefs/new`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium transition hover:border-[var(--color-brass)]"
             >
-              <MessageSquare size={14} /> Message
+              <Plus size={14} /> New brief
             </Link>
-          )}
+            {client.user && (
+              <Link
+                href={`/admin/messages/${client.user.id}`}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
+              >
+                <MessageSquare size={14} /> Message
+              </Link>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-[var(--color-slate)]">
@@ -110,7 +121,7 @@ export default async function AdminClientDetailPage({
           </span>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-4 border-t border-[var(--color-line)] pt-5">
+        <div className="mt-5 grid grid-cols-2 gap-4 border-t border-[var(--color-line)] pt-5 sm:grid-cols-4">
           <div>
             <p className="text-xs text-[var(--color-slate)]">Projects</p>
             <p className="mt-1 font-[family-name:var(--font-mono)] text-xl text-[var(--color-brass)]">
@@ -121,6 +132,12 @@ export default async function AdminClientDetailPage({
             <p className="text-xs text-[var(--color-slate)]">Bookings</p>
             <p className="mt-1 font-[family-name:var(--font-mono)] text-xl text-[var(--color-brass)]">
               {bookings.length}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-[var(--color-slate)]">Briefs</p>
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-xl text-[var(--color-brass)]">
+              {briefs.length}
             </p>
           </div>
           <div>
@@ -159,6 +176,48 @@ export default async function AdminClientDetailPage({
                   </Link>
                 </li>
               ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Briefs */}
+        <div className="glass rounded-2xl p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 font-[family-name:var(--font-display)] text-lg font-medium">
+              <ClipboardList size={16} /> Briefs ({briefs.length})
+            </h2>
+            <Link
+              href={`/admin/clients/${id}/briefs/new`}
+              className="text-xs text-[var(--color-brass)] underline underline-offset-4"
+            >
+              New brief
+            </Link>
+          </div>
+          {briefs.length === 0 ? (
+            <p className="text-sm text-[var(--color-slate)]">No briefs on file yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {briefs.map((b) => {
+                const answers = Array.isArray(b.answers) ? (b.answers as { checked?: boolean }[]) : [];
+                const ticked = answers.filter((a) => a.checked).length;
+                return (
+                  <li key={b.id}>
+                    <Link
+                      href={`/admin/clients/${id}/briefs/${b.id}`}
+                      className="group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm transition hover:bg-white/5"
+                    >
+                      <span className="transition group-hover:text-[var(--color-brass)]">{b.packageName}</span>
+                      <span className="flex items-center gap-1.5 text-xs text-[var(--color-slate)]">
+                        {ticked}/{answers.length} · {new Date(b.createdAt).toLocaleDateString()}
+                        <ArrowUpRight
+                          size={13}
+                          className="text-[var(--color-slate)] transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[var(--color-brass)]"
+                        />
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

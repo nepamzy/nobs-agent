@@ -18,6 +18,7 @@ import {
   UserCircle,
   Handshake,
   ClipboardList,
+  Archive,
 } from "lucide-react";
 
 const navItems = [
@@ -34,6 +35,7 @@ const navItems = [
   { label: "Bookings", href: "/admin/bookings", icon: CalendarClock },
   { label: "Payments", href: "/admin/payments", icon: CreditCard },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { label: "Trash", href: "/admin/trash", icon: Archive },
 ];
 
 async function getUnreadInboxCount() {

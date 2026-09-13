@@ -46,7 +46,7 @@ export function SiteHeader() {
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? "glass" : "bg-transparent border-b border-transparent"
+        scrolled ? "glass-solid" : "bg-transparent border-b border-transparent"
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-4">
@@ -103,7 +103,7 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <nav className="glass flex flex-col gap-1 px-6 pb-6 md:hidden">
+        <nav className="glass-solid flex flex-col gap-1 px-6 pb-6 md:hidden">
           {siteContent.nav.map((item) => (
             <Link
               key={item.href}

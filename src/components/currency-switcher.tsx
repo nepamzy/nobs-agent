@@ -43,7 +43,7 @@ export function CurrencySwitcher() {
       </button>
 
       {open && (
-        <div className="glass absolute right-0 z-20 mt-2 w-72 rounded-xl p-3 shadow-xl">
+        <div className="glass-solid absolute right-0 z-20 mt-2 w-72 rounded-xl p-3 shadow-xl">
           <div className="relative mb-2">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-slate)]" />
             <input

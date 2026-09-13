@@ -28,7 +28,7 @@ export default async function AdminTrashPage() {
       <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">Trash</h1>
       <p className="mt-1 text-sm text-[var(--color-slate)]">
         Deleted client and referral partner accounts. Restoring gives an account back its
-        original email — since the password was invalidated at delete time, they'll need to
+        original email — since the password was invalidated at delete time, they&apos;ll need to
         use &quot;Forgot password&quot; to sign back in.
       </p>
 

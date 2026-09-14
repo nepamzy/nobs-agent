@@ -47,7 +47,7 @@ export function PartnerSignupForm({ recruiterCode }: { recruiterCode?: string })
       return;
     }
 
-    router.push("/partner");
+    router.push("/partner/policy");
     router.refresh();
   }
 

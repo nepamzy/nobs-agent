@@ -432,6 +432,12 @@ model ReferralPartner {
   // guards against double-processing if the cron ever fires more than
   // once for the same month.
   lastActivityCheckedMonth String?
+  // Null until the partner explicitly ticks "I understand and agree" on
+  // /partner/policy, acknowledging the 3-consecutive-inactive-month
+  // suspension rule above. Enforced in src/app/partner/(dashboard)/layout.tsx,
+  // which every dashboard page sits inside — null here means no route into
+  // the dashboard renders anything until this is set.
+  inactivityPolicyAckAt     DateTime?
 
   // ---- Bi-weekly "nudge your client to book" reminder ----
   // Checked by the daily cron in src/app/api/cron/nudge-unbooked-referrals

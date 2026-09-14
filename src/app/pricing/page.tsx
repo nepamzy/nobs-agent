@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { PriceDisplay } from "@/components/price-display";
+import { PricingItemPrice } from "@/components/pricing-item-price";
+import { AiTierPrice } from "@/components/ai-tier-price";
+import { NigeriaDiscountBanner } from "@/components/nigeria-discount-banner";
 import { pricingGroups, type PricingTier } from "@/lib/data/pricing-detailed";
 import { aiAutomationTiers } from "@/lib/data/ai-automation-pricing";
+import { internationalFloorPrices } from "@/lib/data/pricing-international";
 import { Check, ArrowUpRight, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -44,6 +47,8 @@ export default function PricingPage() {
         </div>
       </div>
 
+      <NigeriaDiscountBanner />
+
       <div className="mx-auto max-w-6xl space-y-16 px-6 py-16">
         {pricingGroups.map((group) => (
           <section key={group.id} id={group.id} className="scroll-mt-24">
@@ -68,19 +73,12 @@ export default function PricingPage() {
                     </span>
                   </div>
 
-                  <div className="mt-4 flex items-baseline gap-2">
-                    <span className="font-[family-name:var(--font-mono)] text-sm text-red-500 line-through decoration-2">
-                      <PriceDisplay ngnAmount={item.standardPrice} />
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)]">
-                      <PriceDisplay ngnAmount={item.launchPrice} />
-                    </span>
-                    {item.unit && (
-                      <span className="text-xs text-[var(--color-slate)]">{item.unit}</span>
-                    )}
-                  </div>
+                  <PricingItemPrice
+                    standardPrice={item.standardPrice}
+                    launchPrice={item.launchPrice}
+                    internationalFloor={internationalFloorPrices[item.name]}
+                    unit={item.unit}
+                  />
 
                   <ul className="mt-5 flex-1 space-y-2">
                     {item.bullets.map((b) => (
@@ -132,6 +130,7 @@ export default function PricingPage() {
                   {t.audience}
                 </p>
                 <p className="mt-3 text-sm text-[var(--color-slate)]">{t.summary}</p>
+                <AiTierPrice floorUsd={internationalFloorPrices[t.id]} />
 
                 <ul className="mt-5 flex-1 space-y-2.5">
                   {t.inclusions.map((b) => (

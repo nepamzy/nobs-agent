@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { SignOutButton } from "@/components/sign-out-button";
 import { InstallButton } from "@/components/install-button";
 import { PushSubscribeButton } from "@/components/push-subscribe-button";
@@ -14,6 +15,19 @@ export default async function PartnerLayout({
   const session = await auth();
   if (!session || session.user.role !== "REFERRER") {
     redirect("/login?callbackUrl=/partner");
+  }
+
+  // The real, un-bypassable gate for the 3-consecutive-inactive-month
+  // policy acknowledgment: this layout wraps every page under /partner's
+  // (dashboard) route group, so no dashboard content ever renders for an
+  // account that hasn't ticked the box on /partner/policy yet — fresh
+  // signup, waitlist promotion, a direct URL, an old bookmark, all of it.
+  const partner = await prisma.referralPartner.findUnique({
+    where: { userId: session.user.id },
+    select: { inactivityPolicyAckAt: true },
+  });
+  if (partner && !partner.inactivityPolicyAckAt) {
+    redirect("/partner/policy");
   }
 
   return (

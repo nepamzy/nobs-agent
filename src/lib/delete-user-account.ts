@@ -50,3 +50,52 @@ export async function anonymizeUserAccount(userId: string) {
 
   return { freedEmail: user.email };
 }
+
+// Reverses anonymizeUserAccount: gives the account its original email back,
+// clears the deleted/suspended flags, and unsuspends its ReferralPartner
+// record if it has one. The password hash was overwritten with a random,
+// unusable value at delete time and can't be recovered — a restored account
+// signs back in through "Forgot password" to set a new one.
+export async function restoreUserAccount(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { referralPartner: { select: { id: true } } },
+  });
+  if (!user) throw new Error("Account not found.");
+  if (!user.deletedAt || !user.originalEmail) {
+    throw new Error("This account isn't in the trash.");
+  }
+
+  // Someone may have signed up fresh with the freed email since this
+  // account was deleted — restoring would collide with that live account,
+  // so this has to be caught and handed back to the admin to resolve
+  // manually (e.g. via "Link a previous account" on the new one) rather
+  // than silently failing on the DB's unique constraint.
+  const emailTaken = await prisma.user.findUnique({ where: { email: user.originalEmail } });
+  if (emailTaken) {
+    throw new Error(
+      `Can't restore — ${user.originalEmail} is already in use by another account. Use "Link a previous account" on that account instead.`
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        email: user.originalEmail!,
+        originalEmail: null,
+        deletedAt: null,
+        suspended: false,
+      },
+    });
+
+    if (user.referralPartner) {
+      await tx.referralPartner.update({
+        where: { id: user.referralPartner.id },
+        data: { suspended: false },
+      });
+    }
+  });
+
+  return { restoredEmail: user.originalEmail };
+}

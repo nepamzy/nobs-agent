@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { anonymizeUserAccount } from "@/lib/delete-user-account";
+import { anonymizeUserAccount, restoreUserAccount } from "@/lib/delete-user-account";
 
 async function requireAdmin() {
   const session = await auth();
@@ -29,7 +29,21 @@ export async function deleteUserAccount(formData: FormData) {
 
   revalidatePath("/admin/clients");
   revalidatePath("/admin/partners");
+  revalidatePath("/admin/trash");
   redirect(redirectTo);
+}
+
+export async function restoreUserAccountAction(formData: FormData) {
+  await requireAdmin();
+  const userId = formData.get("userId");
+  if (typeof userId !== "string") throw new Error("Missing account id.");
+
+  await restoreUserAccount(userId);
+
+  revalidatePath("/admin/clients");
+  revalidatePath("/admin/partners");
+  revalidatePath("/admin/trash");
+  redirect("/admin/trash");
 }
 
 // Re-attaches a deleted account's Bookings (and, if it's not already

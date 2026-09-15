@@ -8,6 +8,7 @@ import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
 import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
 import { getExchangeRates, convertAmount } from "@/lib/exchange-rates";
+import { toMinorUnits } from "@/lib/booking-currencies";
 
 const verifySchema = z.object({
   transactionId: z.string().min(1),
@@ -44,7 +45,21 @@ export async function POST(req: NextRequest) {
 
   try {
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-    if (!booking || !booking.agreedAmount || !booking.depositAmount) {
+    if (!booking) {
+      return NextResponse.json({ ok: false, error: "Booking not found." }, { status: 404 });
+    }
+
+    // NGN books off agreedAmount/depositAmount/amountPaid, exactly as
+    // Paystack does. Every other currency books off the international*
+    // equivalents — the REAL price and running total in that currency,
+    // set directly by an admin (see ../../../admin/bookings/actions.ts),
+    // never derived from the Naira figures. See the comment on
+    // Booking.currency in schema.prisma.
+    const isNgn = booking.currency === "NGN";
+    const totalAgreed = isNgn ? booking.agreedAmount : booking.internationalAgreedAmount;
+    const depositFloor = isNgn ? booking.depositAmount : booking.internationalDepositAmount;
+    const alreadyPaid = isNgn ? booking.amountPaid : booking.internationalAmountPaid;
+    if (!totalAgreed || !depositFloor) {
       return NextResponse.json({ ok: false, error: "Booking not found." }, { status: 404 });
     }
 
@@ -71,35 +86,25 @@ export async function POST(req: NextRequest) {
     }
 
     // Only ever trust what Flutterwave itself confirms was charged, in
-    // whatever currency the booking was set up for (see the comment on
-    // Booking.currency in schema.prisma) — never a client-submitted amount
-    // or currency, and never assume it matches what /pay/[id] displayed a
-    // moment earlier.
+    // whatever currency the booking was set up for — never a
+    // client-submitted amount or currency, and never assume it matches
+    // what /pay/[id] displayed a moment earlier.
     if (verifyJson.data.currency !== booking.currency) {
       return NextResponse.json({ ok: false, error: "Unexpected currency." }, { status: 400 });
     }
 
-    // Every amount on Booking stays real NGN kobo regardless of what
-    // currency the client actually paid in — this is what keeps receipts,
-    // the remaining-balance math below, and referral commissions
-    // (src/lib/referral-commission.ts, which assumes paidAmountKobo is
-    // real naira) correct without having to touch any of that code. A
-    // non-NGN payment is converted to its NGN-kobo equivalent right here,
-    // at today's rate, same as /pay/[id] converted the other direction for
-    // display.
-    let paidAmount: number;
-    if (booking.currency === "NGN") {
-      paidAmount = Math.round(verifyJson.data.amount * 100);
-    } else {
-      const { rates } = await getExchangeRates();
-      const ngnMajor = convertAmount(verifyJson.data.amount, booking.currency, "NGN", rates);
-      paidAmount = Math.round(ngnMajor * 100);
-    }
+    // The amount actually credited: real NGN kobo for an NGN booking, or
+    // the booking's own currency's minor units otherwise — this is what
+    // agreedAmount/internationalAgreedAmount are already denominated in,
+    // no FX conversion involved.
+    const paidAmount = isNgn
+      ? Math.round(verifyJson.data.amount * 100)
+      : toMinorUnits(verifyJson.data.amount, booking.currency);
 
-    const remainingBefore = booking.agreedAmount - booking.amountPaid;
-    const isFirstPayment = booking.amountPaid === 0;
+    const remainingBefore = totalAgreed - alreadyPaid;
+    const isFirstPayment = alreadyPaid === 0;
 
-    if (isFirstPayment && paidAmount < booking.depositAmount) {
+    if (isFirstPayment && paidAmount < depositFloor) {
       return NextResponse.json(
         { ok: false, error: "First payment must meet the minimum deposit." },
         { status: 400 }
@@ -112,7 +117,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newTotalPaid = booking.amountPaid + paidAmount;
+    const newTotalPaid = alreadyPaid + paidAmount;
+
+    // Referral commissions are always computed in NGN (partner payouts are
+    // NGN-native) — for a non-NGN booking this converts what was actually
+    // paid into its NGN-kobo equivalent purely for that internal
+    // bookkeeping, never shown to the client and never what they were
+    // charged.
+    let paidAmountKoboForCommission = paidAmount;
+    if (!isNgn) {
+      const { rates } = await getExchangeRates();
+      const ngnMajor = convertAmount(verifyJson.data.amount, booking.currency, "NGN", rates);
+      paidAmountKoboForCommission = Math.round(ngnMajor * 100);
+    }
 
     let commissionEmails: CommissionEmailData[] = [];
     await prisma.$transaction(async (tx) => {
@@ -122,7 +139,7 @@ export async function POST(req: NextRequest) {
       await tx.booking.update({
         where: { id: booking.id },
         data: {
-          amountPaid: newTotalPaid,
+          ...(isNgn ? { amountPaid: newTotalPaid } : { internationalAmountPaid: newTotalPaid }),
           depositPaid: true,
           depositPaidAt: booking.depositPaidAt ?? new Date(),
         },
@@ -130,7 +147,7 @@ export async function POST(req: NextRequest) {
       commissionEmails = await recordReferralCommissionIfApplicable(tx, {
         bookingUserId: booking.userId,
         bookingPaymentId: payment.id,
-        paidAmountKobo: paidAmount,
+        paidAmountKobo: paidAmountKoboForCommission,
       });
     }, { timeout: 15000 });
     // See the matching comment in src/app/api/paystack/verify/route.ts —
@@ -143,8 +160,9 @@ export async function POST(req: NextRequest) {
         reference: transactionId,
         paidThisTransaction: paidAmount,
         totalPaid: newTotalPaid,
-        agreedAmount: booking.agreedAmount,
+        agreedAmount: totalAgreed,
         paidAt: new Date(),
+        currency: booking.currency,
       });
 
       const allPayments = await prisma.bookingPayment.findMany({
@@ -156,9 +174,10 @@ export async function POST(req: NextRequest) {
         fullName: booking.fullName,
         email: booking.email,
         serviceInterest: booking.serviceInterest,
-        agreedAmount: booking.agreedAmount,
+        agreedAmount: totalAgreed,
         amountPaid: newTotalPaid,
         payments: allPayments,
+        currency: booking.currency,
       });
       const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
       const attachment = [{ name: `receipt-${booking.id}.pdf`, content: pdfBase64 }];
@@ -166,7 +185,7 @@ export async function POST(req: NextRequest) {
       await Promise.all([
         sendBrevoEmail({
           to: [{ email: booking.email, name: booking.fullName }],
-          subject: newTotalPaid >= booking.agreedAmount ? "Paid in full, thank you" : "Payment received",
+          subject: newTotalPaid >= totalAgreed ? "Paid in full, thank you" : "Payment received",
           htmlContent: receiptHtml,
           attachment,
         }),
@@ -195,7 +214,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, totalPaid: newTotalPaid, agreedAmount: booking.agreedAmount });
+    return NextResponse.json({ ok: true, totalPaid: newTotalPaid, agreedAmount: totalAgreed });
   } catch (err) {
     console.error("[flutterwave/verify] failed", err);
     return NextResponse.json(

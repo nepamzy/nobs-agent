@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Search, Check, X, CreditCard, CheckCircle2, Trash2, Loader2 } from "lucide-react";
+import { formatMajorAmount, fromMinorUnits } from "@/lib/booking-currencies";
 
 const statusStyles: Record<string, string> = {
   PENDING: "border-[var(--color-brass)]/50 text-[var(--color-brass)]",
@@ -28,18 +29,27 @@ type BookingRow = {
   meetingType: string;
   scheduledFor: Date;
   status: string;
+  currency: string;
   agreedAmount: number | null;
   amountPaid: number;
+  internationalAgreedAmount: number | null;
+  internationalAmountPaid: number;
+  // Package's international floor price, already converted into this row's
+  // own currency (major units) — null when the row is NGN, not PENDING, or
+  // the service has no researched floor. See admin/bookings/page.tsx.
+  internationalFloorHint: number | null;
 };
 
 export function BookingSearchList({
   rows,
   confirmBookingWithDeposit,
+  confirmInternationalBookingWithDeposit,
   updateBookingStatus,
   deleteBooking,
 }: {
   rows: BookingRow[];
   confirmBookingWithDeposit: (formData: FormData) => void;
+  confirmInternationalBookingWithDeposit: (formData: FormData) => void;
   updateBookingStatus: (formData: FormData) => void;
   deleteBooking: (formData: FormData) => Promise<void>;
 }) {
@@ -124,48 +134,101 @@ export function BookingSearchList({
 
             {row.status === "PENDING" && (
               <>
-                <form
-                  action={confirmBookingWithDeposit}
-                  className="mt-4 flex flex-wrap items-end gap-3 border-t border-[var(--color-line)] pt-4"
-                >
-                  <input type="hidden" name="id" value={row.id} />
-                  <div>
-                    <label htmlFor={`booking-${row.id}-agreed-amount`} className="mb-1 block text-[11px] text-[var(--color-slate)]">
-                      Agreed price (₦)
-                    </label>
-                    <input
-                      id={`booking-${row.id}-agreed-amount`}
-                      name="agreedAmountNaira"
-                      type="number"
-                      min={1}
-                      step="0.01"
-                      required
-                      placeholder="1500000"
-                      className={`${inputClass} w-36`}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor={`booking-${row.id}-deposit-percentage`} className="mb-1 block text-[11px] text-[var(--color-slate)]">
-                      Deposit % (min 45)
-                    </label>
-                    <input
-                      id={`booking-${row.id}-deposit-percentage`}
-                      name="depositPercentage"
-                      type="number"
-                      min={45}
-                      max={100}
-                      defaultValue={45}
-                      required
-                      className={`${inputClass} w-24`}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-3 py-2 text-xs font-medium text-[var(--color-ink)] transition hover:opacity-90"
+                {row.currency === "NGN" ? (
+                  <form
+                    action={confirmBookingWithDeposit}
+                    className="mt-4 flex flex-wrap items-end gap-3 border-t border-[var(--color-line)] pt-4"
                   >
-                    <Check size={13} /> Confirm & send payment link
-                  </button>
-                </form>
+                    <input type="hidden" name="id" value={row.id} />
+                    <div>
+                      <label htmlFor={`booking-${row.id}-agreed-amount`} className="mb-1 block text-[11px] text-[var(--color-slate)]">
+                        Agreed price (₦)
+                      </label>
+                      <input
+                        id={`booking-${row.id}-agreed-amount`}
+                        name="agreedAmountNaira"
+                        type="number"
+                        min={1}
+                        step="0.01"
+                        required
+                        placeholder="1500000"
+                        className={`${inputClass} w-36`}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`booking-${row.id}-deposit-percentage`} className="mb-1 block text-[11px] text-[var(--color-slate)]">
+                        Deposit % (min 45)
+                      </label>
+                      <input
+                        id={`booking-${row.id}-deposit-percentage`}
+                        name="depositPercentage"
+                        type="number"
+                        min={45}
+                        max={100}
+                        defaultValue={45}
+                        required
+                        className={`${inputClass} w-24`}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-3 py-2 text-xs font-medium text-[var(--color-ink)] transition hover:opacity-90"
+                    >
+                      <Check size={13} /> Confirm & send payment link
+                    </button>
+                  </form>
+                ) : (
+                  <form
+                    action={confirmInternationalBookingWithDeposit}
+                    className="mt-4 flex flex-wrap items-end gap-3 border-t border-[var(--color-line)] pt-4"
+                  >
+                    <input type="hidden" name="id" value={row.id} />
+                    <div>
+                      <label htmlFor={`booking-${row.id}-agreed-amount`} className="mb-1 block text-[11px] text-[var(--color-slate)]">
+                        Agreed price ({row.currency})
+                        {row.internationalFloorHint !== null && (
+                          <span className="text-[var(--color-brass)]"> — package floor</span>
+                        )}
+                      </label>
+                      <input
+                        id={`booking-${row.id}-agreed-amount`}
+                        name="agreedAmountMajor"
+                        type="number"
+                        min={0.01}
+                        step="0.01"
+                        required
+                        defaultValue={
+                          row.internationalFloorHint !== null
+                            ? Math.round(row.internationalFloorHint * 100) / 100
+                            : undefined
+                        }
+                        placeholder="2000"
+                        className={`${inputClass} w-32`}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`booking-${row.id}-deposit-percentage`} className="mb-1 block text-[11px] text-[var(--color-slate)]">
+                        Deposit % (min 45)
+                      </label>
+                      <input
+                        id={`booking-${row.id}-deposit-percentage`}
+                        name="depositPercentage"
+                        type="number"
+                        min={45}
+                        max={100}
+                        defaultValue={45}
+                        required
+                        className={`${inputClass} w-24`}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-3 py-2 text-xs font-medium text-[var(--color-ink)] transition hover:opacity-90"
+                    >
+                      <Check size={13} /> Confirm & send payment link
+                    </button>
+                  </form>
+                )}
                 <form action={updateBookingStatus} className="mt-2">
                   <input type="hidden" name="id" value={row.id} />
                   <input type="hidden" name="status" value="REJECTED" />
@@ -179,7 +242,7 @@ export function BookingSearchList({
               </>
             )}
 
-            {row.status === "CONFIRMED" && row.agreedAmount && (
+            {row.status === "CONFIRMED" && row.currency === "NGN" && row.agreedAmount && (
               <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-[var(--color-line)] pt-4 text-sm">
                 <span className="text-[var(--color-slate)]">
                   {formatNaira(row.amountPaid)} of {formatNaira(row.agreedAmount)} paid (
@@ -190,6 +253,29 @@ export function BookingSearchList({
                     <CheckCircle2 size={14} /> Paid in full
                   </span>
                 ) : row.amountPaid > 0 ? (
+                  <span className="inline-flex items-center gap-1.5 text-[var(--color-brass)]">
+                    <CreditCard size={14} /> Partially paid
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-[var(--color-brass)]">
+                    <CreditCard size={14} /> Awaiting first payment, payment link sent
+                  </span>
+                )}
+              </div>
+            )}
+
+            {row.status === "CONFIRMED" && row.currency !== "NGN" && row.internationalAgreedAmount && (
+              <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-[var(--color-line)] pt-4 text-sm">
+                <span className="text-[var(--color-slate)]">
+                  {formatMajorAmount(fromMinorUnits(row.internationalAmountPaid, row.currency), row.currency)} of{" "}
+                  {formatMajorAmount(fromMinorUnits(row.internationalAgreedAmount, row.currency), row.currency)} paid
+                  ({Math.round((row.internationalAmountPaid / row.internationalAgreedAmount) * 100)}%)
+                </span>
+                {row.internationalAmountPaid >= row.internationalAgreedAmount ? (
+                  <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                    <CheckCircle2 size={14} /> Paid in full
+                  </span>
+                ) : row.internationalAmountPaid > 0 ? (
                   <span className="inline-flex items-center gap-1.5 text-[var(--color-brass)]">
                     <CreditCard size={14} /> Partially paid
                   </span>

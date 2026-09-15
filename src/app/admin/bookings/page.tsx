@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { updateBookingStatus, confirmBookingWithDeposit, deleteBooking } from "./actions";
+import { updateBookingStatus, confirmBookingWithDeposit, confirmInternationalBookingWithDeposit, deleteBooking } from "./actions";
 import { BookingSearchList } from "@/components/admin/booking-search-list";
 import { AddBookingForm } from "@/components/admin/add-booking-form";
+import { getExchangeRates, convertAmount } from "@/lib/exchange-rates";
+import { internationalFloorPrices } from "@/lib/data/pricing-international";
 
 type BookingRow = Awaited<ReturnType<typeof prisma.booking.findMany>>[number];
 
@@ -16,6 +18,25 @@ async function getBookings() {
 
 export default async function AdminBookingsPage() {
   const { rows, connected } = await getBookings();
+
+  // For a PENDING non-NGN booking, prefill the confirm form with the
+  // package's researched international floor price
+  // (src/lib/data/pricing-international.ts) converted into that specific
+  // booking's currency — the starting point an admin can then override
+  // (bargained up or down). No floor exists for every service (e.g.
+  // recurring items like SEO/Website Maintenance), those just get no
+  // default and the admin enters a number directly, same as today.
+  const needsRates = rows.some((r) => r.status === "PENDING" && r.currency !== "NGN");
+  const rates = needsRates ? (await getExchangeRates()).rates : null;
+
+  const rowsWithHints = rows.map((row) => {
+    if (row.status !== "PENDING" || row.currency === "NGN" || !rates) {
+      return { ...row, internationalFloorHint: null as number | null };
+    }
+    const floorUsd = internationalFloorPrices[row.serviceInterest];
+    if (floorUsd === undefined) return { ...row, internationalFloorHint: null as number | null };
+    return { ...row, internationalFloorHint: convertAmount(floorUsd, "USD", row.currency, rates) };
+  });
 
   return (
     <div>
@@ -41,8 +62,9 @@ export default async function AdminBookingsPage() {
       )}
 
       <BookingSearchList
-        rows={rows}
+        rows={rowsWithHints}
         confirmBookingWithDeposit={confirmBookingWithDeposit}
+        confirmInternationalBookingWithDeposit={confirmInternationalBookingWithDeposit}
         updateBookingStatus={updateBookingStatus}
         deleteBooking={deleteBooking}
       />

@@ -1,5 +1,7 @@
-function formatNaira(kobo: number) {
-  return `₦${(kobo / 100).toLocaleString("en-NG")}`;
+import { formatMajorAmount, fromMinorUnits } from "@/lib/booking-currencies";
+
+function formatMoney(minorAmount: number, currency: string) {
+  return formatMajorAmount(fromMinorUnits(minorAmount, currency), currency);
 }
 
 export function buildReceiptHtml({
@@ -10,6 +12,7 @@ export function buildReceiptHtml({
   totalPaid,
   agreedAmount,
   paidAt,
+  currency = "NGN",
 }: {
   clientName: string;
   serviceInterest: string;
@@ -18,7 +21,9 @@ export function buildReceiptHtml({
   totalPaid: number;
   agreedAmount: number;
   paidAt: Date;
+  currency?: string;
 }) {
+  const formatAmount = (amount: number) => formatMoney(amount, currency);
   const remaining = Math.max(0, agreedAmount - totalPaid);
   const percentPaid = agreedAmount > 0 ? Math.round((totalPaid / agreedAmount) * 100) : 0;
   const fullyPaid = remaining === 0;
@@ -37,14 +42,14 @@ export function buildReceiptHtml({
 
       <div style="margin: 24px 0; padding: 16px 0; border-top: 1px solid #e4b34355; border-bottom: 1px solid #e4b34355;">
         <table style="width: 100%; font-family: Arial, sans-serif; font-size: 14px; border-collapse: collapse;">
-          <tr><td style="padding: 4px 0;">This payment</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">${formatNaira(paidThisTransaction)}</td></tr>
+          <tr><td style="padding: 4px 0;">This payment</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">${formatAmount(paidThisTransaction)}</td></tr>
         </table>
       </div>
 
       <table style="width: 100%; font-family: Arial, sans-serif; font-size: 13px; border-collapse: collapse;">
-        <tr><td style="padding: 4px 0; color: #666;">Total project cost</td><td style="padding: 4px 0; text-align: right;">${formatNaira(agreedAmount)}</td></tr>
-        <tr><td style="padding: 4px 0; color: #666;">Total paid to date</td><td style="padding: 4px 0; text-align: right;">${formatNaira(totalPaid)} (${percentPaid}%)</td></tr>
-        <tr><td style="padding: 4px 0; color: #666;">Remaining balance</td><td style="padding: 4px 0; text-align: right; ${fullyPaid ? "color: #0f6e56; font-weight: bold;" : ""}">${fullyPaid ? "Paid in full" : formatNaira(remaining)}</td></tr>
+        <tr><td style="padding: 4px 0; color: #666;">Total project cost</td><td style="padding: 4px 0; text-align: right;">${formatAmount(agreedAmount)}</td></tr>
+        <tr><td style="padding: 4px 0; color: #666;">Total paid to date</td><td style="padding: 4px 0; text-align: right;">${formatAmount(totalPaid)} (${percentPaid}%)</td></tr>
+        <tr><td style="padding: 4px 0; color: #666;">Remaining balance</td><td style="padding: 4px 0; text-align: right; ${fullyPaid ? "color: #0f6e56; font-weight: bold;" : ""}">${fullyPaid ? "Paid in full" : formatAmount(remaining)}</td></tr>
       </table>
 
       <p style="font-family: Arial, sans-serif; font-size: 11px; color: #999; margin-top: 32px;">

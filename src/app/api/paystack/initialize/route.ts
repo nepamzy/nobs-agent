@@ -54,6 +54,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Booking not found." }, { status: 404 });
     }
 
+    // Paystack only ever settles NGN (the `currency: "NGN"` below is
+    // fixed, not derived from the booking) — a booking set up to pay in
+    // any other currency must go through Flutterwave instead (see
+    // payment-provider-select.tsx, which already never offers this path
+    // for a non-NGN booking). This is a second, server-side backstop in
+    // case that UI gating is ever bypassed.
+    if (booking.currency !== "NGN") {
+      return NextResponse.json(
+        { ok: false, error: "This booking pays in a different currency, use Flutterwave instead." },
+        { status: 400 }
+      );
+    }
+
     const remaining = booking.agreedAmount - booking.amountPaid;
     if (remaining <= 0) {
       return NextResponse.json({ ok: false, error: "This booking is already paid in full." }, { status: 400 });

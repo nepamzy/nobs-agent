@@ -1,32 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { CURRENCIES, type CurrencyCode } from "./currencies-data";
 
-export const CURRENCIES = [
-  { code: "USD", name: "US Dollar", symbol: "$" },
-  { code: "NGN", name: "Nigerian Naira", symbol: "\u20a6" },
-  { code: "EUR", name: "Euro", symbol: "\u20ac" },
-  { code: "GBP", name: "British Pound", symbol: "\u00a3" },
-  { code: "CAD", name: "Canadian Dollar", symbol: "CA$" },
-  { code: "AUD", name: "Australian Dollar", symbol: "AU$" },
-  { code: "JPY", name: "Japanese Yen", symbol: "\u00a5" },
-  { code: "CNY", name: "Chinese Yuan", symbol: "\u00a5" },
-  { code: "INR", name: "Indian Rupee", symbol: "\u20b9" },
-  { code: "ZAR", name: "South African Rand", symbol: "R" },
-  { code: "GHS", name: "Ghanaian Cedi", symbol: "GH\u20b5" },
-  { code: "KES", name: "Kenyan Shilling", symbol: "KSh" },
-  { code: "AED", name: "UAE Dirham", symbol: "AED" },
-  { code: "CHF", name: "Swiss Franc", symbol: "CHF" },
-  { code: "SEK", name: "Swedish Krona", symbol: "kr" },
-  { code: "NOK", name: "Norwegian Krone", symbol: "kr" },
-  { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
-  { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
-  { code: "BRL", name: "Brazilian Real", symbol: "R$" },
-  { code: "MXN", name: "Mexican Peso", symbol: "MX$" },
-  { code: "EGP", name: "Egyptian Pound", symbol: "E\u00a3" },
-] as const;
-
-export type CurrencyCode = (typeof CURRENCIES)[number]["code"];
+// Re-exported for backward compatibility \u2014 every existing caller imports
+// these from this module (e.g. currency-switcher.tsx). The values
+// themselves now live in currencies-data.ts, a plain (non "use client")
+// module, so server code can import them too \u2014 see booking-currencies.ts.
+export { CURRENCIES, type CurrencyCode };
 
 const STORAGE_KEY = "nobs_currency";
 
@@ -57,6 +38,13 @@ type CurrencyContextValue = {
   isNigerian: boolean;
   loading: boolean;
   updatedAt: string | null;
+  // Raw USD-based rate table, exposed so a caller that needs to convert
+  // into a FIXED currency (not the mutable global `currency` state above)
+  // can do so directly — e.g. the booking form previewing amounts in
+  // whichever currency the client is choosing to pay in right now, which
+  // is unrelated to whatever the site-wide currency switcher happens to be
+  // set to. Null until the rates fetch resolves.
+  rates: Record<string, number> | null;
 };
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
@@ -151,7 +139,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   return (
     <CurrencyContext.Provider
-      value={{ currency, setCurrency, convertFromNgn, format, isNigerian, loading, updatedAt }}
+      value={{ currency, setCurrency, convertFromNgn, format, isNigerian, loading, updatedAt, rates }}
     >
       {children}
     </CurrencyContext.Provider>

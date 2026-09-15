@@ -57,6 +57,14 @@ export default async function AdminBookingDetailPage({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {booking.currency !== "NGN" && (
+              <span
+                className="rounded-full border border-[var(--color-brass)]/50 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-brass)]"
+                title="This client will pay via Flutterwave in their own currency, not Naira. The agreed price and deposit below are still set in Naira, as usual."
+              >
+                Pays in {booking.currency}
+              </span>
+            )}
             <span className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-slate)]">
               {booking.status}
             </span>

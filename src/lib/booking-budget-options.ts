@@ -81,3 +81,22 @@ export function budgetOptionsForService(serviceInterest: string): string[] {
     `${formatNaira(tier2)}+`,
   ];
 }
+
+// Same options as above, but the NGN number each one is anchored to,
+// exposed so a caller can show a converted preview (e.g. "≈ $450 – $675")
+// next to the canonical Naira label — the stored `budgetRange` value never
+// changes, this is display-only. Order and length always matches
+// budgetOptionsForService's return for the same serviceInterest.
+export function budgetOptionsAnchorsForService(serviceInterest: string): number[] {
+  if (serviceInterest === "Not sure yet") return [];
+
+  const item = pricingByService[serviceInterest];
+  if (!item) return [];
+
+  if (item.unit) return [item.launchPrice];
+
+  const min = item.launchPrice;
+  const tier1 = roundToNiceNumber(min * 1.5);
+  const tier2 = roundToNiceNumber(min * 2.2);
+  return [min, tier1, tier2];
+}

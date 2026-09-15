@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, CreditCard } from "lucide-react";
+import { formatMajorAmount } from "@/lib/booking-currencies";
 
 declare global {
   interface Window {
@@ -33,26 +34,33 @@ function loadFlutterwaveScript(): Promise<void> {
   });
 }
 
-function formatNaira(kobo: number) {
-  return `₦${(kobo / 100).toLocaleString("en-NG")}`;
-}
-
 export function FlutterwaveButton({
   bookingId,
   email,
   name,
-  minimumKobo,
-  remainingKobo,
+  currency,
+  minimumMajor,
+  remainingMajor,
   onPaid,
 }: {
   bookingId: string;
   email: string;
   name: string;
-  minimumKobo: number;
-  remainingKobo: number;
+  // Booking's fixed payment currency (see prisma Booking.currency) and the
+  // deposit floor / remaining balance already converted into that
+  // currency's MAJOR units (whole dollars/pounds/etc, not kobo/cents) —
+  // computed server-side at /pay/[id] from the real NGN-kobo figures, see
+  // src/lib/exchange-rates.ts. Never NGN here for the currency !== "NGN"
+  // case; NGN bookings keep using Paystack by default (see
+  // payment-provider-select.tsx) and only reach this component if staff or
+  // the client explicitly pick Flutterwave for an NGN booking, still true
+  // to naira in that case.
+  currency: string;
+  minimumMajor: number;
+  remainingMajor: number;
   onPaid?: (totalPaid: number) => void;
 }) {
-  const [amountNaira, setAmountNaira] = useState(Math.round(remainingKobo / 100));
+  const [amountMajor, setAmountMajor] = useState(remainingMajor);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -60,13 +68,15 @@ export function FlutterwaveButton({
   async function handlePay() {
     setError(null);
 
-    const amountKobo = Math.round(amountNaira * 100);
-    if (amountKobo < minimumKobo) {
-      setError(`This payment must be at least ${formatNaira(minimumKobo)}.`);
+    // A tiny epsilon guards against float rounding on converted amounts
+    // (e.g. 44.999999999 from a division chain) incorrectly tripping the
+    // "below minimum" check.
+    if (amountMajor < minimumMajor - 0.01) {
+      setError(`This payment must be at least ${formatMajorAmount(minimumMajor, currency)}.`);
       return;
     }
-    if (amountKobo > remainingKobo) {
-      setError(`This payment can't exceed the remaining balance of ${formatNaira(remainingKobo)}.`);
+    if (amountMajor > remainingMajor + 0.01) {
+      setError(`This payment can't exceed the remaining balance of ${formatMajorAmount(remainingMajor, currency)}.`);
       return;
     }
 
@@ -87,8 +97,8 @@ export function FlutterwaveButton({
       window.FlutterwaveCheckout!({
         public_key: publicKey,
         tx_ref: txRef,
-        amount: amountNaira,
-        currency: "NGN",
+        amount: amountMajor,
+        currency,
         payment_options: "card, banktransfer, ussd",
         customer: { email, name },
         customizations: { title: "NOBS AGENT", description: "Project payment" },
@@ -126,7 +136,7 @@ export function FlutterwaveButton({
     );
   }
 
-  const isFullBalance = minimumKobo === remainingKobo;
+  const isFullBalance = minimumMajor === remainingMajor;
 
   return (
     <div>
@@ -136,15 +146,14 @@ export function FlutterwaveButton({
             Amount to pay now
           </label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-[var(--color-slate)]">₦</span>
             <input
               id="flutterwave-amount"
               type="number"
-              value={amountNaira}
-              onChange={(e) => setAmountNaira(Number(e.target.value))}
-              min={Math.round(minimumKobo / 100)}
-              max={Math.round(remainingKobo / 100)}
-              step="1"
+              value={amountMajor}
+              onChange={(e) => setAmountMajor(Number(e.target.value))}
+              min={minimumMajor}
+              max={remainingMajor}
+              step="0.01"
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--color-brass)]"
             />
           </div>

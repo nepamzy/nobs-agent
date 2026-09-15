@@ -7,6 +7,7 @@ import { buildReceiptHtml } from "@/lib/receipt";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
 import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
+import { getExchangeRates, convertAmount } from "@/lib/exchange-rates";
 
 const verifySchema = z.object({
   transactionId: z.string().min(1),
@@ -69,14 +70,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Flutterwave returns amount in the whole currency unit (naira), not
-    // kobo like Paystack, converting here keeps the rest of the app's
-    // kobo-everywhere convention intact.
-    const paidAmount: number = Math.round(verifyJson.data.amount * 100);
-    const currencyOk = verifyJson.data.currency === "NGN";
-
-    if (!currencyOk) {
+    // Only ever trust what Flutterwave itself confirms was charged, in
+    // whatever currency the booking was set up for (see the comment on
+    // Booking.currency in schema.prisma) — never a client-submitted amount
+    // or currency, and never assume it matches what /pay/[id] displayed a
+    // moment earlier.
+    if (verifyJson.data.currency !== booking.currency) {
       return NextResponse.json({ ok: false, error: "Unexpected currency." }, { status: 400 });
+    }
+
+    // Every amount on Booking stays real NGN kobo regardless of what
+    // currency the client actually paid in — this is what keeps receipts,
+    // the remaining-balance math below, and referral commissions
+    // (src/lib/referral-commission.ts, which assumes paidAmountKobo is
+    // real naira) correct without having to touch any of that code. A
+    // non-NGN payment is converted to its NGN-kobo equivalent right here,
+    // at today's rate, same as /pay/[id] converted the other direction for
+    // display.
+    let paidAmount: number;
+    if (booking.currency === "NGN") {
+      paidAmount = Math.round(verifyJson.data.amount * 100);
+    } else {
+      const { rates } = await getExchangeRates();
+      const ngnMajor = convertAmount(verifyJson.data.amount, booking.currency, "NGN", rates);
+      paidAmount = Math.round(ngnMajor * 100);
     }
 
     const remainingBefore = booking.agreedAmount - booking.amountPaid;

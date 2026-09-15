@@ -318,6 +318,19 @@ model Booking {
   status        BookingStatus @default(PENDING)
   createdAt     DateTime      @default(now())
 
+  // ISO 4217 code the client chose to pay in on the booking form (see
+  // src/lib/booking-currencies.ts for the offered subset — deliberately
+  // narrower than the full display list in currency-context.tsx, limited to
+  // currencies Flutterwave can actually settle). Every amount field below
+  // (agreedAmount, depositAmount, amountPaid, etc.) stays in NGN kobo
+  // regardless of this — the studio's own books, referral commissions, and
+  // invoices never change currency. This field only decides what a NON-NGN
+  // client is shown and charged at /pay/[id]: their real payment is
+  // converted back to an NGN-kobo equivalent at verification time (see
+  // src/app/api/flutterwave/verify/route.ts), so nothing downstream of that
+  // (receipts, commission math, remaining-balance checks) had to change.
+  currency      String        @default("NGN")
+
   // ---- Terms & Conditions acceptance, captured at submission time ----
   // Set only by the server (never trust a client-supplied timestamp/IP) the
   // moment a booking is created — the checkbox on the booking form is
@@ -496,6 +509,21 @@ model ReferralProgramSettings {
   directPartnerSignupEnabled  Boolean  @default(true)
   updatedAt                   DateTime @updatedAt
   updatedBy                   String?
+}
+
+// Single-row settings gating the "Total revenue" figure on
+// /admin/analytics behind a PIN — see src/lib/revenue-pin.ts. Null
+// revenuePinHash means no PIN has been set yet, so the UI prompts to
+// create one instead of asking to unlock. Only ever compared server-side
+// (bcrypt hash, same as User.passwordHash) — the revenue figure itself is
+// also never included in the analytics page's initial render while
+// locked, it's fetched by a server action only after a correct PIN, so
+// this is a real gate, not just a CSS blur someone could inspect around.
+model AdminSettings {
+  id             String   @id @default("singleton")
+  revenuePinHash String?
+  updatedAt      DateTime @updatedAt
+  updatedBy      String?
 }
 
 // Holds everyone who applied while all ReferralPartner slots (capacity in

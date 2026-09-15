@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from "react";
 import { Loader2, CheckCircle2, Paperclip, X } from "lucide-react";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { uploadBookingFile } from "@/app/dashboard/new-project/actions";
 import { TermsPanel } from "@/components/terms-panel";
-import { services, budgetOptionsForService } from "@/lib/booking-budget-options";
+import { services, budgetOptionsForService, budgetOptionsAnchorsForService } from "@/lib/booking-budget-options";
+import { BOOKING_CURRENCIES, type BookingCurrencyCode } from "@/lib/booking-currencies";
+import { useCurrency } from "@/lib/currency-context";
+import { convertAmount } from "@/lib/exchange-rates";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -17,14 +20,37 @@ export function BookingForm() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [serviceInterest, setServiceInterest] = useState("");
   const [budgetRange, setBudgetRange] = useState("");
+  const [payCurrency, setPayCurrency] = useState<BookingCurrencyCode>("USD");
+  const [currencyTouched, setCurrencyTouched] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const pendingDataRef = useRef<Record<string, unknown> | null>(null);
+  const { isNigerian, rates } = useCurrency();
+
+  // Defaults to NGN for a Nigerian visitor (once geo-IP resolves), USD for
+  // everyone else — same default logic as CurrencyContext, but this is the
+  // currency the client will actually PAY in at /pay/[id], not just a
+  // display preference, so it's only set until they've touched the picker
+  // themselves.
+  useEffect(() => {
+    if (!currencyTouched && isNigerian) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPayCurrency("NGN");
+    }
+  }, [isNigerian, currencyTouched]);
 
   // A package's own budget options — anchored at that package's real
   // /pricing minimum, or the single fixed monthly rate for Website
   // Maintenance/SEO. Picking a new package always clears any previously
   // selected amount, since it may no longer be a valid option.
   const budgetOptions = serviceInterest ? budgetOptionsForService(serviceInterest) : [];
+  const budgetAnchors = serviceInterest ? budgetOptionsAnchorsForService(serviceInterest) : [];
+
+  function convertedPreview(ngnAmount: number): string | null {
+    if (payCurrency === "NGN" || !rates) return null;
+    const meta = BOOKING_CURRENCIES.find((c) => c.code === payCurrency);
+    const converted = convertAmount(ngnAmount, "NGN", payCurrency, rates);
+    return `${meta?.symbol ?? payCurrency} ${Math.round(converted).toLocaleString()}`;
+  }
 
   function handleServiceChange(e: ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value;
@@ -217,6 +243,37 @@ export function BookingForm() {
         </select>
       </div>
 
+      <div>
+        <label
+          htmlFor="booking-currency"
+          className="mb-1.5 block text-xs font-medium text-[var(--color-slate)]"
+        >
+          Currency, where are you paying from?
+        </label>
+        <select
+          id="booking-currency"
+          name="currency"
+          required
+          value={payCurrency}
+          onChange={(e) => {
+            setCurrencyTouched(true);
+            setPayCurrency(e.target.value as BookingCurrencyCode);
+          }}
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+        >
+          {BOOKING_CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code} className="bg-[var(--color-ink)]">
+              {c.code} — {c.name}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1.5 text-xs text-[var(--color-slate)]">
+          {payCurrency === "NGN"
+            ? "You'll pay in Naira via Paystack."
+            : "You'll pay in this currency directly, converted amounts below are estimates."}
+        </p>
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label
@@ -237,11 +294,15 @@ export function BookingForm() {
             <option value="" disabled>
               {serviceInterest ? "Select one" : "Pick a package first"}
             </option>
-            {budgetOptions.map((b) => (
-              <option key={b} value={b} className="bg-[var(--color-ink)]">
-                {b}
-              </option>
-            ))}
+            {budgetOptions.map((b, i) => {
+              const preview = convertedPreview(budgetAnchors[i]);
+              return (
+                <option key={b} value={b} className="bg-[var(--color-ink)]">
+                  {b}
+                  {preview ? ` (from ≈ ${preview})` : ""}
+                </option>
+              );
+            })}
           </select>
           {serviceInterest && budgetOptions.length > 1 && (
             <p className="mt-1.5 text-xs text-[var(--color-slate)]">

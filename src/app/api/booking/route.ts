@@ -8,6 +8,7 @@ import { checkBookingAvailability } from "@/lib/booking-availability";
 import { notifyAdminsPush } from "@/lib/push";
 import { createBookingCalendarEvent } from "@/lib/google-calendar";
 import { budgetOptionsForService } from "@/lib/booking-budget-options";
+import { BOOKING_CURRENCY_CODES } from "@/lib/booking-currencies";
 
 const bookingSchema = z
   .object({
@@ -15,6 +16,7 @@ const bookingSchema = z
     email: z.string().trim().email(),
     serviceInterest: z.string().trim().min(2).max(150),
     budgetRange: z.string().trim().min(1).max(50),
+    currency: z.enum(BOOKING_CURRENCY_CODES).default("NGN"),
     meetingType: z.enum(["video", "phone", "in-person"]),
     scheduledFor: z.string().refine((v) => !Number.isNaN(Date.parse(v)), {
       message: "Please choose a valid date and time.",
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { fullName, email, serviceInterest, budgetRange, meetingType, scheduledFor, notes } =
+  const { fullName, email, serviceInterest, budgetRange, currency, meetingType, scheduledFor, notes } =
     parsed.data;
 
   const scheduledDate = new Date(scheduledFor);
@@ -91,6 +93,7 @@ export async function POST(req: NextRequest) {
         email,
         serviceInterest,
         budgetRange,
+        currency,
         meetingType,
         scheduledFor: scheduledDate,
         notes: notes || null,

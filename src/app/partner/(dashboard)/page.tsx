@@ -2,11 +2,9 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl, getReferralWhatsAppChannelUrl } from "@/lib/env";
 import { tierProgress } from "@/lib/referral-tier";
-import { getReferralPartnerCapacity, getReferralPartnerCount } from "@/lib/referral-partner-capacity";
 import { getReferralProgramSettings } from "@/lib/referral-program-settings";
 import { ReferralLinkCopy } from "@/components/referral-link-copy";
 import { PayoutDetailsForm } from "@/components/payout-details-form";
-import { CapacityGauge } from "@/components/capacity-gauge";
 import { CheckCircle2, FileDown, MessageCircle } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
@@ -97,11 +95,7 @@ export default async function PartnerDashboardPage() {
   const referralLink = `${getSiteUrl()}/signup?ref=${partner.referralCode}`;
   const recruitLink = `${getSiteUrl()}/partner/signup?ref=${partner.referralCode}`;
   const progress = tierProgress(partner.paidReferralCount);
-  const [partnerCount, partnerCapacity, programSettings] = await Promise.all([
-    getReferralPartnerCount(),
-    getReferralPartnerCapacity(),
-    getReferralProgramSettings(),
-  ]);
+  const programSettings = await getReferralProgramSettings();
 
   const convertedReferrals = partner.referrals.filter((r) => r.status === "CONVERTED");
   const allCommissions = [...partner.referrals.flatMap((r) => r.commissions), ...partner.overrideCommissions];
@@ -111,14 +105,6 @@ export default async function PartnerDashboardPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <CapacityGauge
-          count={partnerCount}
-          capacity={partnerCapacity}
-          label="Referral partners on the site"
-        />
-      </div>
-
       <div className="glass rounded-2xl p-6">
         <p className="mb-3 text-xs uppercase tracking-wider text-[var(--color-slate)]">
           Your referral link

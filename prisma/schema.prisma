@@ -511,6 +511,21 @@ model ReferralProgramSettings {
   updatedBy                   String?
 }
 
+// Single-row settings gating the "Total revenue" figure on
+// /admin/analytics behind a PIN — see src/lib/revenue-pin.ts. Null
+// revenuePinHash means no PIN has been set yet, so the UI prompts to
+// create one instead of asking to unlock. Only ever compared server-side
+// (bcrypt hash, same as User.passwordHash) — the revenue figure itself is
+// also never included in the analytics page's initial render while
+// locked, it's fetched by a server action only after a correct PIN, so
+// this is a real gate, not just a CSS blur someone could inspect around.
+model AdminSettings {
+  id             String   @id @default("singleton")
+  revenuePinHash String?
+  updatedAt      DateTime @updatedAt
+  updatedBy      String?
+}
+
 // Holds everyone who applied while all ReferralPartner slots (capacity in
 // ReferralProgramSettings) were taken. No User/ReferralPartner row exists
 // for them yet — passwordHash is captured up front so promotion later

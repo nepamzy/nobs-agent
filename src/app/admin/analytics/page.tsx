@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { DailyVisitorHistogram } from "@/components/admin/daily-visitor-histogram";
+import { RevenuePinGate } from "@/components/admin/revenue-pin-gate";
+import { isRevenuePinSet } from "@/lib/revenue-pin";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -95,23 +98,23 @@ async function getDayBreakdown(day: Date) {
   }
 }
 
-async function getRevenueAndDuration() {
+// Deliberately excludes revenue — that figure is only ever computed inside
+// the PIN-gated reveal action (./pin-actions.ts), never as part of this
+// page's normal server-rendered load, so it can't leak through the initial
+// HTML/RSC payload while locked.
+async function getDurationStats() {
   try {
-    const [payments, durationRows] = await Promise.all([
-      prisma.bookingPayment.findMany({ select: { amount: true } }),
-      prisma.pageView.findMany({
-        where: { durationMs: { not: null } },
-        select: { durationMs: true },
-      }),
-    ]);
+    const durationRows = await prisma.pageView.findMany({
+      where: { durationMs: { not: null } },
+      select: { durationMs: true },
+    });
 
-    const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
     const totalDurationMs = durationRows.reduce((sum, r) => sum + (r.durationMs ?? 0), 0);
     const avgDurationMs = durationRows.length > 0 ? totalDurationMs / durationRows.length : 0;
 
-    return { totalRevenue, totalDurationMs, avgDurationMs, sampledVisits: durationRows.length };
+    return { totalDurationMs, avgDurationMs, sampledVisits: durationRows.length };
   } catch {
-    return { totalRevenue: 0, totalDurationMs: 0, avgDurationMs: 0, sampledVisits: 0 };
+    return { totalDurationMs: 0, avgDurationMs: 0, sampledVisits: 0 };
   }
 }
 
@@ -265,10 +268,6 @@ function StatCard({
   );
 }
 
-function formatNaira(kobo: number) {
-  return `₦${(kobo / 100).toLocaleString("en-NG")}`;
-}
-
 function formatDuration(ms: number) {
   const totalSeconds = Math.round(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
@@ -287,12 +286,15 @@ export default async function AdminAnalyticsPage({
   const { day: dayParam } = await searchParams;
   const selectedDay = parseDayParam(dayParam, startOfDay(new Date()));
 
-  const [data, dailyTrend, revenueData, dayBreakdown] = await Promise.all([
+  const [session, data, dailyTrend, revenueData, dayBreakdown, pinIsSet] = await Promise.all([
+    auth(),
     getAnalytics(),
     getDailyTrend(30),
-    getRevenueAndDuration(),
+    getDurationStats(),
     getDayBreakdown(selectedDay),
+    isRevenuePinSet(),
   ]);
+  const canManagePin = session?.user.role === "ADMIN";
 
   const monthGrowth = growthPercent(data.thisMonthUnique, data.lastMonthUnique);
   const yearGrowth = growthPercent(data.thisYearUnique, data.lastYearUnique);
@@ -329,14 +331,7 @@ export default async function AdminAnalyticsPage({
             avg {formatDuration(revenueData.avgDurationMs)} per visit
           </p>
         </div>
-        <div className="glass overflow-hidden rounded-2xl p-6">
-          <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
-            Total revenue
-          </p>
-          <p className="mt-2 break-words font-[family-name:var(--font-mono)] text-2xl text-[var(--color-brass)] sm:text-3xl">
-            {formatNaira(revenueData.totalRevenue)}
-          </p>
-        </div>
+        <RevenuePinGate pinIsSet={pinIsSet} canManagePin={canManagePin} />
         <div className="glass overflow-hidden rounded-2xl p-6">
           <p className="text-xs uppercase tracking-wider text-[var(--color-slate)]">
             All-time unique visitors

@@ -20,9 +20,17 @@ export async function getReferralPartnerCapacity(): Promise<number> {
 // (src/app/partner/policy/page.tsx, enforced before any dashboard page
 // renders): if someone abandons that screen, the account row exists but
 // they were never actually let in, so it shouldn't hold a capacity slot
-// the next person on the waitlist could otherwise fill. Accepts an
-// optional transaction client so a capacity check can be read inside the
-// same locked transaction as the write that depends on it (see
+// the next person on the waitlist could otherwise fill.
+//
+// This only means what it's supposed to because every partner who
+// existed BEFORE that policy screen did (and so never had a real chance
+// to see or tick it) was backfilled to a non-null ack in migration
+// 20260917192710_backfill_legacy_partner_policy_ack — without that, this
+// exclusion wrongly swept up the entire pre-existing partner base too,
+// not just genuinely abandoned new signups.
+//
+// Accepts an optional transaction client so a capacity check can be read
+// inside the same locked transaction as the write that depends on it (see
 // src/lib/referral-partner-lock.ts) — pass `tx`, not the default `prisma`,
 // anywhere the check and the resulting create/update must be atomic.
 export async function getReferralPartnerCount(db: Db = prisma): Promise<number> {

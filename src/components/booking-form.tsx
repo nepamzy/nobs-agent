@@ -5,8 +5,9 @@ import { Loader2, CheckCircle2, Paperclip, X } from "lucide-react";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { uploadBookingFile } from "@/app/dashboard/new-project/actions";
 import { TermsPanel } from "@/components/terms-panel";
-import { services, budgetOptionsForService, budgetOptionsAnchorsForService } from "@/lib/booking-budget-options";
+import { services, budgetOptionsForService } from "@/lib/booking-budget-options";
 import { BOOKING_CURRENCIES, type BookingCurrencyCode } from "@/lib/booking-currencies";
+import { internationalFloorPrices } from "@/lib/data/pricing-international";
 import { useCurrency } from "@/lib/currency-context";
 import { convertAmount } from "@/lib/exchange-rates";
 
@@ -41,16 +42,27 @@ export function BookingForm() {
   // A package's own budget options — anchored at that package's real
   // /pricing minimum, or the single fixed monthly rate for Website
   // Maintenance/SEO. Picking a new package always clears any previously
-  // selected amount, since it may no longer be a valid option.
+  // selected amount, since it may no longer be a valid option. This
+  // dropdown is Naira-only and stays that way deliberately — it's an
+  // indicative range for the admin, not a real price for non-Nigerians
+  // (see the note below instead).
   const budgetOptions = serviceInterest ? budgetOptionsForService(serviceInterest) : [];
-  const budgetAnchors = serviceInterest ? budgetOptionsAnchorsForService(serviceInterest) : [];
 
-  function convertedPreview(ngnAmount: number): string | null {
-    if (payCurrency === "NGN" || !rates) return null;
+  // Outside Nigeria this package isn't a range, it's a flat researched
+  // floor price (src/lib/data/pricing-international.ts) — never a
+  // conversion of the Naira budget above. This is only a preview; the
+  // real, final figure a non-Nigerian client pays is set by an admin when
+  // they confirm the booking (starting from this same floor, but
+  // overridable), see /admin/bookings.
+  function internationalPriceNote(): string | null {
+    if (payCurrency === "NGN" || !serviceInterest || !rates) return null;
+    const floorUsd = internationalFloorPrices[serviceInterest];
+    if (floorUsd === undefined) return null;
     const meta = BOOKING_CURRENCIES.find((c) => c.code === payCurrency);
-    const converted = convertAmount(ngnAmount, "NGN", payCurrency, rates);
+    const converted = convertAmount(floorUsd, "USD", payCurrency, rates);
     return `${meta?.symbol ?? payCurrency} ${Math.round(converted).toLocaleString()}`;
   }
+  const priceNote = internationalPriceNote();
 
   function handleServiceChange(e: ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value;
@@ -270,8 +282,14 @@ export function BookingForm() {
         <p className="mt-1.5 text-xs text-[var(--color-slate)]">
           {payCurrency === "NGN"
             ? "You'll pay in Naira via Paystack."
-            : "You'll pay in this currency directly, converted amounts below are estimates."}
+            : "You'll pay in this currency directly, via Flutterwave."}
         </p>
+        {priceNote && (
+          <p className="mt-1.5 text-xs text-[var(--color-brass)]">
+            Outside Nigeria, {serviceInterest} is a flat {priceNote} — that&apos;s what you&apos;ll be
+            invoiced, we&apos;ll confirm the exact figure after this call.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -294,15 +312,11 @@ export function BookingForm() {
             <option value="" disabled>
               {serviceInterest ? "Select one" : "Pick a package first"}
             </option>
-            {budgetOptions.map((b, i) => {
-              const preview = convertedPreview(budgetAnchors[i]);
-              return (
-                <option key={b} value={b} className="bg-[var(--color-ink)]">
-                  {b}
-                  {preview ? ` (from ≈ ${preview})` : ""}
-                </option>
-              );
-            })}
+            {budgetOptions.map((b) => (
+              <option key={b} value={b} className="bg-[var(--color-ink)]">
+                {b}
+              </option>
+            ))}
           </select>
           {serviceInterest && budgetOptions.length > 1 && (
             <p className="mt-1.5 text-xs text-[var(--color-slate)]">

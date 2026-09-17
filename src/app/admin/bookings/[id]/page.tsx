@@ -7,6 +7,7 @@ import { removeBookingPayment } from "../actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { BookingFileUpload } from "@/components/booking-file-upload";
 import { toDownloadUrl } from "@/lib/cloudinary-download";
+import { formatMajorAmount, fromMinorUnits } from "@/lib/booking-currencies";
 import { ArrowLeft, Mail, Phone, Calendar, Video, DollarSign } from "lucide-react";
 
 function formatNaira(kobo: number) {
@@ -60,7 +61,7 @@ export default async function AdminBookingDetailPage({
             {booking.currency !== "NGN" && (
               <span
                 className="rounded-full border border-[var(--color-brass)]/50 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-brass)]"
-                title="This client will pay via Flutterwave in their own currency, not Naira. The agreed price and deposit below are still set in Naira, as usual."
+                title="This client pays via Flutterwave in their own currency. The agreed price and deposit are set directly in that currency below, not converted from Naira."
               >
                 Pays in {booking.currency}
               </span>
@@ -126,7 +127,7 @@ export default async function AdminBookingDetailPage({
           <BookingFileUpload bookingId={booking.id} />
         </div>
 
-        {booking.agreedAmount && (
+        {booking.currency === "NGN" && booking.agreedAmount && (
           <div className="mt-6 border-t border-[var(--color-line)] pt-6">
             <p className="mb-2 flex items-center gap-1.5 text-xs text-[var(--color-slate)]">
               <DollarSign size={12} /> Payment
@@ -185,7 +186,35 @@ export default async function AdminBookingDetailPage({
           </div>
         )}
 
-        {(booking.status === "PENDING" || booking.status === "CONFIRMED") && (
+        {booking.currency !== "NGN" && booking.internationalAgreedAmount && (
+          <div className="mt-6 border-t border-[var(--color-line)] pt-6">
+            <p className="mb-2 flex items-center gap-1.5 text-xs text-[var(--color-slate)]">
+              <DollarSign size={12} /> Payment
+            </p>
+            <p className="text-sm">
+              {formatMajorAmount(fromMinorUnits(booking.internationalAmountPaid, booking.currency), booking.currency)}{" "}
+              of {formatMajorAmount(fromMinorUnits(booking.internationalAgreedAmount, booking.currency), booking.currency)} paid
+            </p>
+            {booking.payments.length > 0 && (
+              <ul className="mt-3 space-y-1.5">
+                {booking.payments.map(
+                  (p: { id: string; createdAt: Date; provider: string; amount: number; note: string | null }) => (
+                    <li key={p.id} className="text-xs text-[var(--color-slate)]">
+                      {new Date(p.createdAt).toLocaleDateString()}, {p.provider},{" "}
+                      {formatMajorAmount(fromMinorUnits(p.amount, booking.currency), booking.currency)}
+                      {p.note && <span className="block italic">&ldquo;{p.note}&rdquo;</span>}
+                    </li>
+                  )
+                )}
+              </ul>
+            )}
+            <p className="mt-3 text-xs text-[var(--color-slate)]">
+              Resetting or removing a payment isn&apos;t available yet for non-Naira bookings.
+            </p>
+          </div>
+        )}
+
+        {booking.currency === "NGN" && (booking.status === "PENDING" || booking.status === "CONFIRMED") && (
           <AuthorizePaymentForm
             bookingId={booking.id}
             hasAgreedAmount={!!booking.agreedAmount}
@@ -193,6 +222,13 @@ export default async function AdminBookingDetailPage({
             agreedAmount={booking.agreedAmount}
             amountPaid={booking.amountPaid}
           />
+        )}
+        {booking.currency !== "NGN" && (booking.status === "PENDING" || booking.status === "CONFIRMED") && (
+          <p className="mt-6 border-t border-[var(--color-line)] pt-6 text-xs text-[var(--color-slate)]">
+            Manually authorizing a payment (for one received outside Flutterwave) isn&apos;t available yet
+            for non-Naira bookings — confirm the price from the Bookings list, then let the client pay
+            through the link.
+          </p>
         )}
 
         <p className="mt-6 text-xs text-[var(--color-slate)]">

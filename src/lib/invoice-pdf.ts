@@ -1,8 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-
-function formatNaira(kobo: number) {
-  return `NGN ${(kobo / 100).toLocaleString("en-NG")}`;
-}
+import { formatMajorAmount, fromMinorUnits } from "@/lib/booking-currencies";
 
 type InvoiceBooking = {
   id: string;
@@ -12,9 +9,12 @@ type InvoiceBooking = {
   agreedAmount: number;
   amountPaid: number;
   payments: { createdAt: Date; provider: string; amount: number }[];
+  currency?: string;
 };
 
 export async function generateInvoicePdf(booking: InvoiceBooking): Promise<Uint8Array> {
+  const currency = booking.currency ?? "NGN";
+  const formatNaira = (minorAmount: number) => formatMajorAmount(fromMinorUnits(minorAmount, currency), currency);
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595, 842]); // A4
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);

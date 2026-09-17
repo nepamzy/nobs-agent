@@ -12,6 +12,7 @@ import { sendPushToUser } from "@/lib/push";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
 import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
 import { createBookingCalendarEvent } from "@/lib/google-calendar";
+import { toMinorUnits, fromMinorUnits, formatMajorAmount } from "@/lib/booking-currencies";
 import type { BookingStatus } from "@prisma/client";
 
 // ---------- Manually logging a booking taken outside the site ----------
@@ -216,6 +217,90 @@ export async function confirmBookingWithDeposit(formData: FormData) {
         <p>Hi ${booking.fullName.split(" ")[0]},</p>
         <p>Your project is confirmed. The agreed total is ₦${(agreedAmount / 100).toLocaleString("en-NG")}.</p>
         <p>To get started, a deposit of <strong>₦${depositNaira}</strong> (${depositPercentage}%) is required.</p>
+        <p><a href="${payUrl}" style="display:inline-block;background:#e4b343;color:#0b0d12;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:600;">Continue to payment</a></p>
+        <p>Once it's received, we'll begin work right away.</p>
+      `,
+    });
+  }
+
+  revalidatePath("/admin/bookings");
+}
+
+// ---------- Confirming a non-NGN booking ----------
+// Same idea as confirmBookingWithDeposit above, but for a booking whose
+// client picked a currency other than Naira on the booking form. The
+// amount entered here is the REAL price in that booking's own currency —
+// prefilled in the UI with the package's researched international floor
+// price (src/lib/data/pricing-international.ts), but this is where an
+// admin can override it (bargained up or down), same as agreedAmountNaira
+// already works for NGN bookings. Never derived from a Naira figure.
+
+const confirmInternationalSchema = z.object({
+  id: z.string().min(1),
+  agreedAmountMajor: z.coerce.number().positive("Enter the agreed price."),
+  depositPercentage: z.coerce.number().min(45, "Deposit must be at least 45%.").max(100),
+});
+
+export async function confirmInternationalBookingWithDeposit(formData: FormData) {
+  const session = await auth();
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {
+    throw new Error("Not authorized.");
+  }
+
+  const parsed = confirmInternationalSchema.safeParse({
+    id: formData.get("id"),
+    agreedAmountMajor: formData.get("agreedAmountMajor"),
+    depositPercentage: formData.get("depositPercentage"),
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
+
+  const { id, agreedAmountMajor, depositPercentage } = parsed.data;
+
+  const existing = await prisma.booking.findUnique({ where: { id }, select: { currency: true } });
+  if (!existing) throw new Error("Booking not found.");
+  if (existing.currency === "NGN") {
+    throw new Error("This booking pays in Naira, use the Naira confirm form instead.");
+  }
+
+  const internationalAgreedAmount = toMinorUnits(agreedAmountMajor, existing.currency);
+  const internationalDepositAmount = Math.round((internationalAgreedAmount * depositPercentage) / 100);
+
+  const booking = await prisma.booking.update({
+    where: { id },
+    data: {
+      status: "CONFIRMED",
+      internationalAgreedAmount,
+      depositPercentage,
+      internationalDepositAmount,
+      depositPaid: false,
+      confirmedAt: new Date(),
+    },
+  });
+
+  const payUrl = `${getSiteUrl()}/pay/${booking.id}`;
+  const depositFormatted = formatMajorAmount(fromMinorUnits(internationalDepositAmount, booking.currency), booking.currency);
+  const totalFormatted = formatMajorAmount(agreedAmountMajor, booking.currency);
+
+  const matchingUser = await prisma.user.findUnique({ where: { email: booking.email } });
+  if (matchingUser) {
+    await prisma.notification.create({
+      data: {
+        userId: matchingUser.id,
+        title: "Your project is confirmed",
+        body: `A deposit of ${depositFormatted} (${depositPercentage}%) is required before work begins.`,
+        link: `/pay/${booking.id}`,
+      },
+    });
+  }
+
+  if (process.env.BREVO_API_KEY) {
+    await sendBrevoEmail({
+      to: [{ email: booking.email, name: booking.fullName }],
+      subject: "Your project is confirmed, next step: deposit",
+      htmlContent: `
+        <p>Hi ${booking.fullName.split(" ")[0]},</p>
+        <p>Your project is confirmed. The agreed total is ${totalFormatted}.</p>
+        <p>To get started, a deposit of <strong>${depositFormatted}</strong> (${depositPercentage}%) is required.</p>
         <p><a href="${payUrl}" style="display:inline-block;background:#e4b343;color:#0b0d12;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:600;">Continue to payment</a></p>
         <p>Once it's received, we'll begin work right away.</p>
       `,

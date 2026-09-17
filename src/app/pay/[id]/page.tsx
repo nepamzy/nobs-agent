@@ -3,9 +3,8 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { PaymentProviderSelect } from "@/components/payment-provider-select";
 import { PaymentReturnHandler } from "@/components/payment-return-handler";
-import { MIN_INSTALLMENT_KOBO } from "@/lib/payment-constants";
-import { getExchangeRates, convertAmount } from "@/lib/exchange-rates";
-import { formatMajorAmount } from "@/lib/booking-currencies";
+import { MIN_INSTALLMENT_KOBO, MIN_INTERNATIONAL_INSTALLMENT_MAJOR } from "@/lib/payment-constants";
+import { formatMajorAmount, fromMinorUnits } from "@/lib/booking-currencies";
 import { CheckCircle2, CreditCard, Landmark, Smartphone } from "lucide-react";
 
 export async function generateMetadata({
@@ -44,45 +43,49 @@ export default async function PayPage({
     booking = null;
   }
 
-  if (!booking || !booking.agreedAmount || !booking.depositAmount) notFound();
-
-  const remaining = booking.agreedAmount - booking.amountPaid;
-  const percentPaid = Math.round((booking.amountPaid / booking.agreedAmount) * 100);
-  const fullyPaid = remaining <= 0;
-  const isFirstPayment = booking.amountPaid === 0;
-  const minimumForThisPayment = isFirstPayment
-    ? booking.depositAmount
-    : Math.min(MIN_INSTALLMENT_KOBO, remaining);
-
-  // Everything above stays real NGN kobo, the studio's actual books never
-  // change currency (see the comment on Booking.currency in schema.prisma).
-  // For a non-NGN booking, these are ONLY converted here for display and
-  // for what gets charged through Flutterwave — src/api/flutterwave/verify
-  // converts what actually comes back into an NGN-kobo equivalent before
-  // crediting amountPaid, so the numbers above stay the source of truth.
-  const currency = booking.currency;
+  // NGN books off agreedAmount/depositAmount/amountPaid, exactly as
+  // always. Every other currency books off the international* equivalents
+  // — the REAL price and running total in that currency, set directly by
+  // an admin (see admin/bookings/actions.ts), never a conversion of the
+  // Naira figures. See the comment on Booking.currency in schema.prisma.
+  const currency = booking?.currency ?? "NGN";
   const isForeign = currency !== "NGN";
-  let display = {
-    total: formatNaira(booking.agreedAmount),
-    paid: formatNaira(booking.amountPaid),
-    remaining: fullyPaid ? formatNaira(0) : formatNaira(remaining),
-    deposit: formatNaira(booking.depositAmount),
-  };
-  let minimumMajor: number | undefined;
-  let remainingMajor: number | undefined;
+  const totalAgreed = isForeign ? booking?.internationalAgreedAmount : booking?.agreedAmount;
+  const depositFloor = isForeign ? booking?.internationalDepositAmount : booking?.depositAmount;
+  const amountPaid = isForeign ? (booking?.internationalAmountPaid ?? 0) : (booking?.amountPaid ?? 0);
 
-  if (isForeign) {
-    const { rates } = await getExchangeRates();
-    const toForeign = (kobo: number) => convertAmount(kobo / 100, "NGN", currency, rates);
-    display = {
-      total: formatMajorAmount(toForeign(booking.agreedAmount), currency),
-      paid: formatMajorAmount(toForeign(booking.amountPaid), currency),
-      remaining: fullyPaid ? formatMajorAmount(0, currency) : formatMajorAmount(toForeign(remaining), currency),
-      deposit: formatMajorAmount(toForeign(booking.depositAmount), currency),
-    };
-    minimumMajor = toForeign(minimumForThisPayment);
-    remainingMajor = toForeign(remaining);
-  }
+  if (!booking || !totalAgreed || !depositFloor) notFound();
+
+  const remaining = totalAgreed - amountPaid;
+  const percentPaid = Math.round((amountPaid / totalAgreed) * 100);
+  const fullyPaid = remaining <= 0;
+  const isFirstPayment = amountPaid === 0;
+  const minimumForThisPayment = isFirstPayment
+    ? depositFloor
+    : Math.min(
+        isForeign
+          ? Math.round((MIN_INTERNATIONAL_INSTALLMENT_MAJOR[currency] ?? 10) * 100)
+          : MIN_INSTALLMENT_KOBO,
+        remaining
+      );
+
+  const display = isForeign
+    ? {
+        total: formatMajorAmount(fromMinorUnits(totalAgreed, currency), currency),
+        paid: formatMajorAmount(fromMinorUnits(amountPaid, currency), currency),
+        remaining: fullyPaid
+          ? formatMajorAmount(0, currency)
+          : formatMajorAmount(fromMinorUnits(remaining, currency), currency),
+        deposit: formatMajorAmount(fromMinorUnits(depositFloor, currency), currency),
+      }
+    : {
+        total: formatNaira(totalAgreed),
+        paid: formatNaira(amountPaid),
+        remaining: fullyPaid ? formatNaira(0) : formatNaira(remaining),
+        deposit: formatNaira(depositFloor),
+      };
+  const minimumMajor = isForeign ? fromMinorUnits(minimumForThisPayment, currency) : undefined;
+  const remainingMajor = isForeign ? fromMinorUnits(remaining, currency) : undefined;
 
   return (
     <div className="mx-auto max-w-lg px-6 py-24">
@@ -122,11 +125,6 @@ export default async function PayPage({
         {isFirstPayment && (
           <p className="text-xs text-[var(--color-slate)]">
             The first payment must be at least {display.deposit} ({booking.depositPercentage}% minimum) before work begins.
-          </p>
-        )}
-        {isForeign && (
-          <p className="text-xs text-[var(--color-slate)]">
-            Prices shown in {currency} are converted from the agreed cost at today&apos;s rate, and may shift slightly by the time you pay.
           </p>
         )}
       </div>

@@ -105,7 +105,7 @@ export function buildPartnerOnboardingChecklistHtml({ partnerName }: { partnerNa
       <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
         <strong>1. Sign and send back your agreement.</strong> Your Referral Partner Agreement is
         attached to the welcome email — please sign it and email the signed copy back to
-        nobsagent0@gmail.com within 7 days of registering.
+        nobsagent0@gmail.com within 8 days of registering.
       </p>
       <p style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
         <strong>2. Remember what actually triggers your commission.</strong> Introducing someone is

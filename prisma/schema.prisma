@@ -321,14 +321,16 @@ model Booking {
   // ISO 4217 code the client chose to pay in on the booking form (see
   // src/lib/booking-currencies.ts for the offered subset — deliberately
   // narrower than the full display list in currency-context.tsx, limited to
-  // currencies Flutterwave can actually settle). Every amount field below
-  // (agreedAmount, depositAmount, amountPaid, etc.) stays in NGN kobo
-  // regardless of this — the studio's own books, referral commissions, and
-  // invoices never change currency. This field only decides what a NON-NGN
-  // client is shown and charged at /pay/[id]: their real payment is
-  // converted back to an NGN-kobo equivalent at verification time (see
-  // src/app/api/flutterwave/verify/route.ts), so nothing downstream of that
-  // (receipts, commission math, remaining-balance checks) had to change.
+  // currencies Flutterwave can actually settle). "NGN" uses
+  // agreedAmount/depositAmount/amountPaid below (kobo) exactly as always.
+  // Any other currency uses internationalAgreedAmount/
+  // internationalDepositAmount/internationalAmountPaid instead — the REAL
+  // price and running total in that currency's own minor units, never
+  // derived by converting the Naira figures. Referral commissions are the
+  // one exception: they're computed by converting whatever was actually
+  // paid into an NGN-kobo equivalent purely for internal partner-payout
+  // bookkeeping (src/app/api/flutterwave/verify/route.ts) — that number is
+  // never shown to the client and never what they're charged.
   currency      String        @default("NGN")
 
   // ---- Terms & Conditions acceptance, captured at submission time ----
@@ -359,6 +361,22 @@ model Booking {
   amountPaid        Int      @default(0) // running total actually received across all installments, in kobo
   paystackReference String?  @unique // kept for the first/deposit payment, for backward compatibility
   depositPaidAt     DateTime?
+
+  // ---- Non-NGN equivalent of the three fields above, currency = the
+  // `currency` field's own minor units (see src/lib/booking-currencies.ts
+  // toMinorUnits/fromMinorUnits) ----
+  // Set directly by an admin when confirming a non-NGN booking, defaulting
+  // to the package's researched international floor price
+  // (src/lib/data/pricing-international.ts) converted into this currency,
+  // but overridable (bargained up or down) same as agreedAmount already
+  // works for NGN bookings — this is the actual, real number the client
+  // sees and pays, never a conversion of a Naira figure. Both null/0 for
+  // every NGN booking, where agreedAmount/depositAmount/amountPaid above
+  // are the only real figures instead.
+  internationalAgreedAmount  Int?
+  internationalDepositAmount Int?
+  internationalAmountPaid    Int      @default(0)
+
   // Set (or re-set) the moment an admin confirms this booking with a price
   // — i.e. the instant the data the Client Service Agreement is generated
   // from becomes real. This is what the agreement is dated against, not

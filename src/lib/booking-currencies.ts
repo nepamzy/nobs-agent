@@ -31,9 +31,29 @@ export function isBookingCurrency(code: string): code is BookingCurrencyCode {
 
 // Formats an amount already in MAJOR units (whole dollars/pounds/etc, not
 // kobo/cents) of the given currency — used at /pay/[id] and the Flutterwave
-// button, where amounts are converted out of NGN kobo before display.
+// button.
 export function formatMajorAmount(amount: number, currency: string): string {
   const meta = CURRENCIES.find((c) => c.code === currency);
   const symbol = meta?.symbol ?? `${currency} `;
   return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Minor-unit helpers for the internationalAgreedAmount/internationalDepositAmount/
+// internationalAmountPaid fields on Booking (kobo's equivalent, but for
+// whatever currency the booking is actually in). Every currency in
+// BOOKING_CURRENCY_CODES uses 2 decimal places today; kept as a lookup
+// rather than a hardcoded /100 so a future zero-decimal currency (e.g. JPY)
+// can't silently corrupt amounts if this list ever grows to include one.
+const ZERO_DECIMAL_CURRENCIES = new Set<string>([]);
+
+export function minorUnitsPerMajor(currency: string): number {
+  return ZERO_DECIMAL_CURRENCIES.has(currency) ? 1 : 100;
+}
+
+export function toMinorUnits(majorAmount: number, currency: string): number {
+  return Math.round(majorAmount * minorUnitsPerMajor(currency));
+}
+
+export function fromMinorUnits(minorAmount: number, currency: string): number {
+  return minorAmount / minorUnitsPerMajor(currency);
 }

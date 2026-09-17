@@ -7,7 +7,7 @@
 // two changes reflecting what's actually shipped: (1) the commission
 // section now describes the real repeating 10%-then-20% tier structure and
 // the Paystack auto-split instead of a flat 10% manually paid, and (2) a
-// new clause 3.5 requiring the signed copy back within 7 days of account
+// new clause 3.5 requiring the signed copy back within 8 days of account
 // creation — this clause did not exist in the original document at all,
 // it's a new addition pending the account owner's sign-off on its wording.
 
@@ -49,7 +49,7 @@ export const AGREEMENT_SECTIONS: AgreementSection[] = [
       "(c) the referral information provided is materially false, misleading, or submitted in bad faith;",
       "(d) the referral is submitted after this Agreement has been terminated, except where clause 7.4 applies.",
       "3.4  Referrals are tracked automatically through the Company's referral platform once the Referrer shares their unique referral link or code; a prospective client who signs up through that link or code is treated as having been referred in writing for the purposes of clause 3.1.",
-      "3.5  The Referrer shall submit a signed copy of this Agreement to the Company by email within seven (7) days of creating a referral partner account on the Company's platform. The Company may, at its sole discretion, suspend or disqualify a referral partner account for which a signed Agreement has not been received within this period.",
+      "3.5  The Referrer shall submit a signed copy of this Agreement to the Company by email within eight (8) days of creating a referral partner account on the Company's platform. The Company may, at its sole discretion, suspend or disqualify a referral partner account for which a signed Agreement has not been received within this period.",
     ],
   },
   {

@@ -31,11 +31,22 @@ const bookingSchema = z
   // The budget dropdown is only ever populated with options anchored to
   // the chosen package's real /pricing minimum — re-checked here so the
   // rule can't be bypassed by posting directly to this endpoint with a
-  // budget that doesn't actually belong to that package.
-  .refine((data) => budgetOptionsForService(data.serviceInterest).includes(data.budgetRange), {
-    message: "That budget doesn't match the selected package. Please pick again.",
-    path: ["budgetRange"],
-  });
+  // budget that doesn't actually belong to that package. Only applies to
+  // NGN bookings, where budgetRange is always one of a fixed, known set of
+  // Naira strings (see src/lib/booking-budget-options.ts). A non-NGN
+  // booking's budgetRange is the package's real international price,
+  // computed client-side from a live exchange rate — there's no fixed
+  // list to check it against, and it's informational only (never the
+  // actual charge; the admin sets the real price at confirm time, see
+  // admin/bookings/actions.ts), so any non-empty value (already enforced
+  // by budgetRange's own min/max above) is accepted.
+  .refine(
+    (data) => data.currency !== "NGN" || budgetOptionsForService(data.serviceInterest).includes(data.budgetRange),
+    {
+      message: "That budget doesn't match the selected package. Please pick again.",
+      path: ["budgetRange"],
+    }
+  );
 
 export async function POST(req: NextRequest) {
   // Booking requires an account, this is enforced here (not just in the

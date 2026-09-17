@@ -13,6 +13,34 @@ import { convertAmount } from "@/lib/exchange-rates";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
+// The budget field's real options for a given package + currency. NGN
+// keeps the existing 3-tier range picker, anchored to the real /pricing
+// minimum. Outside Nigeria a package is a flat researched floor price
+// (src/lib/data/pricing-international.ts), not a range, so this collapses
+// to a single option showing that real converted number — never Naira
+// text, and never a live-FX conversion of the Naira figure. A service
+// with no researched international floor (e.g. "Not sure yet", recurring
+// items like SEO) falls back to a plain "to be quoted" option instead of
+// guessing a number. `rates` still loading (null) returns no options at
+// all, so the field can't be submitted until a real price is known —
+// src/lib/exchange-rates.ts's convertAmount needs it to mean anything.
+function computeBudgetOptions(
+  service: string,
+  currency: BookingCurrencyCode,
+  rates: Record<string, number> | null
+): string[] {
+  if (!service) return [];
+  if (currency === "NGN") return budgetOptionsForService(service);
+
+  const floorUsd = internationalFloorPrices[service];
+  if (floorUsd === undefined) return ["To be quoted after your call"];
+  if (!rates) return [];
+
+  const meta = BOOKING_CURRENCIES.find((c) => c.code === currency);
+  const converted = convertAmount(floorUsd, "USD", currency, rates);
+  return [`${meta?.symbol ?? currency} ${Math.round(converted).toLocaleString()}`];
+}
+
 export function BookingForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -36,40 +64,52 @@ export function BookingForm() {
     if (!currencyTouched && isNigerian) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPayCurrency("NGN");
+      // A budget already picked under the previous (non-NGN) currency
+      // won't be one of NGN's own option strings, so it has to be
+      // reset here too, not just the currency itself.
+      if (serviceInterest) {
+        const options = computeBudgetOptions(serviceInterest, "NGN", rates);
+        setBudgetRange(options.length === 1 ? options[0] : "");
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNigerian, currencyTouched]);
 
-  // A package's own budget options — anchored at that package's real
-  // /pricing minimum, or the single fixed monthly rate for Website
-  // Maintenance/SEO. Picking a new package always clears any previously
-  // selected amount, since it may no longer be a valid option. This
-  // dropdown is Naira-only and stays that way deliberately — it's an
-  // indicative range for the admin, not a real price for non-Nigerians
-  // (see the note below instead).
-  const budgetOptions = serviceInterest ? budgetOptionsForService(serviceInterest) : [];
+  // Picking a new package or a new currency always recomputes the budget
+  // options fresh and clears/reselects the amount, since the previous
+  // selection may no longer be valid (or may now be a single forced
+  // option) — see computeBudgetOptions above.
+  const budgetOptions = computeBudgetOptions(serviceInterest, payCurrency, rates);
 
-  // Outside Nigeria this package isn't a range, it's a flat researched
-  // floor price (src/lib/data/pricing-international.ts) — never a
-  // conversion of the Naira budget above. This is only a preview; the
-  // real, final figure a non-Nigerian client pays is set by an admin when
-  // they confirm the booking (starting from this same floor, but
-  // overridable), see /admin/bookings.
-  function internationalPriceNote(): string | null {
-    if (payCurrency === "NGN" || !serviceInterest || !rates) return null;
-    const floorUsd = internationalFloorPrices[serviceInterest];
-    if (floorUsd === undefined) return null;
-    const meta = BOOKING_CURRENCIES.find((c) => c.code === payCurrency);
-    const converted = convertAmount(floorUsd, "USD", payCurrency, rates);
-    return `${meta?.symbol ?? payCurrency} ${Math.round(converted).toLocaleString()}`;
-  }
-  const priceNote = internationalPriceNote();
+  // Rates load asynchronously after mount — if someone already had a
+  // non-NGN currency + package selected before that finished, the single
+  // real-price option above only becomes computable once `rates` arrives,
+  // so it's backfilled here rather than leaving the field stuck empty.
+  useEffect(() => {
+    if (!rates || payCurrency === "NGN" || !serviceInterest) return;
+    const options = computeBudgetOptions(serviceInterest, payCurrency, rates);
+    if (options.length === 1 && budgetRange !== options[0]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBudgetRange(options[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rates, payCurrency, serviceInterest]);
 
   function handleServiceChange(e: ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value;
     setServiceInterest(next);
-    const options = budgetOptionsForService(next);
-    // Recurring services resolve to exactly one valid amount — no reason
-    // to make someone click a dropdown with a single option in it.
+    const options = computeBudgetOptions(next, payCurrency, rates);
+    // A single-option result (a recurring NGN rate, or any non-NGN
+    // currency) auto-selects — no reason to make someone click a dropdown
+    // with only one real choice in it.
+    setBudgetRange(options.length === 1 ? options[0] : "");
+  }
+
+  function handleCurrencyChange(e: ChangeEvent<HTMLSelectElement>) {
+    setCurrencyTouched(true);
+    const next = e.target.value as BookingCurrencyCode;
+    setPayCurrency(next);
+    const options = computeBudgetOptions(serviceInterest, next, rates);
     setBudgetRange(options.length === 1 ? options[0] : "");
   }
 
@@ -267,10 +307,7 @@ export function BookingForm() {
           name="currency"
           required
           value={payCurrency}
-          onChange={(e) => {
-            setCurrencyTouched(true);
-            setPayCurrency(e.target.value as BookingCurrencyCode);
-          }}
+          onChange={handleCurrencyChange}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
         >
           {BOOKING_CURRENCIES.map((c) => (
@@ -284,12 +321,6 @@ export function BookingForm() {
             ? "You'll pay in Naira via Paystack."
             : "You'll pay in this currency directly, via Flutterwave."}
         </p>
-        {priceNote && (
-          <p className="mt-1.5 text-xs text-[var(--color-brass)]">
-            Outside Nigeria, {serviceInterest} is a flat {priceNote} — that&apos;s what you&apos;ll be
-            invoiced, we&apos;ll confirm the exact figure after this call.
-          </p>
-        )}
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -310,7 +341,11 @@ export function BookingForm() {
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="" disabled>
-              {serviceInterest ? "Select one" : "Pick a package first"}
+              {!serviceInterest
+                ? "Pick a package first"
+                : budgetOptions.length === 0 && payCurrency !== "NGN"
+                  ? "Loading price…"
+                  : "Select one"}
             </option>
             {budgetOptions.map((b) => (
               <option key={b} value={b} className="bg-[var(--color-ink)]">
@@ -318,13 +353,18 @@ export function BookingForm() {
               </option>
             ))}
           </select>
-          {serviceInterest && budgetOptions.length > 1 && (
+          {serviceInterest && payCurrency === "NGN" && budgetOptions.length > 1 && (
             <p className="mt-1.5 text-xs text-[var(--color-slate)]">
               Reflects this package&apos;s real starting price on{" "}
               <a href="/pricing" target="_blank" rel="noopener noreferrer" className="text-[var(--color-brass)] underline underline-offset-4">
                 /pricing
               </a>
               .
+            </p>
+          )}
+          {serviceInterest && payCurrency !== "NGN" && budgetOptions.length === 1 && internationalFloorPrices[serviceInterest] !== undefined && (
+            <p className="mt-1.5 text-xs text-[var(--color-slate)]">
+              This package&apos;s real price outside Nigeria, we&apos;ll confirm it with you on the call.
             </p>
           )}
         </div>

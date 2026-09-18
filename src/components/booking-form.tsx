@@ -13,16 +13,29 @@ import { convertAmount } from "@/lib/exchange-rates";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
+// Rounds a computed tier boundary to a "clean" number worth showing a
+// client — bucket size scales with magnitude, same idea as
+// src/lib/booking-budget-options.ts's Naira rounding, but currency-agnostic
+// since this runs on whatever currency the visitor picked, already
+// converted from the USD floor.
+function roundToNiceBudgetNumber(amount: number): number {
+  const bucket = amount >= 50_000 ? 5_000 : amount >= 10_000 ? 1_000 : amount >= 2_000 ? 500 : 100;
+  return Math.round(amount / bucket) * bucket;
+}
+
 // The budget field's real options for a given package + currency. NGN
 // keeps the existing 3-tier range picker, anchored to the real /pricing
-// minimum. Outside Nigeria a package is a flat researched floor price
-// (src/lib/data/pricing-international.ts), not a range, so this collapses
-// to a single option showing that real converted number — never Naira
-// text, and never a live-FX conversion of the Naira figure. A service
-// with no researched international floor (e.g. "Not sure yet", recurring
-// items like SEO) falls back to a plain "to be quoted" option instead of
-// guessing a number. `rates` still loading (null) returns no options at
-// all, so the field can't be submitted until a real price is known —
+// minimum. Outside Nigeria a package's real floor price
+// (src/lib/data/pricing-international.ts) is never a live-FX conversion
+// of the Naira figure, but it also isn't shown as a single locked-in
+// number — three escalating bands above the floor (4/3x, 10/3x, 5x, e.g.
+// a $3,000 floor becomes $3,000–$4,000 / $4,000–$10,000 /
+// $10,000–$15,000) let someone signal a bigger budget, plus a leading
+// "Not sure yet" for someone who doesn't know yet. A service with no
+// researched international floor (e.g. recurring items like SEO) falls
+// back to a plain "to be quoted" option instead of guessing a number.
+// `rates` still loading (null) returns no options at all, so the field
+// can't be submitted until real prices are known —
 // src/lib/exchange-rates.ts's convertAmount needs it to mean anything.
 function computeBudgetOptions(
   service: string,
@@ -37,8 +50,19 @@ function computeBudgetOptions(
   if (!rates) return [];
 
   const meta = BOOKING_CURRENCIES.find((c) => c.code === currency);
-  const converted = convertAmount(floorUsd, "USD", currency, rates);
-  return [`${meta?.symbol ?? currency} ${Math.round(converted).toLocaleString()}`];
+  const fmt = (n: number) => `${meta?.symbol ?? currency} ${n.toLocaleString()}`;
+
+  const floor = Math.round(convertAmount(floorUsd, "USD", currency, rates));
+  const tier1 = roundToNiceBudgetNumber(floor * (4 / 3));
+  const tier2 = roundToNiceBudgetNumber(floor * (10 / 3));
+  const tier3 = roundToNiceBudgetNumber(floor * 5);
+
+  return [
+    "Not sure yet",
+    `${fmt(floor)} – ${fmt(tier1)}`,
+    `${fmt(tier1)} – ${fmt(tier2)}`,
+    `${fmt(tier2)} – ${fmt(tier3)}`,
+  ];
 }
 
 export function BookingForm() {
@@ -362,9 +386,9 @@ export function BookingForm() {
               .
             </p>
           )}
-          {serviceInterest && payCurrency !== "NGN" && budgetOptions.length === 1 && internationalFloorPrices[serviceInterest] !== undefined && (
+          {serviceInterest && payCurrency !== "NGN" && budgetOptions.length > 1 && internationalFloorPrices[serviceInterest] !== undefined && (
             <p className="mt-1.5 text-xs text-[var(--color-slate)]">
-              This package&apos;s real price outside Nigeria, we&apos;ll confirm it with you on the call.
+              Starts at this package&apos;s real floor price outside Nigeria — pick a higher range if you&apos;d like more scope discussed on the call.
             </p>
           )}
         </div>

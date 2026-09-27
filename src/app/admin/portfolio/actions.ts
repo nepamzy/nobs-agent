@@ -22,6 +22,38 @@ function slugify(input: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+// Ensures the slug is actually unique before we hit the database, so a
+// duplicate/similar title never crashes the save with a raw Prisma error.
+// excludeId lets an update skip past the project's own existing slug.
+async function uniqueSlug(base: string, excludeId?: string) {
+  let candidate = base || "project";
+  let suffix = 2;
+  while (
+    await prisma.project.findFirst({
+      where: { slug: candidate, ...(excludeId ? { id: { not: excludeId } } : {}) },
+      select: { id: true },
+    })
+  ) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
+function friendlyDbError(err: unknown): never {
+  if (
+    err &&
+    typeof err === "object" &&
+    "code" in err &&
+    (err as { code?: string }).code === "P2002"
+  ) {
+    throw new Error(
+      "A project with that slug already exists. Try a different title or set a custom slug."
+    );
+  }
+  throw err instanceof Error ? err : new Error("Something went wrong saving the project.");
+}
+
 function splitList(value: FormDataEntryValue | null) {
   if (typeof value !== "string") return [];
   return value
@@ -42,7 +74,10 @@ const projectSchema = z.object({
   keyEngineeringDecisions: z.string().trim().optional().or(z.literal("")),
   security: z.string().trim().optional().or(z.literal("")),
   performance: z.string().trim().optional().or(z.literal("")),
-  durationWeeks: z.coerce.number().int().positive().optional(),
+  durationWeeks: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? undefined : val),
+    z.coerce.number().int().positive().optional()
+  ),
   liveUrl: z.string().trim().url().optional().or(z.literal("")),
   githubUrl: z.string().trim().url().optional().or(z.literal("")),
   coverImage: z.string().trim().optional().or(z.literal("")),
@@ -68,28 +103,32 @@ export async function createProject(formData: FormData) {
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
 
   const { clientName, ...data } = parsed.data;
-  const slug = slugify(String(formData.get("slug") || data.title));
+  const slug = await uniqueSlug(slugify(String(formData.get("slug") || data.title)));
   const clientId = await resolveClientId(clientName);
 
-  await prisma.project.create({
-    data: {
-      ...data,
-      slug,
-      coverImage: data.coverImage || "",
-      liveUrl: data.liveUrl || null,
-      githubUrl: data.githubUrl || null,
-      constraints: data.constraints || null,
-      architecture: data.architecture || null,
-      keyEngineeringDecisions: data.keyEngineeringDecisions || null,
-      security: data.security || null,
-      performance: data.performance || null,
-      technologies: splitList(formData.get("technologies")),
-      gallery: formData.getAll("gallery").map(String).filter(Boolean),
-      featured: formData.get("featured") === "on",
-      hidden: formData.get("hidden") === "on",
-      clientId,
-    },
-  });
+  try {
+    await prisma.project.create({
+      data: {
+        ...data,
+        slug,
+        coverImage: data.coverImage || "",
+        liveUrl: data.liveUrl || null,
+        githubUrl: data.githubUrl || null,
+        constraints: data.constraints || null,
+        architecture: data.architecture || null,
+        keyEngineeringDecisions: data.keyEngineeringDecisions || null,
+        security: data.security || null,
+        performance: data.performance || null,
+        technologies: splitList(formData.get("technologies")),
+        gallery: formData.getAll("gallery").map(String).filter(Boolean),
+        featured: formData.get("featured") === "on",
+        hidden: formData.get("hidden") === "on",
+        clientId,
+      },
+    });
+  } catch (err) {
+    friendlyDbError(err);
+  }
 
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
@@ -110,25 +149,30 @@ export async function updateProject(formData: FormData) {
   const { clientName, ...data } = parsed.data;
   const clientId = await resolveClientId(clientName);
 
-  const updated = await prisma.project.update({
-    where: { id },
-    data: {
-      ...data,
-      coverImage: data.coverImage || "",
-      liveUrl: data.liveUrl || null,
-      githubUrl: data.githubUrl || null,
-      constraints: data.constraints || null,
-      architecture: data.architecture || null,
-      keyEngineeringDecisions: data.keyEngineeringDecisions || null,
-      security: data.security || null,
-      performance: data.performance || null,
-      technologies: splitList(formData.get("technologies")),
-      gallery: formData.getAll("gallery").map(String).filter(Boolean),
-      featured: formData.get("featured") === "on",
-      hidden: formData.get("hidden") === "on",
-      ...(clientId ? { clientId } : {}),
-    },
-  });
+  let updated;
+  try {
+    updated = await prisma.project.update({
+      where: { id },
+      data: {
+        ...data,
+        coverImage: data.coverImage || "",
+        liveUrl: data.liveUrl || null,
+        githubUrl: data.githubUrl || null,
+        constraints: data.constraints || null,
+        architecture: data.architecture || null,
+        keyEngineeringDecisions: data.keyEngineeringDecisions || null,
+        security: data.security || null,
+        performance: data.performance || null,
+        technologies: splitList(formData.get("technologies")),
+        gallery: formData.getAll("gallery").map(String).filter(Boolean),
+        featured: formData.get("featured") === "on",
+        hidden: formData.get("hidden") === "on",
+        ...(clientId ? { clientId } : {}),
+      },
+    });
+  } catch (err) {
+    friendlyDbError(err);
+  }
 
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");

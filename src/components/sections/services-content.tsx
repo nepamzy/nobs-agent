@@ -7,6 +7,7 @@ import { HashScroll } from "@/components/hash-scroll";
 import { PriceDisplay } from "@/components/price-display";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { pricingGroups } from "@/lib/data/pricing-detailed";
+import { internationalFloorPrices } from "@/lib/data/pricing-international";
 import { PageHeader } from "@/components/page-header";
 
 // Ongoing Care is recurring, not a one-time delivery, so it gets its own
@@ -83,7 +84,10 @@ export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples
                     Starting price
                   </p>
                   <p className="mt-1.5 text-sm text-[var(--color-paper)]">
-                    <PriceDisplay ngnAmount={cheapestItem.launchPrice} />
+                    <PriceDisplay
+                      ngnAmount={cheapestItem.launchPrice}
+                      internationalFloor={internationalFloorPrices[cheapestItem.name]}
+                    />
                     {cheapestItem.unit ?? ""}
                   </p>
                 </div>

@@ -804,3 +804,39 @@ model AuditLog {
   metadata  Json?
   createdAt DateTime @default(now())
 }
+
+// WhatsApp AI automation — each real-world phone number gets one
+// WhatsAppContact, with every inbound/outbound message logged under it so
+// the bot has conversation history for context on each new message.
+model WhatsAppContact {
+  id              String            @id @default(cuid())
+  // WhatsApp's "wa_id" — the customer's number in international format,
+  // no "+" or spaces (e.g. "2348031234567"). This is what Meta sends us
+  // on every webhook event, so it's what we key contacts on.
+  waId            String            @unique
+  // Meta also sends a free-text profile name alongside the wa_id — not
+  // verified/trustworthy, just a label for the admin UI.
+  profileName     String?
+  // Set when the bot hands off to a human (explicit request, a complaint
+  // it can't resolve, or a payment issue) — see HANDOFF marker in
+  // src/lib/whatsapp-bot.ts. Cleared manually once an admin has replied.
+  needsHuman      Boolean           @default(false)
+  handoffReason   String?
+  handoffNotifiedAt DateTime?
+  lastMessageAt   DateTime          @default(now())
+  createdAt       DateTime          @default(now())
+  messages        WhatsAppMessage[]
+
+  @@index([needsHuman])
+}
+
+model WhatsAppMessage {
+  id        String          @id @default(cuid())
+  contactId String
+  contact   WhatsAppContact @relation(fields: [contactId], references: [id])
+  direction String // "in" | "out"
+  body      String          @db.Text
+  createdAt DateTime        @default(now())
+
+  @@index([contactId, createdAt])
+}

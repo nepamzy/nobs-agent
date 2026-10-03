@@ -13,6 +13,13 @@ import { convertAmount } from "@/lib/exchange-rates";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
+// Sentinel shown as the last budget option everywhere a real number isn't
+// forced on someone — picking it swaps the dropdown for a free-text input
+// (see the budgetRange <select> below) so a client who doesn't fit the
+// preset bands can still say what they actually have to spend, instead of
+// picking a tier that's wrong in either direction.
+const OTHER_BUDGET_OPTION = "Other — I'll describe it";
+
 // Rounds a computed tier boundary to a "clean" number worth showing a
 // client — bucket size scales with magnitude, same idea as
 // src/lib/booking-budget-options.ts's Naira rounding, but currency-agnostic
@@ -37,16 +44,27 @@ function roundToNiceBudgetNumber(amount: number): number {
 // `rates` still loading (null) returns no options at all, so the field
 // can't be submitted until real prices are known —
 // src/lib/exchange-rates.ts's convertAmount needs it to mean anything.
+// Every branch below ends with OTHER_BUDGET_OPTION tacked on, except a
+// recurring NGN rate (Website Maintenance, SEO) — that's one real fixed
+// number, not a range to negotiate, so there's nothing to "describe
+// instead of." budgetOptionsForService returns exactly one string for
+// that case and more than one for everything else (including the generic
+// "Not sure yet" bucket), so that's what's checked here rather than
+// re-deriving "is this recurring" from pricing-detailed.ts again.
 function computeBudgetOptions(
   service: string,
   currency: BookingCurrencyCode,
   rates: Record<string, number> | null
 ): string[] {
   if (!service) return [];
-  if (currency === "NGN") return budgetOptionsForService(service);
+
+  if (currency === "NGN") {
+    const options = budgetOptionsForService(service);
+    return options.length === 1 ? options : [...options, OTHER_BUDGET_OPTION];
+  }
 
   const floorUsd = internationalFloorPrices[service];
-  if (floorUsd === undefined) return ["To be quoted after your call"];
+  if (floorUsd === undefined) return ["To be quoted after your call", OTHER_BUDGET_OPTION];
   if (!rates) return [];
 
   const meta = BOOKING_CURRENCIES.find((c) => c.code === currency);
@@ -62,6 +80,7 @@ function computeBudgetOptions(
     `${fmt(floor)} – ${fmt(tier1)}`,
     `${fmt(tier1)} – ${fmt(tier2)}`,
     `${fmt(tier2)} – ${fmt(tier3)}`,
+    OTHER_BUDGET_OPTION,
   ];
 }
 
@@ -73,6 +92,7 @@ export function BookingForm() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [serviceInterest, setServiceInterest] = useState("");
   const [budgetRange, setBudgetRange] = useState("");
+  const [customBudgetText, setCustomBudgetText] = useState("");
   const [payCurrency, setPayCurrency] = useState<BookingCurrencyCode>("USD");
   const [currencyTouched, setCurrencyTouched] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -215,6 +235,13 @@ export function BookingForm() {
     setError(null);
 
     const data = Object.fromEntries(new FormData(e.currentTarget).entries());
+    // The select submits the sentinel label itself (it's the field's real
+    // `name="budgetRange"` value) — swap in what they actually typed so
+    // the server, admin view, and emails all see a real number/description,
+    // never the placeholder text.
+    if (data.budgetRange === OTHER_BUDGET_OPTION) {
+      data.budgetRange = customBudgetText.trim();
+    }
 
     try {
       await submitBooking(data);
@@ -377,18 +404,28 @@ export function BookingForm() {
               </option>
             ))}
           </select>
-          {serviceInterest && payCurrency === "NGN" && budgetOptions.length > 1 && (
+          {budgetRange === OTHER_BUDGET_OPTION && (
+            <input
+              type="text"
+              required
+              minLength={1}
+              maxLength={50}
+              autoFocus
+              value={customBudgetText}
+              onChange={(e) => setCustomBudgetText(e.target.value)}
+              placeholder="What's your budget?"
+              aria-label="What's your budget?"
+              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]"
+            />
+          )}
+          {serviceInterest && payCurrency === "NGN" && budgetOptions.length > 1 && budgetRange !== OTHER_BUDGET_OPTION && (
             <p className="mt-1.5 text-xs text-[var(--color-slate)]">
-              Reflects this package&apos;s real starting price on{" "}
-              <a href="/pricing" target="_blank" rel="noopener noreferrer" className="text-[var(--color-brass)] underline underline-offset-4">
-                /pricing
-              </a>
-              .
+              These ranges reflect this package&apos;s real starting price — not sure which fits? Pick &quot;Other&quot; and tell us.
             </p>
           )}
-          {serviceInterest && payCurrency !== "NGN" && budgetOptions.length > 1 && internationalFloorPrices[serviceInterest] !== undefined && (
+          {serviceInterest && payCurrency !== "NGN" && budgetOptions.length > 1 && internationalFloorPrices[serviceInterest] !== undefined && budgetRange !== OTHER_BUDGET_OPTION && (
             <p className="mt-1.5 text-xs text-[var(--color-slate)]">
-              Starts at this package&apos;s real floor price outside Nigeria — pick a higher range if you&apos;d like more scope discussed on the call.
+              Starts at this package&apos;s real floor price outside Nigeria — pick a higher range, or &quot;Other&quot;, if you&apos;d like more scope discussed on the call.
             </p>
           )}
         </div>

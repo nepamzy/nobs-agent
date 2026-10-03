@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { PricingItemPrice } from "@/components/pricing-item-price";
-import { AiTierPrice } from "@/components/ai-tier-price";
 import { NigeriaDiscountBanner } from "@/components/nigeria-discount-banner";
 import { pricingGroups, type PricingTier } from "@/lib/data/pricing-detailed";
 import { aiAutomationTiers } from "@/lib/data/ai-automation-pricing";
-import { internationalFloorPrices } from "@/lib/data/pricing-international";
 import { Check, ArrowUpRight, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: "Transparent pricing by category, with current launch rates.",
+  description: "Scoped, category-by-category work. Book a consultation for your exact number.",
   alternates: {
     canonical: "/pricing",
   },
@@ -28,21 +25,20 @@ export default function PricingPage() {
     <div>
       <PageHeader
         eyebrow="Pricing"
-        title="Priced by category, not guesswork"
-        description="Every price below is specific to the work, not a vague range."
+        title="Scoped by category, not guesswork"
+        description="Every category below has a clear, fixed scope — the exact price is set on your consultation call."
       />
 
       <div className="mx-auto max-w-3xl px-6">
         <div className="glass rounded-2xl p-6 text-sm text-[var(--color-slate)]">
           <p>
             <span className="font-medium text-[var(--color-brass)]">
-              These are launch prices.
+              Pricing is tailored, not listed.
             </span>{" "}
-            NOBS AGENT is a newly launched studio, and these rates reflect that. The
-            crossed-out amount on each card is the standard rate this work is actually
-            worth, the active price next to it is what you pay right now, while the
-            studio is building its first track record. This won&apos;t be the pricing
-            forever, it moves toward the standard rate as the portfolio grows.
+            NOBS AGENT is a newly launched studio, and every project is scoped and
+            quoted individually so you get a real number for your actual work, not a
+            generic card price. Book a free consultation, walk through what you need,
+            and leave with the exact figure.
           </p>
         </div>
       </div>
@@ -73,12 +69,9 @@ export default function PricingPage() {
                     </span>
                   </div>
 
-                  <PricingItemPrice
-                    standardPrice={item.standardPrice}
-                    launchPrice={item.launchPrice}
-                    internationalFloor={internationalFloorPrices[item.name]}
-                    unit={item.unit}
-                  />
+                  <p className="mt-4 text-sm text-[var(--color-slate)]">
+                    Tailored pricing — book a free consultation for the exact number.
+                  </p>
 
                   <ul className="mt-5 flex-1 space-y-2">
                     {item.bullets.map((b) => (
@@ -130,7 +123,6 @@ export default function PricingPage() {
                   {t.audience}
                 </p>
                 <p className="mt-3 text-sm text-[var(--color-slate)]">{t.summary}</p>
-                <AiTierPrice floorUsd={internationalFloorPrices[t.id]} />
 
                 <ul className="mt-5 flex-1 space-y-2.5">
                   {t.inclusions.map((b) => (

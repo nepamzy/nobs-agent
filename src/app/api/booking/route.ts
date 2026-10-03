@@ -28,20 +28,27 @@ const bookingSchema = z
     // reasoning as the auth check below.
     termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
   })
-  // The budget dropdown is only ever populated with options anchored to
-  // the chosen package's real /pricing minimum — re-checked here so the
-  // rule can't be bypassed by posting directly to this endpoint with a
-  // budget that doesn't actually belong to that package. Only applies to
-  // NGN bookings, where budgetRange is always one of a fixed, known set of
-  // Naira strings (see src/lib/booking-budget-options.ts). A non-NGN
-  // booking's budgetRange is the package's real international price,
-  // computed client-side from a live exchange rate — there's no fixed
-  // list to check it against, and it's informational only (never the
-  // actual charge; the admin sets the real price at confirm time, see
-  // admin/bookings/actions.ts), so any non-empty value (already enforced
-  // by budgetRange's own min/max above) is accepted.
+  // A recurring NGN rate (Website Maintenance, SEO — budgetOptionsForService
+  // returns exactly one string for these, see src/lib/booking-budget-options.ts)
+  // is a real fixed price, not a range, and the booking form never offers a
+  // "write your own" escape hatch for it — so it's the one case still
+  // checked against the known value, closing off posting directly to this
+  // endpoint with a number that isn't the actual rate. Every other NGN
+  // service's budgetRange is either one of its real tiered ranges or
+  // free text from the form's "Other — I'll describe it" option, and a
+  // non-NGN booking's budgetRange is the package's real international
+  // price computed client-side from a live exchange rate (or likewise
+  // free text) — none of those have a fixed list to check against, and
+  // it's informational only (never the actual charge; the admin sets the
+  // real price at confirm time, see admin/bookings/actions.ts), so any
+  // non-empty value (already enforced by budgetRange's own min/max above)
+  // is accepted.
   .refine(
-    (data) => data.currency !== "NGN" || budgetOptionsForService(data.serviceInterest).includes(data.budgetRange),
+    (data) => {
+      if (data.currency !== "NGN") return true;
+      const options = budgetOptionsForService(data.serviceInterest);
+      return options.length > 1 || options.includes(data.budgetRange);
+    },
     {
       message: "That budget doesn't match the selected package. Please pick again.",
       path: ["budgetRange"],

@@ -5,10 +5,12 @@
 // and ai-automation-pricing.ts unchanged; this table only applies when
 // CurrencyContext's `isNigerian` is false — see src/lib/currency-context.tsx.
 //
-// Keyed by the same `name`/`id` used in pricing-detailed.ts's
-// PricingCategoryItem and ai-automation-pricing.ts's AiAutomationTier, so a
-// lookup miss is a real bug (a package renamed in one file and not the
-// other), not a silent fallback.
+// Keyed by the same `name` used in pricing-detailed.ts's PricingCategoryItem
+// and ai-automation-pricing.ts's AiAutomationTier (not the AI tier's `id` —
+// everything on the booking form addresses a service by its display name,
+// see src/lib/booking-budget-options.ts's `services`), so a lookup miss is a
+// real bug (a package renamed in one file and not the other), not a silent
+// fallback.
 
 export const internationalFloorPrices: Record<string, number> = {
   // ---- pricing-detailed.ts ----
@@ -27,8 +29,8 @@ export const internationalFloorPrices: Record<string, number> = {
   "UI/UX Design": 3000,
   "Website Redesign": 1500,
 
-  // ---- ai-automation-pricing.ts (id, not name) ----
-  "starter-ai": 2000,
-  "growth-ai": 20000,
-  "enterprise-ai": 75000,
+  // ---- ai-automation-pricing.ts ----
+  "Starter AI": 2000,
+  "Growth AI": 20000,
+  "Enterprise AI": 75000,
 };

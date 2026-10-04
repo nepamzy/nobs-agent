@@ -5,7 +5,12 @@ import { Loader2, CheckCircle2, Paperclip, X } from "lucide-react";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { uploadBookingFile } from "@/app/dashboard/new-project/actions";
 import { TermsPanel } from "@/components/terms-panel";
-import { services, budgetOptionsForService } from "@/lib/booking-budget-options";
+import {
+  services,
+  budgetOptionsForService,
+  isFixedRecurringRate,
+  AI_AUTOMATION_SERVICE_NAMES,
+} from "@/lib/booking-budget-options";
 import { BOOKING_CURRENCIES, type BookingCurrencyCode } from "@/lib/booking-currencies";
 import { internationalFloorPrices } from "@/lib/data/pricing-international";
 import { useCurrency } from "@/lib/currency-context";
@@ -47,10 +52,10 @@ function roundToNiceBudgetNumber(amount: number): number {
 // Every branch below ends with OTHER_BUDGET_OPTION tacked on, except a
 // recurring NGN rate (Website Maintenance, SEO) — that's one real fixed
 // number, not a range to negotiate, so there's nothing to "describe
-// instead of." budgetOptionsForService returns exactly one string for
-// that case and more than one for everything else (including the generic
-// "Not sure yet" bucket), so that's what's checked here rather than
-// re-deriving "is this recurring" from pricing-detailed.ts again.
+// instead of." (AI Automation also returns a single "to be quoted" string
+// for NGN, but that's not a committed number either, so it still gets
+// "Other" — isFixedRecurringRate is checked directly rather than inferred
+// from the options array's length, which both cases otherwise share.)
 function computeBudgetOptions(
   service: string,
   currency: BookingCurrencyCode,
@@ -60,7 +65,7 @@ function computeBudgetOptions(
 
   if (currency === "NGN") {
     const options = budgetOptionsForService(service);
-    return options.length === 1 ? options : [...options, OTHER_BUDGET_OPTION];
+    return isFixedRecurringRate(service) ? options : [...options, OTHER_BUDGET_OPTION];
   }
 
   const floorUsd = internationalFloorPrices[service];
@@ -338,11 +343,20 @@ export function BookingForm() {
           <option value="" disabled>
             Select one
           </option>
-          {services.map((s) => (
-            <option key={s} value={s} className="bg-[var(--color-ink)]">
-              {s}
-            </option>
-          ))}
+          {services
+            .filter((s) => !AI_AUTOMATION_SERVICE_NAMES.includes(s))
+            .map((s) => (
+              <option key={s} value={s} className="bg-[var(--color-ink)]">
+                {s}
+              </option>
+            ))}
+          <optgroup label="AI Automation" className="bg-[var(--color-ink)]">
+            {AI_AUTOMATION_SERVICE_NAMES.map((s) => (
+              <option key={s} value={s} className="bg-[var(--color-ink)]">
+                {s}
+              </option>
+            ))}
+          </optgroup>
         </select>
       </div>
 

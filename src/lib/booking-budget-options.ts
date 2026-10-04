@@ -1,10 +1,17 @@
 import { pricingGroups } from "@/lib/data/pricing-detailed";
+import { aiAutomationTiers } from "@/lib/data/ai-automation-pricing";
 
 // Single source of truth for every booking entry point (public form,
 // dashboard "new project", admin manual entry) — a client must pick a
 // package before an amount, and the amounts offered are tied to that
 // package's real price on /pricing, never a generic guess. Pure/static,
 // safe to import from a client component.
+
+// AI Automation has no fixed NGN price at all (see ai-automation-pricing.ts
+// — every build is scoped per client), so its names are tracked separately
+// rather than folded into pricingByService below, and budgetOptionsForService
+// special-cases them instead of guessing a Naira range.
+export const AI_AUTOMATION_SERVICE_NAMES = aiAutomationTiers.map((t) => t.name);
 
 export const services = [
   // Listed first, deliberately — someone who doesn't yet know which
@@ -28,7 +35,8 @@ export const services = [
   "Website Maintenance",
   "SEO",
   "Branding",
-] as const;
+  ...AI_AUTOMATION_SERVICE_NAMES,
+];
 
 // Shown for "Not sure yet" — the only case where we genuinely don't know
 // a real minimum to anchor to.
@@ -37,6 +45,16 @@ const GENERIC_BUDGETS = ["Under ₦300k", "₦300k – ₦800k", "₦800k – �
 const pricingByService = Object.fromEntries(
   pricingGroups.flatMap((group) => group.items.map((item) => [item.name, item]))
 );
+
+// True only for a real fixed recurring rate (Website Maintenance, SEO,
+// Hosting) — the one case where budgetOptionsForService's result is a
+// single non-negotiable number rather than a range or a "we don't have a
+// number yet" placeholder. Exported so callers (the booking form's "write
+// your own budget" option) can tell this apart from every other
+// single-option result without re-deriving it from array length.
+export function isFixedRecurringRate(serviceInterest: string): boolean {
+  return Boolean(pricingByService[serviceInterest]?.unit);
+}
 
 function formatNaira(amount: number): string {
   if (amount >= 1_000_000) {
@@ -61,6 +79,14 @@ function roundToNiceNumber(amount: number): number {
 // steps above that so a client can still signal a bigger budget.
 export function budgetOptionsForService(serviceInterest: string): string[] {
   if (serviceInterest === "Not sure yet") return GENERIC_BUDGETS;
+
+  // Every AI Automation build is scoped to the client with no fixed NGN
+  // rate at all (see ai-automation-pricing.ts) — GENERIC_BUDGETS would
+  // wrongly imply a sub-₦2m ballpark, so there's nothing to anchor a
+  // Naira range to here, unlike the genuine "don't know yet" case above.
+  if (AI_AUTOMATION_SERVICE_NAMES.includes(serviceInterest)) {
+    return ["To be quoted after your call"];
+  }
 
   const item = pricingByService[serviceInterest];
   if (!item) return GENERIC_BUDGETS;

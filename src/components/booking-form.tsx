@@ -9,6 +9,7 @@ import {
   services,
   budgetOptionsForService,
   isFixedRecurringRate,
+  isAiAutomationService,
   AI_AUTOMATION_SERVICE_NAMES,
 } from "@/lib/booking-budget-options";
 import { BOOKING_CURRENCIES, type BookingCurrencyCode } from "@/lib/booking-currencies";
@@ -52,16 +53,19 @@ function roundToNiceBudgetNumber(amount: number): number {
 // Every branch below ends with OTHER_BUDGET_OPTION tacked on, except a
 // recurring NGN rate (Website Maintenance, SEO) — that's one real fixed
 // number, not a range to negotiate, so there's nothing to "describe
-// instead of." (AI Automation also returns a single "to be quoted" string
-// for NGN, but that's not a committed number either, so it still gets
-// "Other" — isFixedRecurringRate is checked directly rather than inferred
-// from the options array's length, which both cases otherwise share.)
+// instead of." AI Automation is the other exception: its single "find out
+// during your scoping call" option is all it ever gets, in any currency.
 function computeBudgetOptions(
   service: string,
   currency: BookingCurrencyCode,
   rates: Record<string, number> | null
 ): string[] {
   if (!service) return [];
+
+  // AI Automation is never priced on the form, in any currency: its one
+  // option is "Find out during your scoping call", with no "Other" escape
+  // hatch to type a number into.
+  if (isAiAutomationService(service)) return budgetOptionsForService(service);
 
   if (currency === "NGN") {
     const options = budgetOptionsForService(service);

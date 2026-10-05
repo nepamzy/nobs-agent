@@ -7,7 +7,12 @@ import { auth } from "@/auth";
 import { checkBookingAvailability } from "@/lib/booking-availability";
 import { notifyAdminsPush } from "@/lib/push";
 import { createBookingCalendarEvent } from "@/lib/google-calendar";
-import { budgetOptionsForService, isFixedRecurringRate } from "@/lib/booking-budget-options";
+import {
+  budgetOptionsForService,
+  isFixedRecurringRate,
+  isAiAutomationService,
+  AI_BUDGET_OPTION,
+} from "@/lib/booking-budget-options";
 import { BOOKING_CURRENCY_CODES } from "@/lib/booking-currencies";
 
 const bookingSchema = z
@@ -28,13 +33,21 @@ const bookingSchema = z
     // reasoning as the auth check below.
     termsAccepted: z.literal("on", "You must agree to the Terms and Conditions."),
   })
+  // AI Automation is never priced on the form, in any currency — the only
+  // accepted budget is the "find out during your scoping call" option.
+  .refine(
+    (data) => !isAiAutomationService(data.serviceInterest) || data.budgetRange === AI_BUDGET_OPTION,
+    {
+      message: "That budget doesn't match the selected package. Please pick again.",
+      path: ["budgetRange"],
+    }
+  )
   // A recurring NGN rate (Website Maintenance, SEO) is a real fixed price,
   // not a range, and the booking form never offers a "write your own"
   // escape hatch for it — so it's the one case still checked against the
   // known value, closing off posting directly to this endpoint with a
   // number that isn't the actual rate. Every other NGN service's
-  // budgetRange is either one of its real tiered ranges, a "to be quoted"
-  // placeholder (AI Automation, which has no fixed NGN rate at all), or
+  // budgetRange is either one of its real tiered ranges, or
   // free text from the form's "Other — I'll describe it" option, and a
   // non-NGN booking's budgetRange is the package's real international
   // price computed client-side from a live exchange rate (or likewise
@@ -43,8 +56,8 @@ const bookingSchema = z
   // real price at confirm time, see admin/bookings/actions.ts), so any
   // non-empty value (already enforced by budgetRange's own min/max above)
   // is accepted. isFixedRecurringRate is checked directly rather than
-  // inferred from budgetOptionsForService's result length, since the "to
-  // be quoted" placeholder is also a single string but isn't a real
+  // inferred from budgetOptionsForService's result length, since the AI
+  // "scoping call" option is also a single string but isn't a real
   // commitment the way a recurring rate is.
   .refine(
     (data) => {

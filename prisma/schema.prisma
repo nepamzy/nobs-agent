@@ -836,6 +836,11 @@ model WhatsAppMessage {
   contact   WhatsAppContact @relation(fields: [contactId], references: [id])
   direction String // "in" | "out"
   body      String          @db.Text
+  // Meta's own message id ("wamid...") on inbound messages, null on our
+  // outbound replies. Unique so a webhook Meta redelivers (it retries on
+  // any slow or failed ack) is rejected at insert time instead of getting
+  // a second AI reply — see src/app/api/whatsapp/webhook/route.ts.
+  waMessageId String?       @unique
   createdAt DateTime        @default(now())
 
   @@index([contactId, createdAt])

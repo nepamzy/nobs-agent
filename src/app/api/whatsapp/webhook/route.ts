@@ -1,5 +1,7 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isUniqueConstraintError } from "@/lib/prisma-errors";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import { WHATSAPP_SYSTEM_PROMPT } from "@/lib/whatsapp-knowledge-base";
 import { notifyAdminsPush } from "@/lib/push";
@@ -19,11 +21,41 @@ export async function GET(req: NextRequest) {
   return new NextResponse("Forbidden", { status: 403 });
 }
 
+// Meta signs every webhook POST with the app's App Secret
+// (X-Hub-Signature-256: "sha256=<hex HMAC of the raw body>"). Without
+// checking it, anyone who finds this URL could post a fake "message" and
+// make the bot spend Claude/WhatsApp credit replying to any number they
+// choose. Fails closed: no secret configured means nothing is accepted.
+function hasValidMetaSignature(rawBody: string, header: string | null): boolean {
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appSecret) {
+    console.error("[whatsapp webhook] Missing WHATSAPP_APP_SECRET, rejecting all webhook POSTs");
+    return false;
+  }
+  if (!header?.startsWith("sha256=")) return false;
+
+  const expected = createHmac("sha256", appSecret).update(rawBody, "utf8").digest();
+  const received = Buffer.from(header.slice("sha256=".length), "hex");
+  return received.length === expected.length && timingSafeEqual(received, expected);
+}
+
 // Every inbound message, and every delivery/read status update, arrives
 // here. We only act on actual text messages; everything else is
 // acknowledged and ignored.
 export async function POST(req: NextRequest) {
-  const payload = await req.json();
+  // The signature covers the exact bytes Meta sent, so read the raw text
+  // first and only parse it after it's been verified.
+  const rawBody = await req.text();
+  if (!hasValidMetaSignature(rawBody, req.headers.get("x-hub-signature-256"))) {
+    return new NextResponse("Invalid signature", { status: 401 });
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return new NextResponse("Invalid JSON", { status: 400 });
+  }
 
   try {
     const change = payload?.entry?.[0]?.changes?.[0]?.value;
@@ -52,16 +84,31 @@ export async function POST(req: NextRequest) {
       create: { waId, profileName },
     });
 
-    await prisma.whatsAppMessage.create({
-      data: { contactId: contact.id, direction: "in", body: incomingText },
-    });
+    // Meta redelivers a webhook whenever our ack is slow or fails, so the
+    // same message can arrive more than once. waMessageId is unique: the
+    // insert for a repeat delivery fails, and we stop before replying a
+    // second time. This also holds when two deliveries race each other.
+    try {
+      await prisma.whatsAppMessage.create({
+        data: {
+          contactId: contact.id,
+          direction: "in",
+          body: incomingText,
+          waMessageId: message.id,
+        },
+      });
+    } catch (err) {
+      if (isUniqueConstraintError(err)) {
+        return NextResponse.json({ ok: true, duplicate: true });
+      }
+      throw err;
+    }
 
-    // Last 20 turns of history is enough context without the prompt
-    // growing unbounded on a long-running conversation.
+    // The whole conversation, oldest first, so the bot always has the full
+    // context, including the message that just arrived.
     const history = await prisma.whatsAppMessage.findMany({
       where: { contactId: contact.id },
       orderBy: { createdAt: "asc" },
-      take: 20,
     });
 
     const replyText = await getAiReply(history);

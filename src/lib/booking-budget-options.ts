@@ -7,11 +7,17 @@ import { aiAutomationTiers } from "@/lib/data/ai-automation-pricing";
 // package's real price on /pricing, never a generic guess. Pure/static,
 // safe to import from a client component.
 
-// AI Automation has no fixed NGN price at all (see ai-automation-pricing.ts
-// — every build is scoped per client), so its names are tracked separately
-// rather than folded into pricingByService below, and budgetOptionsForService
-// special-cases them instead of guessing a Naira range.
+// AI Automation has no price at all, in any currency (see
+// ai-automation-pricing.ts — every build is scoped per client), so its
+// names are tracked separately rather than folded into pricingByService
+// below. Its only budget option is AI_BUDGET_OPTION: the number is agreed
+// on the scoping call, never picked or typed on the form.
 export const AI_AUTOMATION_SERVICE_NAMES = aiAutomationTiers.map((t) => t.name);
+export const AI_BUDGET_OPTION = "Find out during your scoping call";
+
+export function isAiAutomationService(serviceInterest: string): boolean {
+  return AI_AUTOMATION_SERVICE_NAMES.includes(serviceInterest);
+}
 
 export const services = [
   // Listed first, deliberately — someone who doesn't yet know which
@@ -34,6 +40,7 @@ export const services = [
   "Website Redesign",
   "Website Maintenance",
   "SEO",
+  "Hosting (management)",
   "Branding",
   ...AI_AUTOMATION_SERVICE_NAMES,
 ];
@@ -80,12 +87,9 @@ function roundToNiceNumber(amount: number): number {
 export function budgetOptionsForService(serviceInterest: string): string[] {
   if (serviceInterest === "Not sure yet") return GENERIC_BUDGETS;
 
-  // Every AI Automation build is scoped to the client with no fixed NGN
-  // rate at all (see ai-automation-pricing.ts) — GENERIC_BUDGETS would
-  // wrongly imply a sub-₦2m ballpark, so there's nothing to anchor a
-  // Naira range to here, unlike the genuine "don't know yet" case above.
-  if (AI_AUTOMATION_SERVICE_NAMES.includes(serviceInterest)) {
-    return ["To be quoted after your call"];
+  // AI Automation is never priced on the form, in any currency.
+  if (isAiAutomationService(serviceInterest)) {
+    return [AI_BUDGET_OPTION];
   }
 
   const item = pricingByService[serviceInterest];

@@ -1,8 +1,8 @@
-// AI Automation is a new service line, scoped per client rather than
-// priced off a fixed card like the rest of /pricing — no standardPrice/
-// launchPrice fields here on purpose. Kept as its own file/shape rather
-// than forced into PricingCategoryItem so a real number can be added
-// later without fighting a type built for the launch-price display.
+// AI Automation is a service line scoped per client and never priced on
+// the site, in any currency — no standardPrice/launchPrice fields here on
+// purpose, and no entry in pricing-international.ts. The number is agreed
+// on the scoping call. Copy is written for clients, in plain English: no
+// technical terms like "RAG" or "RBAC".
 
 export type AiAutomationTier = {
   id: string;
@@ -18,18 +18,18 @@ export const aiAutomationTiers: AiAutomationTier[] = [
     name: "Starter AI",
     audience: "Small businesses & solo operators",
     summary:
-      "One clear automation, done properly — a support chat, a booking assistant, or a lead-qualifier trained on your own content, not a generic bot.",
+      "One clear job, done properly: answering customers, helping with bookings, or sorting serious enquiries from casual ones, trained on your own business information, not a generic bot.",
     inclusions: [
-      "Discovery call to scope exactly one core use case: customer support, booking assistance, lead qualification, or review/reputation management",
-      "Custom-trained on your own FAQs, docs, menu, or policies — never a generic off-the-shelf script",
-      "Deployed on your website plus one messaging channel (WhatsApp or Instagram DM)",
-      "Branded chat widget matched to your site's actual look, not a default template",
-      "Human handoff built in — flags anything it can't answer confidently and routes it straight to you",
-      "Conversation logging so you can see exactly what customers are asking, in plain view",
-      "One full round of tone and response refinement after real customer conversations come in",
-      "A short setup walkthrough call for you or your staff, plus a written quick-start guide",
-      "30 days of post-launch adjustments included at no extra cost",
-      "Monthly usage and uptime report",
+      "A discovery call to pick the one job it will do: answering customer questions, helping with bookings, sorting serious enquiries, or handling reviews",
+      "Trained on your own FAQs, documents, menu or policies, so it answers the way your business would",
+      "Works on your website plus one messaging app (WhatsApp or Instagram DM)",
+      "A chat window designed to match your website's look",
+      "Hands over to you whenever it isn't sure, so customers are never left without an answer",
+      "Every conversation saved, so you can see exactly what customers are asking",
+      "One full round of adjusting its tone and answers after real customers start using it",
+      "A short setup call for you or your staff, plus a written quick-start guide",
+      "30 days of adjustments after launch at no extra cost",
+      "A monthly report on how much it was used and whether it stayed online",
     ],
   },
   {
@@ -37,19 +37,19 @@ export const aiAutomationTiers: AiAutomationTier[] = [
     name: "Growth AI",
     audience: "Medium businesses, multi-location or multi-department",
     summary:
-      "AI woven into how you actually operate — connected to the tools you already run, not just a chat widget bolted onto the homepage.",
+      "AI built into how your business actually runs, connected to the tools you already use, not just a chat window added to the homepage.",
     inclusions: [
-      "Everything in Starter AI, extended across multiple locations or departments",
-      "Integration with your existing CRM, booking system, inventory, or scheduling tools — so the AI can take real action, not just answer questions",
-      "Multi-channel deployment (website, WhatsApp, email, and/or SMS) unified into one AI-assisted inbox with human takeover at any point",
-      "An internal \"ask our docs\" assistant for staff, trained on your SOPs, policies, or product/service information to cut onboarding time",
-      "Document processing automation — structured data extracted automatically from intake forms, applications, or receipts",
-      "No-show and re-engagement automation — predictive reminders and follow-up sequences for bookings or appointments",
-      "Custom conversation flows built around your specific process (multi-step booking, financing/insurance qualification, appointment triage, etc.)",
-      "An analytics dashboard showing automation volume, resolution rate, and exactly where the AI hands off to a human",
-      "A staff training session on reviewing and correcting the AI's behavior over time",
-      "60 days of post-launch tuning plus one scheduled review call",
-      "Priority support through setup and the first month live",
+      "Everything in Starter AI, across several branches or departments",
+      "Connected to the systems you already use (customer records, bookings, stock, schedules) so it can get real work done, not just answer questions",
+      "Website, WhatsApp, email and SMS messages in one shared inbox, where your team can take over any conversation at any time",
+      "A staff assistant that answers questions from your own manuals and policies, so new staff get up to speed faster",
+      "Information pulled out of forms, applications or receipts automatically, so nobody has to retype it",
+      "Automatic reminders before appointments and follow-ups for people who missed one or went quiet",
+      "Conversation steps designed around your own process, such as multi-step bookings or checking who qualifies for financing",
+      "A dashboard showing how many conversations the AI handled, how many it resolved, and when it passed one to a person",
+      "A training session showing your staff how to review and correct the AI over time",
+      "60 days of adjustments after launch, plus one scheduled review call",
+      "Priority support during setup and the first month live",
     ],
   },
   {
@@ -57,20 +57,20 @@ export const aiAutomationTiers: AiAutomationTier[] = [
     name: "Enterprise AI",
     audience: "Institutions & company-size organizations",
     summary:
-      "Built to the same security and compliance standard as the rest of your platform — for hospitals, multi-branch dealerships, and institutions with real data-governance requirements.",
+      "Built to the same security standard as the rest of your systems, for hospitals, large organizations, and institutions with strict rules about how data is handled.",
     inclusions: [
-      "Everything in Growth AI, scoped across your full organization",
-      "A custom retrieval-augmented (RAG) system built over your own proprietary data — policy manuals, medical protocols, engineering docs, case files — with source citations on every answer",
-      "Role-based access control and full audit logging on every AI interaction, matching the security standard the rest of your platform is already held to",
-      "Tool-using AI agents that operate your internal systems directly — creating bookings, updating records, sending notifications — not just answering questions",
-      "Automatic multi-language support, matching each customer's or staff member's own language",
-      "Fraud and anomaly detection tuned to your transaction or claims data, where applicable",
-      "A plain-English analytics copilot answering questions directly from your existing dashboards and reports",
-      "A dedicated data pipeline keeping the AI's knowledge current as your internal documents change",
-      "A formal security review and data-handling agreement completed before go-live",
-      "A phased rollout — a pilot department or branch first, then full deployment once it's proven",
-      "A dedicated point of contact throughout the build and a defined post-launch support window",
-      "Ongoing model and integration maintenance available as a retainer after launch",
+      "Everything in Growth AI, across your whole organization",
+      "An assistant that answers from your own private documents (policy manuals, procedures, case files) and shows which document each answer came from",
+      "Each person only sees what their role allows, and every AI conversation and action is recorded so you can always check who did what",
+      "AI that can carry out tasks in your internal systems (making bookings, updating records, sending notifications), with your team approving anything important",
+      "Replies automatically in each customer's or staff member's own language",
+      "Spotting unusual transactions or claims that might be fraud or mistakes, where that applies",
+      "Ask questions about your reports and dashboards in plain English and get straight answers",
+      "Keeps its knowledge up to date automatically as your documents change",
+      "A formal security review and a written data-handling agreement before anything goes live",
+      "Rolled out in stages: one department or branch first, then everywhere once it's proven",
+      "One dedicated contact person throughout the build, and a clear support period after launch",
+      "Ongoing upkeep available on a monthly arrangement after launch",
     ],
   },
 ];

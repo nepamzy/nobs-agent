@@ -209,7 +209,6 @@ export const pricingZh: Record<string, string> = {
   "Every service, broken down": "每项服务详解",
   "Best for": "适合",
   "Typical timeline": "通常周期",
-  "Starting price": "起步价",
   "What you get": "包含内容",
   "Website packages here can add Starter AI at a bundle discount.": "此类别中的网站套餐可以组合折扣加购 Starter AI。",
   "See full pricing": "查看全部价格",

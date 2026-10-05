@@ -209,7 +209,6 @@ export const pricingFr: Record<string, string> = {
   "Every service, broken down": "Chaque service en détail",
   "Best for": "Idéal pour",
   "Typical timeline": "Délai habituel",
-  "Starting price": "Prix de départ",
   "What you get": "Ce que vous obtenez",
   "Website packages here can add Starter AI at a bundle discount.": "Les formules de site web de cette catégorie peuvent ajouter Starter AI avec une remise groupée.",
   "See full pricing": "Voir tous les tarifs",

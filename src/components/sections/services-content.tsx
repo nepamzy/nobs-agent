@@ -4,11 +4,9 @@ import Link from "next/link";
 import { ArrowUpRight, Check, Sparkles } from "lucide-react";
 import { Carousel3D } from "@/components/carousel-3d";
 import { HashScroll } from "@/components/hash-scroll";
-import { PriceDisplay } from "@/components/price-display";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { pricingGroups, hasStarterAiBundle } from "@/lib/data/pricing-detailed";
 import { usePricingText } from "@/lib/i18n/pricing-text";
-import { internationalFloorPrices } from "@/lib/data/pricing-international";
 import { PageHeader } from "@/components/page-header";
 
 // Ongoing Care is recurring, not a one-time delivery, so it gets its own
@@ -83,14 +81,10 @@ export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples
                   </p>
 
                   <p className="mt-5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-brass)]">
-                    {tp("Starting price")}
+                    {tp("Pricing")}
                   </p>
                   <p className="mt-1.5 text-sm text-[var(--color-paper)]">
-                    <PriceDisplay
-                      ngnAmount={cheapestItem.launchPrice}
-                      internationalFloor={internationalFloorPrices[cheapestItem.name]}
-                    />
-                    {cheapestItem.unit ?? ""}
+                    {tp("Tailored pricing — book a free consultation for the exact number.")}
                   </p>
                 </div>
 

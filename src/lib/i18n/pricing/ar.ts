@@ -209,7 +209,6 @@ export const pricingAr: Record<string, string> = {
   "Every service, broken down": "كل خدمة بالتفصيل",
   "Best for": "الأنسب لـ",
   "Typical timeline": "المدة المعتادة",
-  "Starting price": "السعر المبدئي",
   "What you get": "ما تحصل عليه",
   "Website packages here can add Starter AI at a bundle discount.": "يمكن لباقات المواقع في هذه الفئة إضافة Starter AI بخصم الباقة.",
   "See full pricing": "عرض كل الأسعار",

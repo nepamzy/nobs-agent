@@ -15,6 +15,7 @@ import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 import { InstallPromptModal } from "@/components/install-prompt-modal";
 import { SiteFooter } from "@/components/site-footer";
 import { WhatsAppButton } from "@/components/whatsapp-button";
+import { SiteAssistant } from "@/components/site-assistant";
 import { OrganizationJsonLd } from "@/components/organization-json-ld";
 import { getSiteUrl } from "@/lib/env";
 
@@ -104,6 +105,7 @@ export default function RootLayout({
                 </main>
                 <SiteFooter />
                 <WhatsAppButton />
+                <SiteAssistant />
                 <CookieConsentBanner />
                 <InstallPromptModal />
               </ThemeProvider>

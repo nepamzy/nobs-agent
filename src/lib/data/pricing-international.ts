@@ -28,6 +28,16 @@ export const internationalFloorPrices: Record<string, number> = {
   "UI/UX Design": 3000,
   "Website Redesign": 1500,
 
+  // Ongoing Care: a straight conversion of the NGN launch price (not a
+  // researched market floor like the entries above), at ₦1,331 = $1 on
+  // 2026-10-05, rounded to a clean number. Maintenance and SEO are per
+  // month and Hosting per year (same `unit` as pricing-detailed.ts);
+  // Branding is one-time.
+  "Website Maintenance": 65,
+  "SEO": 70,
+  "Hosting (management)": 60,
+  "Branding": 90,
+
   // AI Automation (ai-automation-pricing.ts) deliberately has no entry:
   // it's never priced on the site, in any currency — the number is agreed
   // on the scoping call. See AI_BUDGET_OPTION in booking-budget-options.ts.

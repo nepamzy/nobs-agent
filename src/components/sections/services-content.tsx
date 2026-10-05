@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Check } from "lucide-react";
+import { ArrowUpRight, Check, Sparkles } from "lucide-react";
 import { Carousel3D } from "@/components/carousel-3d";
 import { HashScroll } from "@/components/hash-scroll";
 import { PriceDisplay } from "@/components/price-display";
 import { useLanguage } from "@/lib/i18n/language-context";
-import { pricingGroups } from "@/lib/data/pricing-detailed";
+import { pricingGroups, hasStarterAiBundle } from "@/lib/data/pricing-detailed";
+import { usePricingText } from "@/lib/i18n/pricing-text";
 import { internationalFloorPrices } from "@/lib/data/pricing-international";
 import { PageHeader } from "@/components/page-header";
 
@@ -22,6 +23,7 @@ const TIMELINE_BY_GROUP: Record<string, string> = {
 
 export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples: boolean }) {
   const { t } = useLanguage();
+  const tp = usePricingText();
 
   const groups = [
     { id: "institutional", title: t("service_institutional_name"), desc: t("svc_institutional_desc_full") },
@@ -55,7 +57,7 @@ export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples
 
       <div className="mt-24 space-y-6">
         <h2 className="font-[family-name:var(--font-display)] text-2xl font-medium">
-          Every service, broken down
+          {tp("Every service, broken down")}
         </h2>
 
         {pricingGroups.map((group) => {
@@ -63,25 +65,25 @@ export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples
           return (
             <div key={group.id} id={`${group.id}-detail`} className="glass rounded-2xl p-8">
               <h3 className="font-[family-name:var(--font-display)] text-xl font-medium">
-                {group.title}
+                {tp(group.title)}
               </h3>
 
               <div className="mt-5 grid gap-8 sm:grid-cols-2">
                 <div>
                   <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-brass)]">
-                    Best for
+                    {tp("Best for")}
                   </p>
-                  <p className="mt-1.5 text-sm text-[var(--color-slate)]">{group.description}</p>
+                  <p className="mt-1.5 text-sm text-[var(--color-slate)]">{tp(group.description)}</p>
 
                   <p className="mt-5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-brass)]">
-                    Typical timeline
+                    {tp("Typical timeline")}
                   </p>
                   <p className="mt-1.5 text-sm text-[var(--color-slate)]">
-                    {TIMELINE_BY_GROUP[group.id]}
+                    {tp(TIMELINE_BY_GROUP[group.id])}
                   </p>
 
                   <p className="mt-5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-brass)]">
-                    Starting price
+                    {tp("Starting price")}
                   </p>
                   <p className="mt-1.5 text-sm text-[var(--color-paper)]">
                     <PriceDisplay
@@ -94,16 +96,22 @@ export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples
 
                 <div>
                   <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-brass)]">
-                    What you get
+                    {tp("What you get")}
                   </p>
                   <ul className="mt-1.5 space-y-1.5">
                     {cheapestItem.bullets.map((b) => (
                       <li key={b} className="flex items-start gap-2 text-sm text-[var(--color-slate)]">
                         <Check size={14} className="mt-0.5 shrink-0 text-[var(--color-brass)]" />
-                        {b}
+                        {tp(b)}
                       </li>
                     ))}
                   </ul>
+                  {group.items.some((item) => hasStarterAiBundle(item.name)) && (
+                    <p className="mt-4 flex items-start gap-2 text-xs text-[var(--color-teal)]">
+                      <Sparkles size={13} className="mt-0.5 shrink-0" />
+                      {tp("Website packages here can add Starter AI at a bundle discount.")}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -112,21 +120,21 @@ export function ServicesContent({ hasPortfolioExamples }: { hasPortfolioExamples
                   href="/pricing"
                   className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-paper)] transition hover:border-[var(--color-brass)] hover:text-[var(--color-brass)]"
                 >
-                  See full pricing
+                  {tp("See full pricing")}
                 </Link>
                 {hasPortfolioExamples && (
                   <Link
                     href="/portfolio"
                     className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-paper)] transition hover:border-[var(--color-brass)] hover:text-[var(--color-brass)]"
                   >
-                    Example projects
+                    {tp("Example projects")}
                   </Link>
                 )}
                 <Link
                   href="/booking"
                   className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
                 >
-                  Start this <ArrowUpRight size={14} />
+                  {tp("Start this")} <ArrowUpRight size={14} />
                 </Link>
               </div>
             </div>

@@ -297,3 +297,28 @@ export const pricingGroups: PricingGroup[] = [
     ],
   },
 ];
+
+// The build packages that come AI-ready, with Starter AI available as an
+// add-on at a bundle discount. The size of the discount is agreed with the
+// client after the scoping call, so no number appears anywhere on the
+// site. Left out on purpose: UI/UX Design (design only, nothing is built)
+// and the Ongoing Care items (Maintenance, SEO, Hosting, Branding).
+export const STARTER_AI_BUNDLE_PACKAGES: string[] = [
+  "School Portals",
+  "Hospital Systems",
+  "Church Websites",
+  "Hotel Booking",
+  "Restaurant Websites",
+  "Car Dealership Websites",
+  "eCommerce",
+  "Business Websites",
+  "Corporate Websites",
+  "Landing Pages",
+  "Real Estate Platforms",
+  "Custom Web Applications",
+  "Website Redesign",
+];
+
+export function hasStarterAiBundle(packageName: string): boolean {
+  return STARTER_AI_BUNDLE_PACKAGES.includes(packageName);
+}

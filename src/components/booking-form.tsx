@@ -10,6 +10,7 @@ import {
   budgetOptionsForService,
   isFixedRecurringRate,
   isAiAutomationService,
+  recurringUnitFor,
   AI_AUTOMATION_SERVICE_NAMES,
 } from "@/lib/booking-budget-options";
 import { BOOKING_CURRENCIES, type BookingCurrencyCode } from "@/lib/booking-currencies";
@@ -44,14 +45,15 @@ function roundToNiceBudgetNumber(amount: number): number {
 // number — three escalating bands above the floor (4/3x, 10/3x, 5x, e.g.
 // a $3,000 floor becomes $3,000–$4,000 / $4,000–$10,000 /
 // $10,000–$15,000) let someone signal a bigger budget, plus a leading
-// "Not sure yet" for someone who doesn't know yet. A service with no
-// researched international floor (e.g. recurring items like SEO) falls
-// back to a plain "to be quoted" option instead of guessing a number.
+// "Not sure yet" for someone who doesn't know yet. A recurring item
+// (Maintenance, SEO, Hosting) is its one fixed rate per period instead.
+// A service with no international price at all falls back to a plain
+// "to be quoted" option instead of guessing a number.
 // `rates` still loading (null) returns no options at all, so the field
 // can't be submitted until real prices are known —
 // src/lib/exchange-rates.ts's convertAmount needs it to mean anything.
 // Every branch below ends with OTHER_BUDGET_OPTION tacked on, except a
-// recurring NGN rate (Website Maintenance, SEO) — that's one real fixed
+// recurring rate (Website Maintenance, SEO, Hosting) — that's one real fixed
 // number, not a range to negotiate, so there's nothing to "describe
 // instead of." AI Automation is the other exception: its single "find out
 // during your scoping call" option is all it ever gets, in any currency.
@@ -80,6 +82,12 @@ function computeBudgetOptions(
   const fmt = (n: number) => `${meta?.symbol ?? currency} ${n.toLocaleString()}`;
 
   const floor = Math.round(convertAmount(floorUsd, "USD", currency, rates));
+
+  // A recurring rate (Maintenance, SEO, Hosting) is one fixed price per
+  // period, same as in NGN: no ranges, and nothing to "describe instead".
+  const unit = recurringUnitFor(service);
+  if (unit) return [`${fmt(floor)}${unit}`];
+
   const tier1 = roundToNiceBudgetNumber(floor * (4 / 3));
   const tier2 = roundToNiceBudgetNumber(floor * (10 / 3));
   const tier3 = roundToNiceBudgetNumber(floor * 5);

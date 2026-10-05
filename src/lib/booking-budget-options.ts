@@ -63,6 +63,13 @@ export function isFixedRecurringRate(serviceInterest: string): boolean {
   return Boolean(pricingByService[serviceInterest]?.unit);
 }
 
+// The billing period of a recurring rate ("/month", "/year"), or
+// undefined for one-time work. Lets the booking form show an overseas
+// visitor the same single fixed rate, in their currency.
+export function recurringUnitFor(serviceInterest: string): string | undefined {
+  return pricingByService[serviceInterest]?.unit;
+}
+
 function formatNaira(amount: number): string {
   if (amount >= 1_000_000) {
     const millions = amount / 1_000_000;

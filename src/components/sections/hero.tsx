@@ -22,7 +22,7 @@ const quickLinks = [
   { label: "View Projects", href: "/portfolio", icon: FolderKanban },
   { label: "About", href: "/about", icon: User },
   { label: "Skills", href: "/skills", icon: Wrench },
-  { label: "Pricing", href: "/pricing", icon: Tags },
+  { label: "Packages", href: "/pricing", icon: Tags },
   { label: "Case Studies", href: "/case-studies", icon: Briefcase },
   { label: "Contact", href: "/contact", icon: Mail },
 ] as const;

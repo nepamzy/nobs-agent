@@ -22,7 +22,7 @@ export const siteMap: SiteMapEntry[] = [
   { label: "Case Studies", href: "/case-studies", section: "Site", access: "public" },
   { label: "Clients", href: "/clients", section: "Site", access: "public" },
   { label: "Testimonials", href: "/testimonials", section: "Site", access: "public" },
-  { label: "Pricing", href: "/pricing", section: "Site", access: "public" },
+  { label: "Packages", href: "/pricing", section: "Site", access: "public" },
   { label: "Blog", href: "/blog", section: "Site", access: "public" },
   { label: "Resources", href: "/resources", section: "Site", access: "public" },
   { label: "Skills", href: "/skills", section: "Site", access: "public" },

@@ -10,7 +10,7 @@ export const siteContent = {
     { label: "Work", href: "/portfolio" },
     { label: "Services", href: "/services" },
     { label: "About", href: "/about" },
-    { label: "Pricing", href: "/pricing" },
+    { label: "Packages", href: "/pricing" },
     { label: "Blog", href: "/blog" },
     { label: "Contact", href: "/contact" },
     { label: "Careers", href: "/careers" },

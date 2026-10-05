@@ -31,7 +31,7 @@ const columns = [
     titleKey: "footer_engage",
     links: [
       { label: "Services", href: "/services" },
-      { label: "Pricing", href: "/pricing" },
+      { label: "Packages", href: "/pricing" },
       { label: "Book a call", href: "/booking" },
       { label: "Client portal", href: "/dashboard" },
     ],

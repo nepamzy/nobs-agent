@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Check, ArrowUpRight, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { NigeriaDiscountBanner } from "@/components/nigeria-discount-banner";
-import { pricingGroups, hasStarterAiBundle, type PricingTier } from "@/lib/data/pricing-detailed";
+import { pricingGroups, type PricingTier } from "@/lib/data/pricing-detailed";
 import { aiAutomationTiers } from "@/lib/data/ai-automation-pricing";
 import { usePricingText } from "@/lib/i18n/pricing-text";
 
@@ -23,7 +23,7 @@ export function PricingContent() {
   return (
     <div>
       <PageHeader
-        eyebrow={tp("Pricing")}
+        eyebrow={tp("Packages")}
         title={tp("Scoped by category, not guesswork")}
         description={tp(
           "Every category below has a clear, fixed scope — the exact price is set on your consultation call."
@@ -45,11 +45,11 @@ export function PricingContent() {
         <div className="mt-4 rounded-2xl border border-[var(--color-teal)]/40 p-6 text-sm text-[var(--color-slate)]">
           <p className="flex items-center gap-2 font-medium text-[var(--color-teal)]">
             <Sparkles size={16} className="shrink-0" />
-            {tp("Every website package comes AI-ready")}
+            {tp("AI built into every package")}
           </p>
           <p className="mt-2">
             {tp(
-              "Add Starter AI to any package marked below at a special bundle discount. The size of the discount is agreed with you after your scoping call."
+              "AI handles the routine work automatically. Your team stays in control and steps in whenever judgment, approval, a sensitive matter or a personal response is needed."
             )}
           </p>
         </div>
@@ -94,13 +94,6 @@ export function PricingContent() {
                     ))}
                   </ul>
 
-                  {hasStarterAiBundle(item.name) && (
-                    <p className="mt-5 flex items-start gap-2 rounded-lg border border-[var(--color-teal)]/30 px-3 py-2 text-xs text-[var(--color-teal)]">
-                      <Sparkles size={13} className="mt-0.5 shrink-0" />
-                      {tp("Add Starter AI at a bundle discount")}
-                    </p>
-                  )}
-
                   <Link
                     href="/booking"
                     className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full border border-[var(--color-line)] px-4 py-2.5 text-sm font-medium transition hover:border-[var(--color-brass)]"
@@ -141,12 +134,6 @@ export function PricingContent() {
                   {tp(t.audience)}
                 </p>
                 <p className="mt-3 text-sm text-[var(--color-slate)]">{tp(t.summary)}</p>
-
-                {t.id === "starter-ai" && (
-                  <p className="mt-3 text-xs text-[var(--color-teal)]">
-                    {tp("Discounted when added to a website package.")}
-                  </p>
-                )}
 
                 <ul className="mt-5 flex-1 space-y-2.5">
                   {t.inclusions.map((b) => (

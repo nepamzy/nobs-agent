@@ -37,7 +37,7 @@ const fallbackPlans: PricingPlan[] = [
     features: [
       "Up to 15 pages",
       "Admin dashboard for content edits",
-      "Payment integration (Paystack/Flutterwave/Stripe)",
+      "Payment integration (Paystack/Flutterwave)",
       "Blog with categories & SEO metadata",
       "Booking or inquiry system",
       "3 months of post-launch support",

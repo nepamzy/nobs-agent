@@ -33,6 +33,12 @@ function trimHistory(messages: ChatMessage[]): ChatMessage[] {
   return recent[0]?.role === "assistant" ? recent.slice(1) : recent;
 }
 
+// The assistant is told to reply in plain text, but strip any markdown
+// emphasis markers that slip through so they don't show as raw asterisks.
+function cleanReply(text: string): string {
+  return text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1");
+}
+
 // Replies can contain links to /booking, /pricing etc. Render URLs as
 // links and everything else as plain text (never as HTML).
 function Linkified({ text }: { text: string }) {
@@ -113,12 +119,27 @@ export function SiteAssistant() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: trimHistory(next) }),
       });
-      const data = await res.json();
-      if (!res.ok || typeof data.reply !== "string") {
-        setError(typeof data.error === "string" ? data.error : t("assistant_error"));
+      // Errors (rate limit, invalid request) come back as JSON with a
+      // non-200 status; a normal reply is streamed as plain text.
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => null);
+        setError(typeof data?.error === "string" ? data.error : t("assistant_error"));
         return;
       }
-      updateMessages([...next, { role: "assistant", content: data.reply }]);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let reply = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        reply += decoder.decode(value, { stream: true });
+        // Show the reply growing as it arrives (not saved until complete).
+        setMessages([...next, { role: "assistant", content: cleanReply(reply) }]);
+        setSending(false);
+      }
+      reply = cleanReply(reply + decoder.decode());
+      updateMessages([...next, { role: "assistant", content: reply || t("assistant_error") }]);
     } catch {
       setError(t("assistant_error"));
     } finally {

@@ -7,6 +7,7 @@ import { NigeriaDiscountBanner } from "@/components/nigeria-discount-banner";
 import { pricingGroups, type PricingTier } from "@/lib/data/pricing-detailed";
 import { aiAutomationTiers } from "@/lib/data/ai-automation-pricing";
 import { usePricingText } from "@/lib/i18n/pricing-text";
+import { PackageIllustration } from "@/components/package-illustration";
 
 const tierStyles: Record<PricingTier, string> = {
   Starter: "border-[var(--color-line)] text-[var(--color-slate)]",
@@ -70,6 +71,9 @@ export function PricingContent() {
             <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {group.items.map((item) => (
                 <div key={item.name} className="glass flex flex-col rounded-2xl p-6">
+                  <div className="mb-5">
+                    <PackageIllustration name={item.name} />
+                  </div>
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-[family-name:var(--font-display)] text-lg font-medium">
                       {tp(item.name)}

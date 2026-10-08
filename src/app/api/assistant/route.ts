@@ -85,16 +85,21 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       let sentText = false;
       try {
-        const stream = anthropic.beta.messages.stream({
-          model: "claude-opus-5-5",
-          // A cost ceiling for a public endpoint: replies are meant to be
-          // short, and low effort keeps thinking brief.
+        const stream = anthropic.messages.stream({
+          // This is closed-book Q&A over a fixed script (see
+          // site-assistant-knowledge.ts) — no reasoning, no tool use — so
+          // Haiku is the right-sized model, not Opus. Thinking is
+          // explicitly disabled (Haiku 5.5 allows this at effort "high" or
+          // below): Opus 5.5 can't disable it at all, and the invisible
+          // "thinking" phase before any visible text streams is what was
+          // actually making replies feel slow, not the text generation
+          // itself. Haiku 5.5 also has no server-side refusal fallback
+          // (unlike Opus 5.5/Fable), so none is requested here — a refusal
+          // still falls through to the FALLBACK_REPLY check below.
+          model: "claude-haiku-5-5",
           max_tokens: 4000,
+          thinking: { type: "disabled" },
           output_config: { effort: "low" },
-          // If the model declines a message, the API retries it on a
-          // fallback model inside the same call instead of failing.
-          betas: ["server-side-fallback-2026-07-01"],
-          fallbacks: "default",
           system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
           messages,
         });

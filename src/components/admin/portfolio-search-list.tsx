@@ -15,6 +15,7 @@ type ProjectRow = {
   industry: string;
   hidden: boolean;
   featured: boolean;
+  nda: boolean;
 };
 
 export function PortfolioSearchList({
@@ -67,6 +68,11 @@ export function PortfolioSearchList({
                 {row.featured && (
                   <span className="ml-2 rounded-full border border-[var(--color-brass)]/50 px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--color-brass)]">
                     Featured
+                  </span>
+                )}
+                {row.nda && (
+                  <span className="ml-2 rounded-full border border-[var(--color-teal)]/50 px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--color-teal)]">
+                    NDA
                   </span>
                 )}
               </p>

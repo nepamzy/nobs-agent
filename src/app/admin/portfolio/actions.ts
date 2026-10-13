@@ -149,6 +149,7 @@ export async function createProject(
         gallery: formData.getAll("gallery").map(String).filter(Boolean),
         featured: formData.get("featured") === "on",
         hidden: formData.get("hidden") === "on",
+        nda: formData.get("nda") === "on",
         clientId,
       },
     });
@@ -198,6 +199,7 @@ export async function updateProject(
         gallery: formData.getAll("gallery").map(String).filter(Boolean),
         featured: formData.get("featured") === "on",
         hidden: formData.get("hidden") === "on",
+        nda: formData.get("nda") === "on",
         ...(clientId ? { clientId } : {}),
       },
     });

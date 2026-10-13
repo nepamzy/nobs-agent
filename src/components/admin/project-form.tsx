@@ -27,6 +27,7 @@ type ProjectFormValues = {
   technologies: string[];
   featured: boolean;
   hidden: boolean;
+  nda: boolean;
   clientName?: string;
   gallery?: string[];
 };
@@ -313,7 +314,21 @@ export function ProjectForm({
           />
           Hidden from public site
         </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="nda"
+            defaultChecked={defaultValues?.nda}
+            className="h-4 w-4 accent-[var(--color-brass)]"
+          />
+          Under NDA
+        </label>
       </div>
+      <p className="text-[11px] text-[var(--color-slate)]">
+        Under NDA: the Live URL above is still saved here for your own reference, but the
+        public portfolio never shows it as a link, or at all — the rest of the case study
+        (problem, solution, results, gallery) still shows normally unless Hidden is also checked.
+      </p>
 
       <SubmitButton isEdit={Boolean(defaultValues?.id)} />
     </form>

@@ -1,7 +1,10 @@
 "use client";
 
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { ImageUpload } from "./image-upload";
 import { GalleryUpload } from "./gallery-upload";
+import type { ProjectFormState } from "@/app/admin/portfolio/actions";
 
 type ProjectFormValues = {
   id?: string;
@@ -32,16 +35,43 @@ const inputClass =
   "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-[var(--color-brass)]";
 const labelClass = "mb-1.5 block text-xs font-medium text-[var(--color-slate)]";
 
+// Submits via useActionState — not a bare `action={fn}` — so a thrown
+// validation or database error comes back as state the form can show
+// inline, instead of crashing straight to Next.js's generic error screen
+// with no indication of what was wrong (see the comment on createProject
+// in actions.ts for how that used to read to an admin: "I can't add a
+// project").
+function SubmitButton({ isEdit }: { isEdit: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brass)] px-6 py-3 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90 disabled:opacity-60"
+    >
+      {pending ? "Saving…" : isEdit ? "Save changes" : "Create project"}
+    </button>
+  );
+}
+
 export function ProjectForm({
   action,
   defaultValues,
 }: {
-  action: (formData: FormData) => void;
+  action: (prevState: ProjectFormState, formData: FormData) => Promise<ProjectFormState>;
   defaultValues?: Partial<ProjectFormValues>;
 }) {
+  const [state, formAction] = useActionState<ProjectFormState, FormData>(action, undefined);
+
   return (
-    <form action={action} className="glass space-y-5 rounded-2xl p-8">
+    <form action={formAction} className="glass space-y-5 rounded-2xl p-8">
       {defaultValues?.id && <input type="hidden" name="id" value={defaultValues.id} />}
+
+      {state?.error && (
+        <div className="rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-3 text-sm text-red-300">
+          {state.error}
+        </div>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
@@ -231,10 +261,18 @@ export function ProjectForm({
         <div className="grid gap-5">
           <div>
             <label htmlFor="project-form-live-url" className={labelClass}>Live URL</label>
+            {/* type="text", not "url" — the browser's own url-input
+                validation silently blocks submitting the whole form on
+                something like "example.com" with no scheme, with no
+                visible message beyond a small native tooltip. The server
+                action normalizes a bare domain to https:// and gives a
+                real, visible error for anything it still can't parse. */}
             <input
               id="project-form-live-url"
               name="liveUrl"
-              type="url"
+              type="text"
+              inputMode="url"
+              placeholder="example.com"
               defaultValue={defaultValues?.liveUrl ?? undefined}
               className={inputClass}
             />
@@ -244,7 +282,9 @@ export function ProjectForm({
             <input
               id="project-form-github-url"
               name="githubUrl"
-              type="url"
+              type="text"
+              inputMode="url"
+              placeholder="github.com/your-org/your-repo"
               defaultValue={defaultValues?.githubUrl ?? undefined}
               className={inputClass}
             />
@@ -275,12 +315,7 @@ export function ProjectForm({
         </label>
       </div>
 
-      <button
-        type="submit"
-        className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brass)] px-6 py-3 text-sm font-medium text-[var(--color-ink)] transition hover:opacity-90"
-      >
-        {defaultValues?.id ? "Save changes" : "Create project"}
-      </button>
+      <SubmitButton isEdit={Boolean(defaultValues?.id)} />
     </form>
   );
 }

@@ -62,7 +62,11 @@ async function fetchFromDb(): Promise<Project[] | null> {
       security: r.security ?? undefined,
       performance: r.performance ?? undefined,
       clientName: r.client?.name ?? "Confidential",
-      liveUrl: r.liveUrl ?? undefined,
+      // Stripped here, not just left for each page to check — an NDA
+      // project's live URL is still saved and editable in the admin for
+      // internal reference, but every public consumer of this function
+      // should never see it, not just the ones that remembered to ask.
+      liveUrl: r.nda ? undefined : r.liveUrl ?? undefined,
       featured: r.featured,
     }));
   } catch {

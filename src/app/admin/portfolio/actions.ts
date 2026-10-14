@@ -40,19 +40,19 @@ async function uniqueSlug(base: string, excludeId?: string) {
   return candidate;
 }
 
-function friendlyDbError(err: unknown): never {
+function friendlyDbErrorMessage(err: unknown): string {
   if (
     err &&
     typeof err === "object" &&
     "code" in err &&
     (err as { code?: string }).code === "P2002"
   ) {
-    throw new Error(
-      "A project with that slug already exists. Try a different title or set a custom slug."
-    );
+    return "A project with that slug already exists. Try a different title or set a custom slug.";
   }
-  throw err instanceof Error ? err : new Error("Something went wrong saving the project.");
+  return err instanceof Error ? err.message : "Something went wrong saving the project.";
 }
+
+export type ProjectFormState = { error: string } | undefined;
 
 function splitList(value: FormDataEntryValue | null) {
   if (typeof value !== "string") return [];
@@ -60,6 +60,19 @@ function splitList(value: FormDataEntryValue | null) {
     .split(",")
     .map((v) => v.trim())
     .filter(Boolean);
+}
+
+// z.url() requires a scheme, but an admin typing a live/GitHub link very
+// often just types "example.com" or "github.com/x/y" — without this,
+// that's a silent-looking crash (see the comment on createProject below),
+// not a validation message anyone would expect for a URL that obviously
+// works in a browser. Assume https when no scheme is given, same as
+// typing it into an address bar.
+function withScheme(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed || /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }
 
 const projectSchema = z.object({
@@ -78,8 +91,8 @@ const projectSchema = z.object({
     (val) => (val === "" || val === null || val === undefined ? undefined : val),
     z.coerce.number().int().positive().optional()
   ),
-  liveUrl: z.string().trim().url().optional().or(z.literal("")),
-  githubUrl: z.string().trim().url().optional().or(z.literal("")),
+  liveUrl: z.preprocess(withScheme, z.string().trim().url().optional().or(z.literal(""))),
+  githubUrl: z.preprocess(withScheme, z.string().trim().url().optional().or(z.literal(""))),
   coverImage: z.string().trim().optional().or(z.literal("")),
   clientName: z.string().trim().max(150).optional().or(z.literal("")),
 });
@@ -96,11 +109,24 @@ async function resolveClientId(clientName: string | undefined) {
   return created.id;
 }
 
-export async function createProject(formData: FormData) {
+// Bound to the form via useActionState (src/components/admin/project-form.tsx)
+// instead of a plain `action={createProject}` — that older binding had no
+// way to surface a thrown error: any validation failure or DB error (a
+// duplicate slug, a bad URL, anything) crashed straight to Next.js's
+// generic error screen with no indication of what was wrong or how to fix
+// it, which from the admin's seat just looked like "I can't add a
+// project." Returning `{ error }` instead of throwing lets the form show
+// the real reason inline and keep whatever the admin already typed.
+export async function createProject(
+  _prevState: ProjectFormState,
+  formData: FormData
+): Promise<ProjectFormState> {
   await requireAdmin();
 
   const parsed = projectSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
 
   const { clientName, ...data } = parsed.data;
   const slug = await uniqueSlug(slugify(String(formData.get("slug") || data.title)));
@@ -123,11 +149,12 @@ export async function createProject(formData: FormData) {
         gallery: formData.getAll("gallery").map(String).filter(Boolean),
         featured: formData.get("featured") === "on",
         hidden: formData.get("hidden") === "on",
+        nda: formData.get("nda") === "on",
         clientId,
       },
     });
   } catch (err) {
-    friendlyDbError(err);
+    return { error: friendlyDbErrorMessage(err) };
   }
 
   revalidatePath("/admin/portfolio");
@@ -137,14 +164,19 @@ export async function createProject(formData: FormData) {
   redirect("/admin/portfolio");
 }
 
-export async function updateProject(formData: FormData) {
+export async function updateProject(
+  _prevState: ProjectFormState,
+  formData: FormData
+): Promise<ProjectFormState> {
   await requireAdmin();
 
   const id = formData.get("id");
-  if (typeof id !== "string") throw new Error("Missing project id.");
+  if (typeof id !== "string") return { error: "Missing project id." };
 
   const parsed = projectSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
 
   const { clientName, ...data } = parsed.data;
   const clientId = await resolveClientId(clientName);
@@ -167,11 +199,12 @@ export async function updateProject(formData: FormData) {
         gallery: formData.getAll("gallery").map(String).filter(Boolean),
         featured: formData.get("featured") === "on",
         hidden: formData.get("hidden") === "on",
+        nda: formData.get("nda") === "on",
         ...(clientId ? { clientId } : {}),
       },
     });
   } catch (err) {
-    friendlyDbError(err);
+    return { error: friendlyDbErrorMessage(err) };
   }
 
   revalidatePath("/admin/portfolio");

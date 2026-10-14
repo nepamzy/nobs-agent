@@ -131,6 +131,12 @@ model Project {
   videoUrl    String?
   liveUrl     String?
   githubUrl   String?
+  // The live/GitHub links are still saved and editable in the admin for
+  // internal reference, but src/lib/data/projects.ts strips liveUrl
+  // before it ever reaches a public page when this is true — the public
+  // portfolio only ever shows a "Visit live site" button if this is
+  // false, never a raw URL either way.
+  nda         Boolean  @default(false)
   featured    Boolean  @default(false)
   hidden      Boolean  @default(false)
   clientId    String?

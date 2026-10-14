@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { MessageCircleQuestion, Send, X, Loader2 } from "lucide-react";
+import { MessageCircleQuestion, Send, X, Loader2, Mic, Square } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
+import type { LanguageCode } from "@/lib/i18n/translations";
 
 // Floating "ask us anything" chat for visitors, backed by
 // src/app/api/assistant/route.ts. The conversation is kept in
@@ -10,6 +11,17 @@ import { useLanguage } from "@/lib/i18n/language-context";
 // isn't stored anywhere else. Sits above the WhatsApp button.
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
+
+// BCP-47 locale tags for SpeechRecognition — the UI's own short codes
+// (src/lib/i18n/translations.ts) aren't valid `lang` values on their own.
+const SPEECH_LOCALE: Record<LanguageCode, string> = {
+  en: "en-US",
+  fr: "fr-FR",
+  es: "es-ES",
+  pt: "pt-BR",
+  ar: "ar-SA",
+  zh: "zh-CN",
+};
 
 const STORAGE_KEY = "nobs_assistant_chat";
 // Matches the API's own limits (MAX_MESSAGES / MAX_MESSAGE_CHARS) so the
@@ -65,7 +77,7 @@ function Linkified({ text }: { text: string }) {
 }
 
 export function SiteAssistant() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -75,6 +87,20 @@ export function SiteAssistant() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const [loaded, setLoaded] = useState(false);
+
+  // Voice input via the browser's own speech recognition — Chrome, Edge
+  // and Safari support it (Safari and most others only under the
+  // `webkit`-prefixed constructor), Firefox doesn't. Feature-detected
+  // after mount (not during render) so server and client markup match;
+  // the mic button simply doesn't render where it's unsupported.
+  const [micSupported, setMicSupported] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMicSupported(Boolean(window.SpeechRecognition || window.webkitSpeechRecognition));
+  }, []);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -102,9 +128,12 @@ export function SiteAssistant() {
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  async function send(e?: FormEvent) {
+  // `overrideText` lets the mic flow send the just-transcribed phrase
+  // straight away without waiting on the `input` state update (which
+  // wouldn't be visible yet in this same tick).
+  async function send(e?: FormEvent, overrideText?: string) {
     e?.preventDefault();
-    const text = input.trim();
+    const text = (overrideText ?? input).trim();
     if (!text || sending) return;
 
     const next = [...messages, { role: "user" as const, content: text.slice(0, MAX_CHARS) }];
@@ -146,6 +175,56 @@ export function SiteAssistant() {
       setSending(false);
     }
   }
+
+  // Tap the mic, say the question, get an answer — no typing required.
+  // `continuous: false` makes the browser end recognition itself on a
+  // pause after speech, which is when the final result (and this
+  // handler's auto-send) fires; tapping the mic again while listening
+  // stops it early via the same `onend`/cleanup path.
+  function startListening() {
+    const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor || sending) return;
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = SPEECH_LOCALE[language];
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) finalTranscript += result[0].transcript;
+        else interimTranscript += result[0].transcript;
+      }
+      if (finalTranscript) {
+        recognition.stop();
+        void send(undefined, finalTranscript);
+      } else {
+        setInput(interimTranscript);
+      }
+    };
+    recognition.onerror = (event) => {
+      if (event.error === "not-allowed" || event.error === "permission-denied") {
+        setError(t("assistant_mic_blocked"));
+      }
+    };
+    recognition.onend = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    setError(null);
+    setListening(true);
+    recognition.start();
+  }
+
+  function stopListening() {
+    recognitionRef.current?.stop();
+  }
+
+  // Leaving the page (or closing the panel) mid-sentence shouldn't leave
+  // the mic listening in the background.
+  useEffect(() => () => recognitionRef.current?.abort(), []);
 
   return (
     <>
@@ -227,9 +306,25 @@ export function SiteAssistant() {
                     void send();
                   }
                 }}
-                placeholder={t("assistant_placeholder")}
+                placeholder={listening ? t("assistant_mic_listening") : t("assistant_placeholder")}
                 className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-[var(--color-paper)] outline-none transition focus:border-[var(--color-brass)]"
               />
+              {micSupported && (
+                <button
+                  type="button"
+                  onClick={listening ? stopListening : startListening}
+                  disabled={sending}
+                  aria-label={listening ? t("assistant_mic_listening") : t("assistant_mic_start")}
+                  title={listening ? t("assistant_mic_listening") : t("assistant_mic_start")}
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition disabled:opacity-40 ${
+                    listening
+                      ? "animate-pulse border-red-400/60 bg-red-400/10 text-red-400"
+                      : "border-white/10 bg-white/5 text-[var(--color-paper)] hover:border-[var(--color-brass)]"
+                  }`}
+                >
+                  {listening ? <Square size={16} /> : <Mic size={16} />}
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={sending || !input.trim()}

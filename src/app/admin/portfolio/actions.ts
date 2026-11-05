@@ -75,13 +75,21 @@ function withScheme(value: unknown): unknown {
   return `https://${trimmed}`;
 }
 
+// Every field below is optional (including title) — the admin asked to be
+// able to save a project with whatever's filled in right now and come
+// back to fill in the rest later, with nothing blocking the save. The
+// underlying DB columns (title, summary, industry, problem, solution,
+// results) aren't nullable, so createProject/updateProject default an
+// empty title to "Untitled project" (it anchors the slug and the public
+// page's <title>) and leave the rest as empty strings — a blank section
+// on the detail page, not a blocked save.
 const projectSchema = z.object({
-  title: z.string().trim().min(2).max(150),
-  summary: z.string().trim().min(2).max(300),
-  industry: z.string().trim().min(2).max(100),
-  problem: z.string().trim().min(2),
-  solution: z.string().trim().min(2),
-  results: z.string().trim().min(2),
+  title: z.string().trim().max(150).optional().or(z.literal("")),
+  summary: z.string().trim().max(300).optional().or(z.literal("")),
+  industry: z.string().trim().max(100).optional().or(z.literal("")),
+  problem: z.string().trim().optional().or(z.literal("")),
+  solution: z.string().trim().optional().or(z.literal("")),
+  results: z.string().trim().optional().or(z.literal("")),
   constraints: z.string().trim().optional().or(z.literal("")),
   architecture: z.string().trim().optional().or(z.literal("")),
   keyEngineeringDecisions: z.string().trim().optional().or(z.literal("")),
@@ -129,7 +137,8 @@ export async function createProject(
   }
 
   const { clientName, ...data } = parsed.data;
-  const slug = await uniqueSlug(slugify(String(formData.get("slug") || data.title)));
+  const title = data.title || "Untitled project";
+  const slug = await uniqueSlug(slugify(String(formData.get("slug") || title)));
   const clientId = await resolveClientId(clientName);
 
   try {
@@ -137,6 +146,12 @@ export async function createProject(
       data: {
         ...data,
         slug,
+        title,
+        summary: data.summary || "",
+        industry: data.industry || "",
+        problem: data.problem || "",
+        solution: data.solution || "",
+        results: data.results || "",
         coverImage: data.coverImage || "",
         liveUrl: data.liveUrl || null,
         githubUrl: data.githubUrl || null,
@@ -187,6 +202,12 @@ export async function updateProject(
       where: { id },
       data: {
         ...data,
+        title: data.title || "Untitled project",
+        summary: data.summary || "",
+        industry: data.industry || "",
+        problem: data.problem || "",
+        solution: data.solution || "",
+        results: data.results || "",
         coverImage: data.coverImage || "",
         liveUrl: data.liveUrl || null,
         githubUrl: data.githubUrl || null,

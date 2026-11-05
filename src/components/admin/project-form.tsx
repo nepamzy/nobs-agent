@@ -76,11 +76,11 @@ export function ProjectForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label htmlFor="project-form-title" className={labelClass}>Title</label>
+          <label htmlFor="project-form-title" className={labelClass}>Title (optional)</label>
           <input
             id="project-form-title"
             name="title"
-            required
+            placeholder="Untitled project"
             defaultValue={defaultValues?.title}
             className={inputClass}
           />
@@ -92,11 +92,10 @@ export function ProjectForm({
       </div>
 
       <div>
-        <label htmlFor="project-form-summary" className={labelClass}>Summary</label>
+        <label htmlFor="project-form-summary" className={labelClass}>Summary (optional)</label>
         <textarea
           id="project-form-summary"
           name="summary"
-          required
           rows={2}
           defaultValue={defaultValues?.summary}
           className={inputClass}
@@ -118,11 +117,10 @@ export function ProjectForm({
           </p>
         </div>
         <div>
-          <label htmlFor="project-form-industry" className={labelClass}>Industry</label>
+          <label htmlFor="project-form-industry" className={labelClass}>Industry (optional)</label>
           <input
             id="project-form-industry"
             name="industry"
-            required
             defaultValue={defaultValues?.industry}
             className={inputClass}
           />
@@ -156,33 +154,30 @@ export function ProjectForm({
 
       <div className="grid gap-5 sm:grid-cols-3">
         <div>
-          <label htmlFor="project-form-problem" className={labelClass}>Problem</label>
+          <label htmlFor="project-form-problem" className={labelClass}>Problem (optional)</label>
           <textarea
             id="project-form-problem"
             name="problem"
-            required
             rows={4}
             defaultValue={defaultValues?.problem}
             className={inputClass}
           />
         </div>
         <div>
-          <label htmlFor="project-form-solution" className={labelClass}>Solution</label>
+          <label htmlFor="project-form-solution" className={labelClass}>Solution (optional)</label>
           <textarea
             id="project-form-solution"
             name="solution"
-            required
             rows={4}
             defaultValue={defaultValues?.solution}
             className={inputClass}
           />
         </div>
         <div>
-          <label htmlFor="project-form-results" className={labelClass}>Results</label>
+          <label htmlFor="project-form-results" className={labelClass}>Results (optional)</label>
           <textarea
             id="project-form-results"
             name="results"
-            required
             rows={4}
             defaultValue={defaultValues?.results}
             className={inputClass}

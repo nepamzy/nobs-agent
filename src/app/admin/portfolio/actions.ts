@@ -84,9 +84,9 @@ function withScheme(value: unknown): unknown {
 // page's <title>) and leave the rest as empty strings — a blank section
 // on the detail page, not a blocked save.
 const projectSchema = z.object({
-  title: z.string().trim().max(150).optional().or(z.literal("")),
-  summary: z.string().trim().max(300).optional().or(z.literal("")),
-  industry: z.string().trim().max(100).optional().or(z.literal("")),
+  title: z.string().trim().optional().or(z.literal("")),
+  summary: z.string().trim().optional().or(z.literal("")),
+  industry: z.string().trim().optional().or(z.literal("")),
   problem: z.string().trim().optional().or(z.literal("")),
   solution: z.string().trim().optional().or(z.literal("")),
   results: z.string().trim().optional().or(z.literal("")),
@@ -102,7 +102,7 @@ const projectSchema = z.object({
   liveUrl: z.preprocess(withScheme, z.string().trim().url().optional().or(z.literal(""))),
   githubUrl: z.preprocess(withScheme, z.string().trim().url().optional().or(z.literal(""))),
   coverImage: z.string().trim().optional().or(z.literal("")),
-  clientName: z.string().trim().max(150).optional().or(z.literal("")),
+  clientName: z.string().trim().optional().or(z.literal("")),
 });
 
 // Upserts a Client by name so uploading a project is the only step needed,

@@ -1,22 +1,14 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { ArrowRight, FolderKanban, Rocket, User, Wrench, Mail, Briefcase, Tags } from "lucide-react";
 import { siteContent } from "@/lib/content";
 import { StatCounter } from "@/components/stat-counter";
-import { usePointerTracking } from "@/lib/use-pointer-tracking";
-import { CursorTrail } from "@/components/cursor-trail";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { useLanguage } from "@/lib/i18n/language-context";
-
-const RobotScene = dynamic(
-  () => import("@/components/three/robot-scene").then((m) => m.RobotScene),
-  { ssr: false }
-);
 
 const quickLinks = [
   { label: "View Projects", href: "/portfolio", icon: FolderKanban },
@@ -68,9 +60,6 @@ export function Hero() {
   const { t } = useLanguage();
   const { data: session } = useSession();
   const [signupOpen, setSignupOpen] = useState(false);
-  const robotContainerRef = useRef<HTMLDivElement>(null);
-  const { pointer, handlePointerDown, handlePointerMove, handlePointerUp } =
-    usePointerTracking(robotContainerRef);
 
   // "Start a Project" gates through signup first if there's no account
   // yet, exactly the same rule already enforced on the booking form
@@ -159,7 +148,7 @@ export function Hero() {
             </motion.div>
           </div>
 
-          {/* Right: the robot, with the quick-nav pills floating directly beneath it */}
+          {/* Right: quick-nav pills */}
           <div className="relative">
             <div
               className="pointer-events-none absolute inset-0 -z-10 rounded-full opacity-60 blur-3xl"
@@ -168,22 +157,7 @@ export function Hero() {
                   "radial-gradient(circle at 50% 45%, rgba(62,214,196,0.16), rgba(228,179,67,0.08) 45%, transparent 70%)",
               }}
             />
-            <div
-              ref={robotContainerRef}
-              className="relative h-[380px] touch-none sm:h-[480px] md:h-[560px] lg:h-[640px]"
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-            >
-              <RobotScene pointer={pointer} />
-              <CursorTrail containerRef={robotContainerRef} />
-              <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-slate)]/70">
-                Drag to rotate
-              </p>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-4">
               {quickLinks.map((link, index) => (
                 <QuickLink key={link.href} index={index} {...link} />
               ))}

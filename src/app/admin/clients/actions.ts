@@ -34,7 +34,7 @@ export async function createClient(formData: FormData) {
   });
 
   revalidatePath("/admin/clients");
-  revalidatePath("/clients");
+  revalidatePath("/");
 }
 
 export async function updateClient(formData: FormData) {
@@ -56,7 +56,7 @@ export async function updateClient(formData: FormData) {
   });
 
   revalidatePath("/admin/clients");
-  revalidatePath("/clients");
+  revalidatePath("/");
 }
 
 export async function deleteClient(formData: FormData) {
@@ -76,7 +76,7 @@ export async function deleteClient(formData: FormData) {
   ]);
 
   revalidatePath("/admin/clients");
-  revalidatePath("/clients");
+  revalidatePath("/");
 }
 
 const testimonialSchema = z.object({

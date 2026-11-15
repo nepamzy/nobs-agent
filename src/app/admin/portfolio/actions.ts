@@ -106,14 +106,14 @@ const projectSchema = z.object({
 });
 
 // Upserts a Client by name so uploading a project is the only step needed,
-// the client automatically shows up on /clients without a second manual
-// step in a different admin screen.
+// the client is counted on the homepage without a second manual step in a
+// different admin screen.
 async function resolveClientId(clientName: string | undefined) {
   if (!clientName) return null;
   const existing = await prisma.client.findFirst({ where: { name: clientName } });
   if (existing) return existing.id;
   const created = await prisma.client.create({ data: { name: clientName } });
-  revalidatePath("/clients");
+  revalidatePath("/");
   return created.id;
 }
 
@@ -172,6 +172,7 @@ export async function createProject(
     return { error: friendlyDbErrorMessage(err) };
   }
 
+  revalidatePath("/");
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
   revalidatePath(`/portfolio/${slug}`);
@@ -242,6 +243,7 @@ export async function deleteProject(formData: FormData) {
   if (typeof id !== "string") throw new Error("Missing project id.");
 
   const deleted = await prisma.project.delete({ where: { id } });
+  revalidatePath("/");
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
   revalidatePath(`/portfolio/${deleted.slug}`);

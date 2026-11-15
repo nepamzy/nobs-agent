@@ -16,17 +16,12 @@ export const siteContent = {
     { label: "Careers", href: "/careers" },
   ],
   hero: {
-    eyebrow: "Software & AI Engineering Studio",
+    eyebrow: "Software & AI Engineering Company",
     title: "Institutions building their next chapter deserve infrastructure, not templates.",
     subtitle:
       "We design and build the websites, portals, systems, and custom AI automation that schools, hospitals, hotels, dealerships, and growing businesses run on, engineered to the same standard as the platforms you use every day.",
     primaryCta: { label: "Start a project", href: "/booking" },
     secondaryCta: { label: "View the work", href: "/portfolio" },
-    stats: [
-      { value: 11, suffix: "", label: "Sectors served" },
-      { value: 99, suffix: ".9%", label: "Uptime across live client systems" },
-      { value: 1, suffix: " month", label: "Typical time to launch", note: "depending on the project" },
-    ],
   },
   servicesPreview: {
     eyebrow: "What I build",

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildClientWelcomeHtml } from "@/lib/partner-email";
@@ -87,6 +88,7 @@ export async function createClientAccount(formData: FormData): Promise<SignupRes
         userId: user.id,
       },
     });
+    revalidatePath("/");
 
     const rawRef = formData.get("ref");
     await linkReferralIfPresent(user.id, email, typeof rawRef === "string" && rawRef ? rawRef : null);

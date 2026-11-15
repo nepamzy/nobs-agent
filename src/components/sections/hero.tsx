@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, FolderKanban, Rocket, User, Wrench, Mail, Briefcase, Tags } from "lucide-react";
 import { siteContent } from "@/lib/content";
 import { StatCounter } from "@/components/stat-counter";
+import { companyFacts } from "@/lib/company-facts";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { useLanguage } from "@/lib/i18n/language-context";
 
@@ -62,7 +63,7 @@ function QuickLink({
   );
 }
 
-export function Hero() {
+export function Hero({ clientCount }: { clientCount: number }) {
   const { hero } = siteContent;
   const { t } = useLanguage();
   const { data: session } = useSession();
@@ -147,11 +148,28 @@ export function Hero() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="mx-auto mt-12 grid max-w-md grid-cols-1 gap-6 sm:grid-cols-3 lg:mx-0"
+              className="mx-auto mt-12 max-w-xl lg:mx-0"
             >
-              <StatCounter value={11} suffix="" label={t("stat_sectors")} />
-              <StatCounter value={99} suffix=".9%" label={t("stat_uptime")} />
-              <StatCounter value={1} suffix=" month" label={t("stat_launch")} note={t("stat_launch_note")} />
+              <div className="grid grid-cols-2 gap-6 text-left sm:grid-cols-4">
+                <StatCounter
+                  value={companyFacts.projectsDelivered.count}
+                  suffix={companyFacts.projectsDelivered.plus ? "+" : ""}
+                  label={t("stat_projects")}
+                />
+                <StatCounter value={clientCount} label={t("stat_clients")} />
+                <StatCounter
+                  value={companyFacts.referralPartners.count}
+                  suffix={companyFacts.referralPartners.plus ? "+" : ""}
+                  label={t("stat_partners")}
+                />
+                <StatCounter
+                  value={companyFacts.reportedSuccessRatePercent}
+                  suffix="%"
+                  label={t("stat_success")}
+                  note={t("stat_success_note")}
+                />
+              </div>
+              <p className="mt-5 text-xs leading-relaxed text-[var(--color-slate)]">{t("hero_team_note")}</p>
             </motion.div>
           </div>
 

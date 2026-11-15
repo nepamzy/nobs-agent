@@ -44,15 +44,15 @@ const SITE = "https://www.nobs-agent.site";
 const QUESTION_BANK = `
 === ABOUT NOBS AGENT ===
 Q: Who are you? / What is NOBS AGENT? / What do you do?
-A: A software and AI engineering studio founded by Nobert Agu, based in Kaduna, Nigeria, and working remote-first with clients anywhere. We design and build websites, school and hospital portals, booking systems, online shops, custom web apps and AI automation for schools, hospitals, churches, hotels, restaurants, dealerships, real estate firms and growing businesses.
+A: A software and AI engineering company founded by Nobert Agu, based in Kaduna, Nigeria, and working remote-first with clients anywhere. We design and build websites, school and hospital portals, booking systems, online shops, custom web apps and AI automation for schools, hospitals, churches, hotels, restaurants, dealerships, real estate firms and growing businesses.
 Q: What does NOBS stand for? / Why the name?
 A: The site doesn't explain the name. If it matters to you, ask Nobert on WhatsApp.
 Q: Who is behind NOBS AGENT? / Who is the founder? / Who will I be working with?
 A: The studio was founded by Nobert Agu, who is your single point of contact through the project. Projects are run end to end, from planning the system to launching it.
 Q: Are you a company or a freelancer? / How big is the team?
-A: NOBS AGENT is a studio that runs every project like a product team, with one point of contact. Team size isn't published on the site; you can ask about who will work on your project during the consultation.
+A: NOBS AGENT is a software and AI engineering company. Projects are delivered by our 2-person core operational team, with one point of contact. Separately, we have a nationwide network of 19+ referral partners across Nigeria; they refer clients to us and are not NOBS AGENT employees or engineers. You can ask who will work on your project during the consultation.
 Q: How long have you been operating?
-A: NOBS AGENT is a newly launched studio, which is why every project is scoped and quoted individually.
+A: We have completed and launched 20+ projects, and we report a 98% project success rate, measured using a combination of delivery factors. Exact start dates and a detailed breakdown of how the success rate is measured aren't published on the site. Every project is scoped and quoted individually.
 Q: What makes you different from other web designers or agencies?
 A: Most institutions get offered either a cheap template that breaks under real use or an agency quote sized for a bank. We build real systems at fair, scoped prices: proper planning, a real database, security built in from the start, an admin dashboard your own staff can use, documentation, and a handover so you're never dependent on us.
 Q: Why shouldn't I just use a cheap template or website builder?
@@ -246,7 +246,7 @@ Other pages: Packages ${SITE}/pricing, Services ${SITE}/services, FAQ ${SITE}/fa
 `;
 
 export function buildSiteAssistantPrompt(): string {
-  return `You are the assistant on the NOBS AGENT website (nobs-agent.site). NOBS AGENT is a software and AI engineering studio based in Kaduna, Nigeria, founded by Nobert Agu.
+  return `You are the assistant on the NOBS AGENT website (nobs-agent.site). NOBS AGENT is a software and AI engineering company based in Kaduna, Nigeria, founded by Nobert Agu.
 
 YOUR JOB: answer every question a visitor has about NOBS AGENT and its work, including first questions, follow-ups, comparisons, "what if" questions, objections and long back-and-forth conversations. Never reply that you can't answer a question about NOBS AGENT: use the question bank, the package details and the FAQ below, combine them sensibly, and when a specific detail genuinely isn't covered, give the most helpful answer you can from what is covered and say the specific detail is confirmed on the free consultation call (${SITE}/booking) or with Nobert on WhatsApp.
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { siteContent } from "@/lib/content";
+import { companyFacts } from "@/lib/company-facts";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 const columns = [
@@ -70,7 +71,10 @@ export function SiteFooter() {
         <div className="grid grid-cols-2 gap-10 md:grid-cols-6">
           <div className="col-span-2">
             <Image src="/logo-full.svg" alt={siteContent.brand} width={200} height={57} className="h-10 w-auto" />
-            <p className="mt-4 max-w-xs text-sm text-[var(--color-slate)]">
+            <p className="mt-4 font-[family-name:var(--font-mono)] text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brass)]">
+              {companyFacts.tagline}
+            </p>
+            <p className="mt-2 max-w-xs text-sm text-[var(--color-slate)]">
               {siteContent.footer.tagline}
             </p>
           </div>

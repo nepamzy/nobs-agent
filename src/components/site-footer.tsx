@@ -23,7 +23,6 @@ const columns = [
     links: [
       { label: "Portfolio", href: "/portfolio" },
       { label: "Case Studies", href: "/case-studies" },
-      { label: "Clients", href: "/clients" },
       { label: "Testimonials", href: "/testimonials" },
     ],
   },

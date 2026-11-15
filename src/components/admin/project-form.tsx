@@ -113,7 +113,7 @@ export function ProjectForm({
             className={inputClass}
           />
           <p className="mt-1 text-[11px] text-[var(--color-slate)]">
-            Auto-creates the client if it doesn&apos;t exist yet, shows up on /clients immediately.
+            Auto-creates the client if it doesn&apos;t exist yet, and adds to the clients count on the homepage.
           </p>
         </div>
         <div>

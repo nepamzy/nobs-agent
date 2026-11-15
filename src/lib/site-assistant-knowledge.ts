@@ -50,9 +50,9 @@ A: The site doesn't explain the name. If it matters to you, ask Nobert on WhatsA
 Q: Who is behind NOBS AGENT? / Who is the founder? / Who will I be working with?
 A: The studio was founded by Nobert Agu, who is your single point of contact through the project. Projects are run end to end, from planning the system to launching it.
 Q: Are you a company or a freelancer? / How big is the team?
-A: NOBS AGENT is a software and AI engineering company. Projects are delivered by our 2-person core operational team, with one point of contact. Separately, we have a nationwide network of 19+ referral partners across Nigeria; they refer clients to us and are not NOBS AGENT employees or engineers. You can ask who will work on your project during the consultation.
+A: NOBS AGENT is a software and AI engineering company, and every project has one point of contact. Team size isn't published on the site; you can ask who will work on your project during the consultation. We also have a nationwide network of 19+ referral partners across Nigeria; they refer clients to us and are not NOBS AGENT employees or engineers.
 Q: How long have you been operating?
-A: We have completed and launched 20+ projects, and we report a 98% project success rate, measured using a combination of delivery factors. Exact start dates and a detailed breakdown of how the success rate is measured aren't published on the site. Every project is scoped and quoted individually.
+A: We have completed and launched 20+ projects for 22+ clients, and we report a 98% project success rate, measured using a combination of delivery factors. Exact start dates and a detailed breakdown of how the success rate is measured aren't published on the site. Every project is scoped and quoted individually.
 Q: What makes you different from other web designers or agencies?
 A: Most institutions get offered either a cheap template that breaks under real use or an agency quote sized for a bank. We build real systems at fair, scoped prices: proper planning, a real database, security built in from the start, an admin dashboard your own staff can use, documentation, and a handover so you're never dependent on us.
 Q: Why shouldn't I just use a cheap template or website builder?

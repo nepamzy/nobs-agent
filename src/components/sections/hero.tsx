@@ -63,7 +63,7 @@ function QuickLink({
   );
 }
 
-export function Hero() {
+export function Hero({ clientCount }: { clientCount: number }) {
   const { hero } = siteContent;
   const { t } = useLanguage();
   const { data: session } = useSession();
@@ -156,12 +156,12 @@ export function Hero() {
                   suffix={companyFacts.projectsDelivered.plus ? "+" : ""}
                   label={t("stat_projects")}
                 />
+                <StatCounter value={clientCount} label={t("stat_clients")} />
                 <StatCounter
                   value={companyFacts.referralPartners.count}
                   suffix={companyFacts.referralPartners.plus ? "+" : ""}
                   label={t("stat_partners")}
                 />
-                <StatCounter value={companyFacts.coreTeamSize} label={t("stat_team")} />
                 <StatCounter
                   value={companyFacts.reportedSuccessRatePercent}
                   suffix="%"

@@ -10,6 +10,13 @@ import { StatCounter } from "@/components/stat-counter";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { useLanguage } from "@/lib/i18n/language-context";
 
+const layers = [
+  { title: "Interface", detail: "Websites, portals and apps people use", color: "#e4b343" },
+  { title: "Logic & APIs", detail: "Integrations and payments that connect", color: "#3ed6c4" },
+  { title: "Data", detail: "Databases and backups you can rely on", color: "#8b7cf6" },
+  { title: "Security", detail: "Login and access control built in", color: "#4aa3ff" },
+] as const;
+
 const quickLinks = [
   { label: "View Projects", href: "/portfolio", icon: FolderKanban },
   { label: "About", href: "/about", icon: User },
@@ -157,7 +164,34 @@ export function Hero() {
                   "radial-gradient(circle at 50% 45%, rgba(62,214,196,0.16), rgba(228,179,67,0.08) 45%, transparent 70%)",
               }}
             />
-            <div className="flex flex-wrap items-center justify-center gap-4">
+            {/* Plain <img>, not next/image: it is a tiny static SVG, and an
+                <img> keeps the SVG's own drift animation running. It has no
+                pointer handlers or touch-action, so it never blocks scrolling. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero-stack.svg"
+              alt="NOBS Agent builds in four layers: interface, logic and APIs, data, and security."
+              width={480}
+              height={640}
+              className="mx-auto h-auto w-full max-w-[300px] sm:max-w-[360px]"
+            />
+
+            <ul className="mx-auto mt-6 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+              {layers.map((layer) => (
+                <li
+                  key={layer.title}
+                  className="rounded-xl border border-[var(--color-line)] bg-[var(--color-ink-2)] p-4"
+                >
+                  <p className="flex items-center gap-2.5 text-base font-semibold text-[var(--color-paper)]">
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: layer.color }} />
+                    {layer.title}
+                  </p>
+                  <p className="mt-1 pl-[22px] text-sm text-[var(--color-paper)]/75">{layer.detail}</p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               {quickLinks.map((link, index) => (
                 <QuickLink key={link.href} index={index} {...link} />
               ))}

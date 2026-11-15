@@ -1,22 +1,21 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { ArrowRight, FolderKanban, Rocket, User, Wrench, Mail, Briefcase, Tags } from "lucide-react";
 import { siteContent } from "@/lib/content";
 import { StatCounter } from "@/components/stat-counter";
-import { usePointerTracking } from "@/lib/use-pointer-tracking";
-import { CursorTrail } from "@/components/cursor-trail";
 import { SignupPromptModal } from "@/components/signup-prompt-modal";
 import { useLanguage } from "@/lib/i18n/language-context";
 
-const RobotScene = dynamic(
-  () => import("@/components/three/robot-scene").then((m) => m.RobotScene),
-  { ssr: false }
-);
+const layers = [
+  { title: "Interface", detail: "Websites, portals and apps people use", color: "#e4b343" },
+  { title: "Logic & APIs", detail: "Integrations and payments that connect", color: "#3ed6c4" },
+  { title: "Data", detail: "Databases and backups you can rely on", color: "#8b7cf6" },
+  { title: "Security", detail: "Login and access control built in", color: "#4aa3ff" },
+] as const;
 
 const quickLinks = [
   { label: "View Projects", href: "/portfolio", icon: FolderKanban },
@@ -68,9 +67,6 @@ export function Hero() {
   const { t } = useLanguage();
   const { data: session } = useSession();
   const [signupOpen, setSignupOpen] = useState(false);
-  const robotContainerRef = useRef<HTMLDivElement>(null);
-  const { pointer, handlePointerDown, handlePointerMove, handlePointerUp } =
-    usePointerTracking(robotContainerRef);
 
   // "Start a Project" gates through signup first if there's no account
   // yet, exactly the same rule already enforced on the booking form
@@ -159,7 +155,7 @@ export function Hero() {
             </motion.div>
           </div>
 
-          {/* Right: the robot, with the quick-nav pills floating directly beneath it */}
+          {/* Right: quick-nav pills */}
           <div className="relative">
             <div
               className="pointer-events-none absolute inset-0 -z-10 rounded-full opacity-60 blur-3xl"
@@ -168,22 +164,34 @@ export function Hero() {
                   "radial-gradient(circle at 50% 45%, rgba(62,214,196,0.16), rgba(228,179,67,0.08) 45%, transparent 70%)",
               }}
             />
-            <div
-              ref={robotContainerRef}
-              className="relative h-[380px] touch-none sm:h-[480px] md:h-[560px] lg:h-[640px]"
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-            >
-              <RobotScene pointer={pointer} />
-              <CursorTrail containerRef={robotContainerRef} />
-              <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-[var(--color-slate)]/70">
-                Drag to rotate
-              </p>
-            </div>
+            {/* Plain <img>, not next/image: it is a tiny static SVG, and an
+                <img> keeps the SVG's own drift animation running. It has no
+                pointer handlers or touch-action, so it never blocks scrolling. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero-stack.svg"
+              alt="NOBS Agent builds in four layers: interface, logic and APIs, data, and security."
+              width={480}
+              height={640}
+              className="mx-auto h-auto w-full max-w-[300px] sm:max-w-[360px]"
+            />
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+            <ul className="mx-auto mt-6 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+              {layers.map((layer) => (
+                <li
+                  key={layer.title}
+                  className="rounded-xl border border-[var(--color-line)] bg-[var(--color-ink-2)] p-4"
+                >
+                  <p className="flex items-center gap-2.5 text-base font-semibold text-[var(--color-paper)]">
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: layer.color }} />
+                    {layer.title}
+                  </p>
+                  <p className="mt-1 pl-[22px] text-sm text-[var(--color-paper)]/75">{layer.detail}</p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               {quickLinks.map((link, index) => (
                 <QuickLink key={link.href} index={index} {...link} />
               ))}

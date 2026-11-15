@@ -1,0 +1,104 @@
+<svg width="480" height="640" viewBox="100 40 480 640" role="img" aria-label="NOBS Agent builds in four layers: interface, logic and APIs, data, and security" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace">
+  <style>
+    .float { animation: bob 6s ease-in-out infinite; }
+    .l2 { animation-delay: -1.5s; } .l3 { animation-delay: -3s; } .l4 { animation-delay: -4.5s; }
+    @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+    .flow { stroke-dasharray: 3 9; animation: dash 1.4s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -12; } }
+    .pulse { animation: pulse 3s ease-in-out infinite; transform-origin: center; }
+    @keyframes pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .float, .flow, .pulse { animation: none; } }
+  </style>
+  <defs>
+    <radialGradient id="glow" cx="42%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#e4b343" stop-opacity="0.16"/>
+      <stop offset="50%" stop-color="#3ed6c4" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#0b0d12" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="beam" gradientUnits="userSpaceOnUse" x1="0" y1="170" x2="0" y2="530">
+      <stop offset="0%" stop-color="#e4b343"/><stop offset="35%" stop-color="#3ed6c4"/>
+      <stop offset="70%" stop-color="#8b7cf6"/><stop offset="100%" stop-color="#4aa3ff"/>
+    </linearGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" fill="none" stroke="#8b93a3" stroke-opacity="0.09"/>
+    </pattern>
+    <radialGradient id="fadeg" cx="42%" cy="50%" r="60%"><stop offset="50%" stop-color="#fff"/><stop offset="100%" stop-color="#000"/></radialGradient>
+    <mask id="fade"><rect width="800" height="720" fill="url(#fadeg)"/></mask>
+  </defs>
+
+  
+  <rect x="0" y="0" width="800" height="720" fill="url(#grid)" mask="url(#fade)"/>
+  <rect width="800" height="720" fill="url(#glow)"/>
+
+  <!-- layer 4: security & infrastructure (bottom) -->
+  <g class="float l4"><g transform="translate(340,530)">
+    <polygon points="-200,0 0,100 0,116 -200,16" fill="#0e1117" stroke="#4aa3ff" stroke-opacity="0.35"/>
+    <polygon points="0,100 200,0 200,16 0,116" fill="#141821" stroke="#4aa3ff" stroke-opacity="0.35"/>
+    <polygon points="0,-100 200,0 0,100 -200,0" fill="#12151d" stroke="#4aa3ff" stroke-opacity="0.8" stroke-width="1.5"/>
+    <g transform="matrix(1 0.5 -1 0.5 0 0)" fill="none" stroke="#4aa3ff" vector-effect="non-scaling-stroke">
+      <rect x="-82" y="-82" width="164" height="164" rx="8" stroke-opacity="0.35" stroke-dasharray="4 6" vector-effect="non-scaling-stroke"/>
+      <path d="M-82 -52 V-82 H-52 M52 -82 H82 V-52 M82 52 V82 H52 M-52 82 H-82 V52" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <rect x="-24" y="-4" width="48" height="38" rx="6" fill="#4aa3ff" fill-opacity="0.25" vector-effect="non-scaling-stroke"/>
+      <path d="M-14 -4 V-18 A14 14 0 0 1 14 -18 V-4" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <circle cx="0" cy="15" r="4" fill="#4aa3ff" stroke="none"/>
+    </g>
+  </g></g>
+
+  <!-- layer 3: data -->
+  <g class="float l3"><g transform="translate(340,410)">
+    <polygon points="-200,0 0,100 0,116 -200,16" fill="#0e1117" stroke="#8b7cf6" stroke-opacity="0.35"/>
+    <polygon points="0,100 200,0 200,16 0,116" fill="#141821" stroke="#8b7cf6" stroke-opacity="0.35"/>
+    <polygon points="0,-100 200,0 0,100 -200,0" fill="#12151d" stroke="#8b7cf6" stroke-opacity="0.85" stroke-width="1.5"/>
+    <g transform="matrix(1 0.5 -1 0.5 0 0)" fill="none" stroke="#8b7cf6">
+      <circle r="66" stroke-opacity="0.35" vector-effect="non-scaling-stroke"/>
+      <circle r="46" stroke-opacity="0.6" vector-effect="non-scaling-stroke"/>
+      <circle r="26" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <circle r="8" fill="#8b7cf6" stroke="none"/>
+      <path d="M-82 0H-66 M66 0H82 M0 -82V-66 M0 66V82" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <circle cx="-66" cy="0" r="4" fill="#12151d" vector-effect="non-scaling-stroke"/><circle cx="66" cy="0" r="4" fill="#12151d" vector-effect="non-scaling-stroke"/>
+      <circle cx="0" cy="-66" r="4" fill="#12151d" vector-effect="non-scaling-stroke"/><circle cx="0" cy="66" r="4" fill="#12151d" vector-effect="non-scaling-stroke"/>
+    </g>
+  </g></g>
+
+  <!-- layer 2: logic & APIs -->
+  <g class="float l2"><g transform="translate(340,290)">
+    <polygon points="-200,0 0,100 0,116 -200,16" fill="#0e1117" stroke="#3ed6c4" stroke-opacity="0.35"/>
+    <polygon points="0,100 200,0 200,16 0,116" fill="#141821" stroke="#3ed6c4" stroke-opacity="0.35"/>
+    <polygon points="0,-100 200,0 0,100 -200,0" fill="#12151d" stroke="#3ed6c4" stroke-opacity="0.85" stroke-width="1.5"/>
+    <g transform="matrix(1 0.5 -1 0.5 0 0)" fill="none" stroke="#3ed6c4">
+      <path d="M-60 -50 L0 -10 L60 -50 M-60 50 L0 -10 L60 50 M-60 -50 V50 M60 -50 V50" stroke-opacity="0.55" vector-effect="non-scaling-stroke"/>
+      <rect x="-72" y="-62" width="24" height="24" rx="5" fill="#12151d" vector-effect="non-scaling-stroke"/>
+      <rect x="48" y="-62" width="24" height="24" rx="5" fill="#12151d" vector-effect="non-scaling-stroke"/>
+      <rect x="-72" y="38" width="24" height="24" rx="5" fill="#12151d" stroke="#e4b343" vector-effect="non-scaling-stroke"/>
+      <rect x="48" y="38" width="24" height="24" rx="5" fill="#12151d" stroke="#e4b343" vector-effect="non-scaling-stroke"/>
+      <circle cx="0" cy="-10" r="16" fill="#12151d" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <circle cx="0" cy="-10" r="6" fill="#3ed6c4" stroke="none"/>
+    </g>
+  </g></g>
+
+  <!-- layer 1: interface (top) -->
+  <g class="float"><g transform="translate(340,170)">
+    <polygon points="-200,0 0,100 0,116 -200,16" fill="#0e1117" stroke="#e4b343" stroke-opacity="0.35"/>
+    <polygon points="0,100 200,0 200,16 0,116" fill="#141821" stroke="#e4b343" stroke-opacity="0.35"/>
+    <polygon points="0,-100 200,0 0,100 -200,0" fill="#12151d" stroke="#e4b343" stroke-opacity="0.9" stroke-width="1.5"/>
+    <g transform="matrix(1 0.5 -1 0.5 0 0)">
+      <rect x="-76" y="-76" width="152" height="16" rx="4" fill="#1b1f2a"/>
+      <rect x="-76" y="-46" width="96" height="14" rx="4" fill="#e4b343"/>
+      <rect x="-76" y="-24" width="130" height="7" rx="3.5" fill="#8b93a3" fill-opacity="0.5"/>
+      <rect x="-76" y="-11" width="100" height="7" rx="3.5" fill="#8b93a3" fill-opacity="0.3"/>
+      <rect x="-76" y="12" width="46" height="60" rx="6" fill="#1b1f2a"/>
+      <rect x="-23" y="12" width="46" height="60" rx="6" fill="#1b1f2a"/>
+      <rect x="30" y="12" width="46" height="60" rx="6" fill="#1b1f2a" stroke="#e4b343" stroke-opacity="0.6" vector-effect="non-scaling-stroke"/>
+    </g>
+  </g></g>
+
+  <!-- data beam through the stack -->
+  <line x1="340" y1="170" x2="340" y2="530" stroke="url(#beam)" stroke-width="2" class="flow"/>
+  <g fill="#0b0d12" stroke-width="2.5">
+    <circle cx="340" cy="170" r="6" stroke="#e4b343"/><circle cx="340" cy="290" r="6" stroke="#3ed6c4"/>
+    <circle cx="340" cy="410" r="6" stroke="#8b7cf6"/><circle cx="340" cy="530" r="6" stroke="#4aa3ff"/>
+  </g>
+  <circle r="4" fill="#fff"><animateMotion dur="3.2s" repeatCount="indefinite" path="M340 170 L340 530"/></circle>
+  <circle r="3" fill="#3ed6c4"><animateMotion dur="3.2s" begin="-1.6s" repeatCount="indefinite" path="M340 170 L340 530"/></circle>
+
+</svg>

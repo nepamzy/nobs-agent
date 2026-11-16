@@ -53,6 +53,7 @@ export const siteMap: SiteMapEntry[] = [
   { label: "Portfolio", href: "/admin/portfolio", section: "Admin", access: "admin" },
   { label: "New portfolio project", href: "/admin/portfolio/new", section: "Admin", access: "admin" },
   { label: "Founder profile", href: "/admin/founder", section: "Admin", access: "admin" },
+  { label: "Assistant questions", href: "/admin/assistant", section: "Admin", access: "admin" },
   { label: "Blog posts", href: "/admin/blog", section: "Admin", access: "admin" },
   { label: "New blog post", href: "/admin/blog/new", section: "Admin", access: "admin" },
   { label: "Clients", href: "/admin/clients", section: "Admin", access: "admin" },

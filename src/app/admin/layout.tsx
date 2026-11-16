@@ -19,6 +19,7 @@ import {
   Handshake,
   ClipboardList,
   Archive,
+  MessageSquareText,
 } from "lucide-react";
 
 const navItems = [
@@ -32,6 +33,7 @@ const navItems = [
   { label: "Careers", href: "/admin/careers", icon: Briefcase },
   { label: "Partners", href: "/admin/partners", icon: Handshake },
   { label: "Inbox", href: "/admin/inbox", icon: Mail },
+  { label: "Assistant Questions", href: "/admin/assistant", icon: MessageSquareText },
   { label: "Bookings", href: "/admin/bookings", icon: CalendarClock },
   { label: "Payments", href: "/admin/payments", icon: CreditCard },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },

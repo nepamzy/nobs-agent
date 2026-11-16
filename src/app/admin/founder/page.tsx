@@ -20,12 +20,13 @@ export default async function AdminFounderPage() {
   return (
     <div>
       <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">
-        Engineer / Founder Profile
+        Founder Profile
       </h1>
       <p className="mt-2 max-w-xl text-sm text-[var(--color-slate)]">
-        This is the &quot;The Engineer Behind NOBS&quot; section shown at the bottom of{" "}
-        <code className="rounded bg-white/10 px-1.5 py-0.5">/about</code>. Until you save
-        something here, the page falls back to placeholder defaults.
+        The name, photo and links here appear in the Leadership card at the bottom of{" "}
+        <code className="rounded bg-white/10 px-1.5 py-0.5">/about</code>. The wording on that
+        card is fixed, so it always reads as a team, and the Role and Bio below are not shown
+        publicly.
       </p>
 
       <form action={saveFounder} className="glass mt-8 space-y-5 rounded-2xl p-8">

@@ -27,6 +27,7 @@ const stack = [
   { name: "Brevo", tag: "BR", color: "#0b996e", text: "#ffffff" },
   { name: "Vercel", tag: "▲", color: "#000000", text: "#ffffff" },
   { name: "Git", tag: "GIT", color: "#f1502f", text: "#ffffff" },
+  { name: "AI", tag: "AI", color: "#e4b343", text: "#0a0a0a" },
 ];
 
 export default function SkillsPage() {
@@ -55,26 +56,6 @@ export default function SkillsPage() {
             <p className="text-sm text-[var(--color-paper)]">{t.name}</p>
           </RevealItem>
         ))}
-      </div>
-
-      <div className="mt-16 rounded-2xl border border-[var(--color-brass)]/30 bg-[var(--color-brass)]/5 p-8">
-        <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
-          And, honestly
-        </p>
-        <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-medium">
-          Claude
-        </h2>
-        <p className="mt-4 max-w-2xl text-[var(--color-slate)]">
-          This entire platform, the portal, the payments, the messaging, all of it, was
-          built working directly with Claude. Not as a shortcut, as a real part of the
-          process. Knowing how to actually use AI well isn&apos;t typing a request and
-          hoping, it&apos;s knowing what to ask for, reading what comes back critically,
-          catching what&apos;s wrong before it ships, and verifying everything actually
-          works rather than just looks right. That&apos;s a genuine skill, and treating
-          it as one, rather than pretending it doesn&apos;t exist, is exactly how this
-          got built as fast and as solid as it did. No pretending otherwise. That&apos;s
-          the whole point of the name.
-        </p>
       </div>
       </div>
     </div>

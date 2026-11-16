@@ -65,7 +65,7 @@ const fallbackPostsRaw: (Omit<BlogPost, "postType"> & { postType?: PostType })[]
     category: "Product Engineering",
     publishedAt: "2026-02-19",
     content: [
-      "The test I use for every admin dashboard I build: could the person who runs day-to-day operations change a homepage headline, swap a photo, or update a price without calling me? If the answer is no, the dashboard isn't finished.",
+      "The test we use for every admin dashboard we build: could the person who runs day-to-day operations change a homepage headline, swap a photo, or update a price without calling us? If the answer is no, the dashboard isn't finished.",
       "This sounds obvious, but it's the single most common gap in commissioned websites, an agency ships something polished, then every future change routes back through a support ticket and an invoice.",
       "The underlying discipline is simple: no text lives only in component code. Every visible string reads from a content table an admin can edit. It costs more time up front and pays for itself the first time a client needs an urgent change on a weekend.",
     ],
@@ -106,18 +106,18 @@ const fallbackPostsRaw: (Omit<BlogPost, "postType"> & { postType?: PostType })[]
     content: [
       "Every one of these three processes payments reliably. The decision isn't really about reliability, it's about who your customers are and where their money already lives.",
       "For a business collecting naira from customers inside Nigeria, Paystack is usually the simplest path, fast local payouts and a setup most Nigerian customers already trust from other sites. Flutterwave covers similar ground with broader reach across African currencies, useful if you're expecting customers from more than one country on the continent. Stripe makes the most sense when a meaningful share of your customers are paying in dollars, pounds, or euros from outside Africa.",
-      "Most of the projects I build start with one provider live at launch and add a second only once there's an actual customer base that needs it. Wiring up three payment providers before you have paying customers is effort spent in the wrong place.",
+      "Most of the projects we build start with one provider live at launch and add a second only once there's an actual customer base that needs it. Wiring up three payment providers before you have paying customers is effort spent in the wrong place.",
     ],
   },
   {
     slug: "why-you-need-a-whatsapp-button-not-just-a-contact-form",
     title: "Why your business needs a WhatsApp button, not just a contact form",
     excerpt:
-      "In most of the markets I build for, a contact form is where inquiries go to die. WhatsApp is where they actually get answered.",
+      "In most of the markets we build for, a contact form is where inquiries go to die. WhatsApp is where they actually get answered.",
     category: "Corporate & Brand",
     publishedAt: "2026-05-11",
     content: [
-      "A contact form assumes the visitor is willing to type a formal message, wait an unknown amount of time, and hope someone checks the inbox. That's a fine assumption in some markets. It's a bad one in most of the ones I build for, where WhatsApp is already how people expect to reach a business.",
+      "A contact form assumes the visitor is willing to type a formal message, wait an unknown amount of time, and hope someone checks the inbox. That's a fine assumption in some markets. It's a bad one in most of the ones we build for, where WhatsApp is already how people expect to reach a business.",
       "The fix isn't complicated: a floating WhatsApp button that's visible on every page, pre-filled with a sensible starting message, so a visitor is one tap away from a real conversation instead of a form they're not sure will be read.",
       "Contact forms still matter, some inquiries genuinely need to be written down and routed properly, and not everyone wants to text a stranger. The point isn't to replace the form. It's to stop making WhatsApp an afterthought when it's often the channel that actually converts.",
     ],

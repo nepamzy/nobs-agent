@@ -15,12 +15,12 @@ export type Founder = {
   linkedinUrl: string | null;
 };
 
-// Matches what's on the About page today, so nothing changes visually
-// until a real row is saved via /admin/founder.
+// Used until a real row is saved via /admin/founder. Only the name, photo
+// and links are shown on the About page.
 const fallbackFounder: Founder = {
   name: "Nobert Agu",
-  role: "Founder & Full-stack Engineer / Systems Builder",
-  bio: "I'm a full-stack engineer and systems builder focused on creating reliable digital infrastructure for growing organizations. I combine thoughtful design, solid engineering, and practical business needs to build systems that are built to work, scale, and last. My approach is simple: understand the problem first, then build the right solution.",
+  role: "Founder",
+  bio: "NOBS AGENT's founder, who sets the company's direction and standards.",
   photoUrl: null,
   githubUrl: "https://github.com/nepamzy",
   linkedinUrl: null,

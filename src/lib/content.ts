@@ -24,8 +24,8 @@ export const siteContent = {
     secondaryCta: { label: "View the work", href: "/portfolio" },
   },
   servicesPreview: {
-    eyebrow: "What I build",
-    title: "One studio, the full stack",
+    eyebrow: "What we build",
+    title: "One team, the full stack",
     items: [
       { name: "Institutional Platforms", desc: "Schools, hospitals, and churches, portals built for the people who run them daily.", href: "/services#institutional" },
       { name: "Commerce & Booking", desc: "Hotels, restaurants, and dealerships, systems that take real payments and real reservations.", href: "/services#commerce" },

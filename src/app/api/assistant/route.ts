@@ -1,14 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 import { buildSiteAssistantPrompt } from "@/lib/site-assistant-knowledge";
 
 // The website chat assistant (src/components/site-assistant.tsx). Public
 // and unauthenticated, so every request costs real API credit: the limits
 // below (per-IP rate, message count and length, reply length) cap what one
 // visitor can spend. The conversation lives in the visitor's browser and
-// is sent in full each time; nothing is stored server-side.
+// is sent in full each time. The only thing stored server-side is the
+// visitor's latest question and the reply (AssistantQuestion), so the owner
+// can see what people actually ask in /admin/assistant. No IP address or
+// account details are saved.
 
 const MAX_MESSAGES = 40;
 const MAX_MESSAGE_CHARS = 2000;
@@ -75,6 +79,25 @@ export async function POST(req: NextRequest) {
   const anthropic = client;
   const system = systemPrompt;
   const messages = parsed.data.messages;
+  const question = messages[messages.length - 1].content;
+  const turn = messages.filter((m) => m.role === "user").length;
+
+  // Resolves when the reply has finished streaming, so the question can be
+  // saved after the response is sent without slowing the visitor down.
+  let finishLog!: (result: { reply: string; answered: boolean }) => void;
+  const logged = new Promise<{ reply: string; answered: boolean }>((resolve) => {
+    finishLog = resolve;
+  });
+  after(async () => {
+    const { reply, answered } = await logged;
+    try {
+      await prisma.assistantQuestion.create({
+        data: { question, answer: reply.slice(0, 8000) || null, answered, turn },
+      });
+    } catch (err) {
+      console.error("[assistant] could not save question", err);
+    }
+  });
 
   // The reply is streamed as plain text, so the visitor sees it appear
   // word by word instead of waiting for the whole answer (a full reply
@@ -84,6 +107,8 @@ export async function POST(req: NextRequest) {
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
       let sentText = false;
+      let reply = "";
+      let answered = true;
       try {
         const stream = anthropic.messages.stream({
           // This is closed-book Q&A over a fixed script (see
@@ -107,12 +132,14 @@ export async function POST(req: NextRequest) {
         for await (const event of stream) {
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
             sentText = true;
+            reply += event.delta.text;
             controller.enqueue(encoder.encode(event.delta.text));
           }
         }
 
         const final = await stream.finalMessage();
         if (!sentText || final.stop_reason === "refusal") {
+          answered = false;
           controller.enqueue(encoder.encode(fallbackText(sentText)));
         }
       } catch (err) {
@@ -123,9 +150,11 @@ export async function POST(req: NextRequest) {
         } else {
           console.error("[assistant] failed", err);
         }
+        answered = false;
         controller.enqueue(encoder.encode(fallbackText(sentText)));
       } finally {
         controller.close();
+        finishLog({ reply, answered });
       }
     },
   });

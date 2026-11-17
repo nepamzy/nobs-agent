@@ -248,6 +248,22 @@ model Founder {
   updatedAt   DateTime @updatedAt
 }
 
+// Every question a visitor asks the website chat assistant, plus the reply
+// it gave, so the owner can see what people actually want to know. Only the
+// visitor's message and the reply are stored, never an IP address or any
+// account details. `answered` is false when the assistant fell back to its
+// "I can't answer right now" message.
+model AssistantQuestion {
+  id        String   @id @default(cuid())
+  question  String   @db.Text
+  answer    String?  @db.Text
+  answered  Boolean  @default(true)
+  turn      Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // ---------- Blog ----------
 
 enum PostType {

@@ -27,11 +27,15 @@ const sections = [
     body: "You can request a copy of the data we hold about you, ask us to correct it, or ask us to delete it, subject to any records we're required to keep for invoicing or legal purposes. Contact us at the address below to make a request.",
   },
   {
-    heading: "5. Cookies",
+    heading: "5. Website chat assistant",
+    body: "When you ask the chat assistant on this site a question, we save your question and the assistant's reply so we can see what visitors want to know and improve our answers. We don't save your name, email address or IP address with it, so please don't type personal or sensitive details into the chat.",
+  },
+  {
+    heading: "6. Cookies",
     body: "We use a small number of strictly necessary cookies to keep you signed in and remember basic preferences (like your chosen language or theme), these don't require consent since the site can't function properly without them. With your permission, given through the cookie banner shown on your first visit, we also use Google Analytics to understand anonymized traffic patterns, page views, general location, device type, nothing that identifies you personally. You can change your choice at any time by clearing your cookies and revisiting the site.",
   },
   {
-    heading: "6. Contact",
+    heading: "7. Contact",
     body: "Questions about this policy can be sent to nobsagent0@gmail.com.",
   },
 ];
@@ -48,7 +52,7 @@ export default async function PrivacyPage() {
   const bodies = await translateList(sections.map((s) => s.body), language);
   const legalLabel = (await translateList(["Legal"], language))[0];
   const title = (await translateList(["Privacy Policy"], language))[0];
-  const lastUpdated = (await translateList(["Last updated: July 9, 2026"], language))[0];
+  const lastUpdated = (await translateList(["Last updated: November 16, 2026"], language))[0];
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-24">

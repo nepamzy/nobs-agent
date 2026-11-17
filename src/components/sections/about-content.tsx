@@ -6,6 +6,8 @@ import { useLanguage } from "@/lib/i18n/language-context";
 import type { Founder } from "@/lib/data/founder";
 import { isCloudinaryUrl } from "@/lib/is-cloudinary-url";
 import { PageHeader } from "@/components/page-header";
+import { StatCounter } from "@/components/stat-counter";
+import { companyFacts } from "@/lib/company-facts";
 
 function GithubIcon({ size = 16 }: { size?: number }) {
   return (
@@ -23,7 +25,7 @@ function LinkedinIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-export function AboutContent({ founder }: { founder: Founder }) {
+export function AboutContent({ founder, clientCount }: { founder: Founder; clientCount: number }) {
   const { t } = useLanguage();
 
   return (
@@ -44,6 +46,33 @@ export function AboutContent({ founder }: { founder: Founder }) {
       </motion.div>
 
       <h2 className="mt-16 mb-6 font-[family-name:var(--font-display)] text-2xl font-medium">
+        {t("about_team_title")}
+      </h2>
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5 }}
+        className="glass space-y-4 rounded-2xl p-8 text-[var(--color-slate)]"
+      >
+        <p>{t("about_team_p1")}</p>
+        <p>{t("about_team_p2")}</p>
+        <div className="grid grid-cols-1 gap-6 pt-4 sm:grid-cols-3">
+          <StatCounter
+            value={companyFacts.projectsDelivered.count}
+            suffix={companyFacts.projectsDelivered.plus ? "+" : ""}
+            label={t("stat_projects")}
+          />
+          <StatCounter value={clientCount} label={t("stat_clients")} />
+          <StatCounter
+            value={companyFacts.referralPartners.count}
+            suffix={companyFacts.referralPartners.plus ? "+" : ""}
+            label={t("stat_partners")}
+          />
+        </div>
+      </motion.div>
+
+      <h2 className="mt-16 mb-6 font-[family-name:var(--font-display)] text-2xl font-medium">
         {t("about_bring_title")}
       </h2>
       <motion.div
@@ -60,7 +89,7 @@ export function AboutContent({ founder }: { founder: Founder }) {
       </motion.div>
 
       <p className="mt-16 mb-6 font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-brass)]">
-        The Engineer Behind NOBS
+        {t("about_lead_title")}
       </p>
       <motion.div
         initial={{ opacity: 0, y: 14 }}
@@ -81,8 +110,8 @@ export function AboutContent({ founder }: { founder: Founder }) {
           <h3 className="font-[family-name:var(--font-display)] text-xl font-medium">
             {founder.name}
           </h3>
-          <p className="mt-0.5 text-sm text-[var(--color-brass)]">{founder.role}</p>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--color-slate)]">{founder.bio}</p>
+          <p className="mt-0.5 text-sm text-[var(--color-brass)]">{t("about_lead_caption")}</p>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-slate)]">{t("about_lead_text")}</p>
           <div className="mt-4 flex flex-wrap gap-4">
             {founder.githubUrl && (
               <a

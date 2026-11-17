@@ -4,6 +4,8 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { sendToFlowmint } from "@/lib/flowmint";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildClientWelcomeHtml } from "@/lib/partner-email";
@@ -89,6 +91,7 @@ export async function createClientAccount(formData: FormData): Promise<SignupRes
       },
     });
     revalidatePath("/");
+    after(() => sendToFlowmint("client_signed_up", { name, email, organization: organization || null }));
 
     const rawRef = formData.get("ref");
     await linkReferralIfPresent(user.id, email, typeof rawRef === "string" && rawRef ? rawRef : null);

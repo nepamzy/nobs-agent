@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Check, ArrowUpRight, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { NigeriaDiscountBanner } from "@/components/nigeria-discount-banner";
 import { pricingGroups, type PricingTier } from "@/lib/data/pricing-detailed";
 import { aiAutomationTiers } from "@/lib/data/ai-automation-pricing";
 import { usePricingText } from "@/lib/i18n/pricing-text";
@@ -55,8 +54,6 @@ export function PricingContent() {
           </p>
         </div>
       </div>
-
-      <NigeriaDiscountBanner />
 
       <div className="mx-auto max-w-6xl space-y-16 px-6 py-16">
         {pricingGroups.map((group) => (

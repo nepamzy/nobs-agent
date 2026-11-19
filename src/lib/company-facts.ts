@@ -13,8 +13,6 @@ export const companyFacts = {
   // this for every client or portfolio project created after that date (see
   // lib/data/client-count.ts), so it grows on its own.
   clientsServed: { baseline: 22, countsFrom: "2026-11-15T00:00:00.000Z" },
-  // The owner confirmed 20-30; the page shows the safe lower bound.
-  projectsDelivered: { count: 20, plus: true },
   // Reported by the owner, measured using a combination of factors. Shown
   // with a qualifier until the methodology, reporting period and supporting
   // records are documented.

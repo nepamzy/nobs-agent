@@ -1,3 +1,4 @@
+import { notifyFlowmint } from "@/lib/flowmint";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -150,6 +151,18 @@ export async function POST(req: NextRequest) {
         paidAmountKobo: paidAmountKoboForCommission,
       });
     }, { timeout: 15000 });
+    notifyFlowmint("payment_received", {
+      bookingId: booking.id,
+      client: booking.fullName,
+      email: booking.email,
+      service: booking.serviceInterest,
+      provider: "flutterwave",
+      reference: transactionId,
+      amountPaid: paidAmount,
+      totalPaid: newTotalPaid,
+      agreedAmount: totalAgreed,
+      currency: booking.currency,
+    });
     // See the matching comment in src/app/api/paystack/verify/route.ts —
     // same reasoning, same fix.
 

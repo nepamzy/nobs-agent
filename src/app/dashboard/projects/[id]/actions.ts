@@ -1,5 +1,6 @@
 "use server";
 
+import { notifyFlowmint } from "@/lib/flowmint";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
@@ -33,6 +34,12 @@ export async function postProjectComment(formData: FormData) {
 
   await prisma.message.create({
     data: { senderId: session.user.id, projectId, body },
+  });
+  notifyFlowmint("project_message_sent", {
+    projectId,
+    from: session.user.name ?? session.user.email ?? "unknown",
+    role: session.user.role,
+    body,
   });
 
   revalidatePath(`/dashboard/projects/${projectId}`);

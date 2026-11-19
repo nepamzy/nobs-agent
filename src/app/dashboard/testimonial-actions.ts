@@ -1,5 +1,6 @@
 "use server";
 
+import { notifyFlowmint } from "@/lib/flowmint";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
@@ -48,6 +49,8 @@ export async function submitDashboardTestimonial(formData: FormData): Promise<Te
         approved: false, // studio reviews before it goes public on /testimonials
       },
     });
+
+    notifyFlowmint("testimonial_submitted", { projectId, clientName: session.user.name ?? null, rating, quote });
 
     revalidatePath("/dashboard");
     return { ok: true };

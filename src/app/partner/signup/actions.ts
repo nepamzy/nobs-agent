@@ -1,5 +1,6 @@
 "use server";
 
+import { notifyFlowmint } from "@/lib/flowmint";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { sendBrevoEmail } from "@/lib/brevo";
@@ -60,6 +61,7 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
           htmlContent: buildWaitlistJoinedHtml({ name: outcome.name, position: outcome.position, statusUrl }),
         }).catch((err) => console.error("[partner signup] waitlist email failed", err));
       }
+      notifyFlowmint("partner_waitlisted", { name: outcome.name, email: outcome.email, position: outcome.position });
       return { ok: true, kind: "waitlisted", position: outcome.position, statusUrl };
     }
 
@@ -72,6 +74,7 @@ export async function createReferralPartnerAccount(formData: FormData): Promise<
       createdAt: outcome.createdAt,
     }).catch((err) => console.error("[partner signup] welcome email failed", err));
 
+    notifyFlowmint("partner_signed_up", { name: outcome.name, email: outcome.email });
     return { ok: true, kind: "partner" };
   } catch (err) {
     console.error("[partner signup] failed", err);

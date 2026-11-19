@@ -1,5 +1,6 @@
 "use server";
 
+import { notifyFlowmint } from "@/lib/flowmint";
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -70,6 +71,17 @@ export async function submitProjectBrief(formData: FormData) {
       termsAcceptedAt: new Date(),
       termsAcceptedIp: ip,
     },
+  });
+
+  notifyFlowmint("project_brief_submitted", {
+    bookingId: booking.id,
+    name: fullName,
+    email,
+    service: serviceInterest,
+    budget: budgetRange,
+    meetingType,
+    scheduledFor: scheduledDate.toISOString(),
+    notes,
   });
 
   try {

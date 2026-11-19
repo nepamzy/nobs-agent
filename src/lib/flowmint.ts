@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
+import { after } from "next/server";
 
 // Sends website events (a submitted contact form, a booking request, a new
 // client sign-up) to FLOWMINT. Server-side only: the signing secret must
@@ -37,5 +38,19 @@ export async function sendToFlowmint(type: string, data: Record<string, unknown>
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+// Fire-and-forget wrapper for server code: sends after the response is on its
+// way when there is a request to hang off, otherwise just sends in the
+// background. Callers must only pass business details, never passwords,
+// password hashes, access or reset tokens, two-factor secrets, API keys or
+// card details.
+export function notifyFlowmint(type: string, data: Record<string, unknown>): void {
+  const task = () => sendToFlowmint(type, data);
+  try {
+    after(task);
+  } catch {
+    void task();
   }
 }

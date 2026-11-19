@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
+import { sendToFlowmint } from "@/lib/flowmint";
 import { buildSiteAssistantPrompt } from "@/lib/site-assistant-knowledge";
 
 // The website chat assistant (src/components/site-assistant.tsx). Public
@@ -97,6 +98,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.error("[assistant] could not save question", err);
     }
+    await sendToFlowmint("assistant_question", { question, answer: reply.slice(0, 8000) || null, answered, turn });
   });
 
   // The reply is streamed as plain text, so the visitor sees it appear

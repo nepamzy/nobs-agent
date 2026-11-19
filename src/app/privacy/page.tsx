@@ -20,7 +20,7 @@ const sections = [
   },
   {
     heading: "3. Data storage & security",
-    body: "Data is stored in a PostgreSQL database with encrypted connections, access restricted by role, and regular backups. Uploaded files are stored via Cloudinary or Supabase Storage under access-controlled buckets. When you send a contact form, request a booking or create an account, the details you submit (such as your name, email address and message) are also passed securely to FLOWMINT, our business operations tool, so we can follow up with you.",
+    body: "Data is stored in a PostgreSQL database with encrypted connections, access restricted by role, and regular backups. Uploaded files are stored via Cloudinary or Supabase Storage under access-controlled buckets. Business details you submit or that relate to your account and projects, such as contact and booking details, job applications, payment records, project messages, testimonials and questions asked in the chat, are also passed securely to FLOWMINT, our business operations tool, so we can manage and follow up on them. We never send passwords, card numbers or sign-in codes.",
   },
   {
     heading: "4. Your rights",
@@ -52,7 +52,7 @@ export default async function PrivacyPage() {
   const bodies = await translateList(sections.map((s) => s.body), language);
   const legalLabel = (await translateList(["Legal"], language))[0];
   const title = (await translateList(["Privacy Policy"], language))[0];
-  const lastUpdated = (await translateList(["Last updated: November 19, 2026"], language))[0];
+  const lastUpdated = (await translateList(["Last updated: November 20, 2026"], language))[0];
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-24">

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { getSiteUrl } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
+import { notifyFlowmint } from "@/lib/flowmint";
 
 const applySchema = z.object({
   jobId: z.string().min(1),
@@ -66,6 +67,20 @@ export async function submitJobApplication(formData: FormData): Promise<ApplyRes
         body: coverLetter,
         readByApplicant: true,
       },
+    });
+
+    notifyFlowmint("job_application_submitted", {
+      applicationId: application.id,
+      job: job.title,
+      name,
+      email,
+      phone,
+      location,
+      portfolioUrl: portfolioUrl || null,
+      experience: experience || null,
+      source,
+      coverLetter,
+      resumeUrl: resumeUrl || null,
     });
 
     const statusUrl = `${getSiteUrl()}/careers/status/${application.accessToken}`;

@@ -1,3 +1,4 @@
+import { notifyFlowmint } from "@/lib/flowmint";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildReceiptHtml } from "@/lib/receipt";
@@ -110,6 +111,20 @@ export async function recordPaystackPayment({
     }
     throw err;
   }
+  notifyFlowmint("payment_received", {
+    bookingId: booking.id,
+    client: booking.fullName,
+    email: booking.email,
+    service: booking.serviceInterest,
+    provider: "paystack",
+    reference,
+    amountPaid: paidAmount,
+    totalPaid: newTotalPaid,
+    agreedAmount: booking.agreedAmount,
+    currency: "NGN",
+    amountUnit: "kobo",
+  });
+
   // Prisma's default interactive-transaction timeout is 5s — this
   // transaction now does meaningfully more work than when it was first
   // written (referral lookup, tier locking, commission + notification

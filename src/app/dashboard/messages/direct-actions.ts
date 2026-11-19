@@ -1,5 +1,6 @@
 "use server";
 
+import { notifyFlowmint } from "@/lib/flowmint";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
@@ -38,6 +39,14 @@ export async function sendDirectMessage(formData: FormData) {
       attachmentUrl: parsed.data.attachmentUrl || null,
       attachmentName: parsed.data.attachmentName || null,
     },
+  });
+
+  notifyFlowmint("client_message_sent", {
+    from: session.user.name ?? "a client",
+    email: session.user.email ?? null,
+    body: parsed.data.body || "(attachment)",
+    attachmentUrl: parsed.data.attachmentUrl || null,
+    attachmentName: parsed.data.attachmentName || null,
   });
 
   await notifyAdminsPush({

@@ -52,7 +52,7 @@ A: NOBS AGENT was founded by Nobert Agu and is run by a team. Every project has 
 Q: Are you a company or a freelancer? / How big is the team?
 A: NOBS AGENT is a team, not a freelancer: a software and AI engineering company where every project has a lead contact accountable to you. Team size isn't published on the site; you can ask who will work on your project during the consultation. We also have a nationwide network of 19+ referral partners across Nigeria; they refer clients to us and are not NOBS AGENT employees or engineers.
 Q: How long have you been operating?
-A: We have completed and launched 20+ projects for 22+ clients, and we report a 98% project success rate, measured using a combination of delivery factors. Exact start dates and a detailed breakdown of how the success rate is measured aren't published on the site. Every project is scoped and quoted individually.
+A: We have worked with 22+ clients, and we report a 98% project success rate, measured using a combination of delivery factors. Exact start dates and a detailed breakdown of how the success rate is measured aren't published on the site. Every project is scoped and quoted individually.
 Q: What makes you different from other web designers or agencies?
 A: Most institutions get offered either a cheap template that breaks under real use or an agency quote sized for a bank. We build real systems at fair, scoped prices: proper planning, a real database, security built in from the start, an admin dashboard your own staff can use, documentation, and a handover so you're never dependent on us.
 Q: Why shouldn't I just use a cheap template or website builder?

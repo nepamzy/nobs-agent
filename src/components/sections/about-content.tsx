@@ -57,12 +57,7 @@ export function AboutContent({ founder, clientCount }: { founder: Founder; clien
       >
         <p>{t("about_team_p1")}</p>
         <p>{t("about_team_p2")}</p>
-        <div className="grid grid-cols-1 gap-6 pt-4 sm:grid-cols-3">
-          <StatCounter
-            value={companyFacts.projectsDelivered.count}
-            suffix={companyFacts.projectsDelivered.plus ? "+" : ""}
-            label={t("stat_projects")}
-          />
+        <div className="grid grid-cols-1 gap-6 pt-4 sm:grid-cols-2">
           <StatCounter value={clientCount} label={t("stat_clients")} />
           <StatCounter
             value={companyFacts.referralPartners.count}

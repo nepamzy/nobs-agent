@@ -150,12 +150,7 @@ export function Hero({ clientCount }: { clientCount: number }) {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="mx-auto mt-12 max-w-xl lg:mx-0"
             >
-              <div className="grid grid-cols-2 gap-6 text-left sm:grid-cols-4">
-                <StatCounter
-                  value={companyFacts.projectsDelivered.count}
-                  suffix={companyFacts.projectsDelivered.plus ? "+" : ""}
-                  label={t("stat_projects")}
-                />
+              <div className="grid grid-cols-2 gap-6 text-left sm:grid-cols-3">
                 <StatCounter value={clientCount} label={t("stat_clients")} />
                 <StatCounter
                   value={companyFacts.referralPartners.count}

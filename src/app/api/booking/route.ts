@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +6,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { auth } from "@/auth";
 import { checkBookingAvailability } from "@/lib/booking-availability";
 import { notifyAdminsPush } from "@/lib/push";
+import { sendToFlowmint } from "@/lib/flowmint";
 import { createBookingCalendarEvent } from "@/lib/google-calendar";
 import {
   budgetOptionsForService,
@@ -157,6 +158,21 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.error("[booking] calendar event creation failed", err);
     }
+
+    // Also tell FLOWMINT, after the response is sent so the visitor never waits.
+    after(() =>
+      sendToFlowmint("form_submitted", {
+        form: "booking",
+        bookingId: booking.id,
+        name: fullName,
+        email,
+        service: serviceInterest,
+        budget: budgetRange,
+        meetingType,
+        scheduledFor: scheduledDate.toISOString(),
+        notes: notes || null,
+      })
+    );
 
     // Push notification to admin devices, "like WhatsApp", even if no one
     // has the site/app open right now.

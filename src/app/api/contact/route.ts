@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { auth } from "@/auth";
 import { notifyAdminsPush } from "@/lib/push";
+import { sendToFlowmint } from "@/lib/flowmint";
 
 const contactSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -70,6 +71,9 @@ export async function POST(req: NextRequest) {
         replyTo: email,
       });
     }
+
+    // Also tell FLOWMINT, after the response is sent so the visitor never waits.
+    after(() => sendToFlowmint("form_submitted", { form: "contact", name, email, company: company || null, message }));
 
     // 3. Push notification to admin devices, same "even when the app/site
     //    isn't open" behavior as new bookings.

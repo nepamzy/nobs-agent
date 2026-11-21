@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
+import { verifyRevenuePin } from "@/lib/revenue-pin";
+import { PAYMENTS_COOKIE, isPaymentsUnlocked, makeUnlockValue } from "@/lib/payments-unlock";
 import { authorizeBookingPayment, confirmBookingWithDeposit } from "@/app/admin/bookings/actions";
 
 export async function clearAllPaymentData() {
@@ -12,6 +16,9 @@ export async function clearAllPaymentData() {
   // app has for any single action.
   if (!session || session.user.role !== "ADMIN") {
     throw new Error("Not authorized.");
+  }
+  if (!(await isPaymentsUnlocked(session.user.id))) {
+    throw new Error("Payments are locked. Unlock them with your PIN first.");
   }
 
   await prisma.$transaction([
@@ -70,7 +77,45 @@ async function requireStaff() {
   if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {
     throw new Error("Not authorized.");
   }
+  // Money actions need the PIN to have been entered (see payments-unlock.ts).
+  if (!(await isPaymentsUnlocked(session.user.id))) {
+    throw new Error("Payments are locked. Unlock them with your PIN first.");
+  }
   return session;
+}
+
+// ---------- The privacy eye ----------
+export type UnlockResult = { ok: true } | { ok: false; error: string };
+
+export async function unlockPaymentsAction(formData: FormData): Promise<UnlockResult> {
+  const session = await auth();
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {
+    return { ok: false, error: "Not authorized." };
+  }
+  // Shares the analytics PIN's attempt budget so the PIN can't be guessed
+  // twice as fast by switching pages.
+  const { success } = rateLimit(`revenue-pin:${session.user.id}`, 5, 5 * 60_000);
+  if (!success) return { ok: false, error: "Too many attempts, try again in a few minutes." };
+
+  const pin = formData.get("pin");
+  if (typeof pin !== "string") return { ok: false, error: "Invalid input." };
+  if (!(await verifyRevenuePin(pin))) return { ok: false, error: "Incorrect PIN." };
+
+  const { value, maxAge } = makeUnlockValue(session.user.id);
+  (await cookies()).set(PAYMENTS_COOKIE, value, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/admin",
+    maxAge,
+  });
+  revalidatePath("/admin/payments");
+  return { ok: true };
+}
+
+export async function lockPaymentsAction(): Promise<void> {
+  (await cookies()).delete({ name: PAYMENTS_COOKIE, path: "/admin" });
+  revalidatePath("/admin/payments");
 }
 
 function fail(err: unknown, fallback: string): PaymentFormState {

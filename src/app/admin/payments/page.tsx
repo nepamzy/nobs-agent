@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { isRevenuePinSet } from "@/lib/revenue-pin";
+import { isPaymentsUnlocked } from "@/lib/payments-unlock";
+import { HidePaymentsButton, PaymentsLockedCard } from "@/components/admin/payments-lock";
 import { clearAllPaymentData } from "./actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { CreditCard, Banknote } from "lucide-react";
@@ -26,6 +30,21 @@ async function getData() {
 }
 
 export default async function AdminPaymentsPage() {
+  const session = await auth();
+  const unlocked = session ? await isPaymentsUnlocked(session.user.id) : false;
+
+  // Locked: build nothing from the database. The only thing sent to the
+  // browser is the locked card.
+  if (!unlocked) {
+    const pinIsSet = await isRevenuePinSet();
+    return (
+      <div>
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">Payments</h1>
+        <PaymentsLockedCard pinIsSet={pinIsSet} />
+      </div>
+    );
+  }
+
   const { rows, clients, connected } = await getData();
 
   // Naira bookings only: the headline totals add up one currency.
@@ -74,6 +93,8 @@ export default async function AdminPaymentsPage() {
             download a numbered receipt or invoice with a QR code for any payment, past or new.
           </p>
         </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <HidePaymentsButton />
         <form action={clearAllPaymentData}>
           <ConfirmSubmit
             message='This permanently deletes every payment record and resets every "amount paid" figure across the entire site back to zero, including analytics revenue, client totals, and invoices. This cannot be undone. Only do this if every payment currently on file is test data. Continue?'
@@ -83,6 +104,7 @@ export default async function AdminPaymentsPage() {
             Clear all payment data
           </ConfirmSubmit>
         </form>
+        </div>
       </div>
 
       {!connected && (

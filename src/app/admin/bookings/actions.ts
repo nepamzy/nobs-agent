@@ -7,7 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { getSiteUrl } from "@/lib/env";
 import { buildReceiptHtml } from "@/lib/receipt";
-import { generateInvoicePdf } from "@/lib/invoice-pdf";
+import { prepareReceiptDelivery } from "@/lib/payment-receipt";
+import { notifyFlowmint } from "@/lib/flowmint";
 import { sendPushToUser } from "@/lib/push";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
 import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
@@ -423,9 +424,25 @@ export async function authorizeBookingPayment(formData: FormData) {
   // See the matching comment in src/app/api/paystack/verify/route.ts —
   // same reasoning, same fix.
 
+  notifyFlowmint("payment_received", {
+    bookingId: booking.id,
+    client: booking.fullName,
+    email: booking.email,
+    service: booking.serviceInterest,
+    provider: "manual",
+    reference,
+    amountPaid: paidAmount,
+    totalPaid: newTotalPaid,
+    agreedAmount,
+    currency: "NGN",
+    amountUnit: "kobo",
+    note: note || null,
+  });
+
   // Everything downstream matches the normal Paystack-verified flow
   // exactly: same receipt builder, same emails, same dashboard notification.
   if (process.env.BREVO_API_KEY) {
+    const delivery = await prepareReceiptDelivery(reference);
     const receiptHtml = buildReceiptHtml({
       clientName: booking.fullName,
       serviceInterest: booking.serviceInterest,
@@ -434,23 +451,11 @@ export async function authorizeBookingPayment(formData: FormData) {
       totalPaid: newTotalPaid,
       agreedAmount,
       paidAt: new Date(),
+      receiptCode: delivery?.code,
+      receiptUrl: delivery?.url,
+      qrUrl: delivery?.qrUrl,
     });
-
-    const allPayments = await prisma.bookingPayment.findMany({
-      where: { bookingId: booking.id },
-      orderBy: { createdAt: "asc" },
-    });
-    const pdfBytes = await generateInvoicePdf({
-      id: booking.id,
-      fullName: booking.fullName,
-      email: booking.email,
-      serviceInterest: booking.serviceInterest,
-      agreedAmount,
-      amountPaid: newTotalPaid,
-      payments: allPayments,
-    });
-    const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
-    const attachment = [{ name: `receipt-${booking.id}.pdf`, content: pdfBase64 }];
+    const attachment = delivery?.attachment;
 
     // The payment record is already committed above, an email hiccup
     // (bad sender domain, rate limit, etc.) shouldn't be able to make

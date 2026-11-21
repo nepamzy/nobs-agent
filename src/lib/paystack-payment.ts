@@ -2,7 +2,7 @@ import { notifyFlowmint } from "@/lib/flowmint";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildReceiptHtml } from "@/lib/receipt";
-import { generateInvoicePdf } from "@/lib/invoice-pdf";
+import { prepareReceiptDelivery } from "@/lib/payment-receipt";
 import { recordReferralCommissionIfApplicable, type CommissionEmailData } from "@/lib/referral-commission";
 import { buildCommissionEarnedHtml, buildOverrideCommissionEarnedHtml } from "@/lib/partner-email";
 import { isUniqueConstraintError } from "@/lib/prisma-errors";
@@ -135,6 +135,7 @@ export async function recordPaystackPayment({
   // genuinely broken query if one ever creeps in.
 
   if (process.env.BREVO_API_KEY) {
+    const delivery = await prepareReceiptDelivery(reference);
     const receiptHtml = buildReceiptHtml({
       clientName: booking.fullName,
       serviceInterest: booking.serviceInterest,
@@ -143,23 +144,11 @@ export async function recordPaystackPayment({
       totalPaid: newTotalPaid,
       agreedAmount: booking.agreedAmount,
       paidAt: new Date(),
+      receiptCode: delivery?.code,
+      receiptUrl: delivery?.url,
+      qrUrl: delivery?.qrUrl,
     });
-
-    const allPayments = await prisma.bookingPayment.findMany({
-      where: { bookingId: booking.id },
-      orderBy: { createdAt: "asc" },
-    });
-    const pdfBytes = await generateInvoicePdf({
-      id: booking.id,
-      fullName: booking.fullName,
-      email: booking.email,
-      serviceInterest: booking.serviceInterest,
-      agreedAmount: booking.agreedAmount,
-      amountPaid: newTotalPaid,
-      payments: allPayments,
-    });
-    const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
-    const attachment = [{ name: `receipt-${booking.id}.pdf`, content: pdfBase64 }];
+    const attachment = delivery?.attachment;
 
     await Promise.all([
       sendBrevoEmail({

@@ -52,26 +52,39 @@ function cleanReply(text: string): string {
 }
 
 // Replies can contain links to /booking, /pricing etc. Render URLs as
-// links and everything else as plain text (never as HTML).
+// links and everything else as plain text (never as HTML). Written to be
+// forgiving about how the model writes an address: with or without
+// https://, with or without www, and with a full stop or comma right
+// after it (the punctuation stays outside the link). Links to this site
+// always go to the page on the current host, so one that was typed as
+// the bare domain still works.
+const LINK_PATTERN = /((?:https?:\/\/)?(?:www\.)?nobs-agent\.site(?:\/[^\s)]*)?|https?:\/\/[^\s)]+)/gi;
+const TRAILING_PUNCTUATION = /[.,;:!?'"\]]+$/;
+
 function Linkified({ text }: { text: string }) {
-  const parts = text.split(/(https?:\/\/[^\s)]+)/g);
+  const parts = text.split(LINK_PATTERN);
   return (
     <>
-      {parts.map((part, i) =>
-        /^https?:\/\//.test(part) ? (
-          <a
-            key={i}
-            href={part}
-            className="underline underline-offset-2 hover:text-[var(--color-brass)]"
-            target={part.includes("nobs-agent.site") ? undefined : "_blank"}
-            rel="noopener noreferrer"
-          >
-            {part.replace(/^https?:\/\/(www\.)?/, "")}
-          </a>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      )}
+      {parts.map((part, i) => {
+        if (i % 2 === 0) return <span key={i}>{part}</span>;
+        const trailing = part.match(TRAILING_PUNCTUATION)?.[0] ?? "";
+        const url = trailing ? part.slice(0, -trailing.length) : part;
+        const own = url.match(/^(?:https?:\/\/)?(?:www\.)?nobs-agent\.site(\/[^\s]*)?$/i);
+        const href = own ? own[1] || "/" : url;
+        return (
+          <span key={i}>
+            <a
+              href={href}
+              className="underline underline-offset-2 hover:text-[var(--color-brass)]"
+              target={own ? undefined : "_blank"}
+              rel="noopener noreferrer"
+            >
+              {url.replace(/^https?:\/\/(www\.)?/i, "")}
+            </a>
+            {trailing}
+          </span>
+        );
+      })}
     </>
   );
 }

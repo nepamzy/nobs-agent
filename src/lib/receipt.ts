@@ -13,6 +13,9 @@ export function buildReceiptHtml({
   agreedAmount,
   paidAt,
   currency = "NGN",
+  receiptCode,
+  receiptUrl,
+  qrUrl,
 }: {
   clientName: string;
   serviceInterest: string;
@@ -22,6 +25,9 @@ export function buildReceiptHtml({
   agreedAmount: number;
   paidAt: Date;
   currency?: string;
+  receiptCode?: string;
+  receiptUrl?: string;
+  qrUrl?: string;
 }) {
   const formatAmount = (amount: number) => formatMoney(amount, currency);
   const remaining = Math.max(0, agreedAmount - totalPaid);
@@ -31,7 +37,8 @@ export function buildReceiptHtml({
   return `
     <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; border: 1px solid #e4b34355; padding: 32px; color: #12151d;">
       <p style="font-family: Arial, sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #a5822f; margin: 0 0 4px;">NOBS AGENT</p>
-      <h1 style="font-size: 22px; margin: 0 0 24px;">Payment Receipt</h1>
+      <h1 style="font-size: 22px; margin: 0 0 ${receiptCode ? "4px" : "24px"};">Payment Receipt</h1>
+      ${receiptCode ? `<p style="font-family: monospace; font-size: 13px; color: #a5822f; margin: 0 0 24px;">${receiptCode}</p>` : ""}
 
       <table style="width: 100%; font-family: Arial, sans-serif; font-size: 13px; border-collapse: collapse;">
         <tr><td style="padding: 6px 0; color: #666;">Billed to</td><td style="padding: 6px 0; text-align: right;">${clientName}</td></tr>
@@ -51,6 +58,15 @@ export function buildReceiptHtml({
         <tr><td style="padding: 4px 0; color: #666;">Total paid to date</td><td style="padding: 4px 0; text-align: right;">${formatAmount(totalPaid)} (${percentPaid}%)</td></tr>
         <tr><td style="padding: 4px 0; color: #666;">Remaining balance</td><td style="padding: 4px 0; text-align: right; ${fullyPaid ? "color: #0f6e56; font-weight: bold;" : ""}">${fullyPaid ? "Paid in full" : formatAmount(remaining)}</td></tr>
       </table>
+
+      ${
+        receiptUrl && qrUrl
+          ? `<table style="width: 100%; margin-top: 24px; border-collapse: collapse;"><tr>
+              <td style="width: 96px; vertical-align: top;"><a href="${receiptUrl}"><img src="${qrUrl}" width="88" height="88" alt="QR code for this receipt" style="border: 1px solid #e4b34355;" /></a></td>
+              <td style="vertical-align: middle; font-family: Arial, sans-serif; font-size: 12px; color: #444;">Scan the code, or <a href="${receiptUrl}" style="color: #a5822f;">open this receipt online</a>, any time. A PDF copy is attached.</td>
+            </tr></table>`
+          : ""
+      }
 
       <p style="font-family: Arial, sans-serif; font-size: 11px; color: #999; margin-top: 32px;">
         NOBS AGENT · Kaduna, Nigeria, remote-first · nobsagent0@gmail.com

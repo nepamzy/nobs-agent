@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { CheckCircle2, CreditCard, FileDown } from "lucide-react";
+import { CheckCircle2, CreditCard, FileDown, ExternalLink } from "lucide-react";
+import { receiptCode } from "@/lib/receipts";
 
 function formatNaira(kobo: number) {
   return `₦${(kobo / 100).toLocaleString("en-NG")}`;
@@ -12,6 +13,7 @@ async function getBookings(email: string) {
     const bookings = await prisma.booking.findMany({
       where: { email, agreedAmount: { not: null } },
       orderBy: { createdAt: "desc" },
+      include: { payments: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] } },
     });
     return { bookings, connected: true };
   } catch {
@@ -55,6 +57,8 @@ export default async function DashboardPaymentsPage() {
             depositPercentage: number | null;
             amountPaid: number;
             status: string;
+            invoiceToken: string;
+            payments: { id: string; amount: number; createdAt: Date; receiptNumber: number; receiptToken: string }[];
           }) => {
             const total = b.agreedAmount ?? 0;
             const paid = b.amountPaid;
@@ -79,7 +83,7 @@ export default async function DashboardPaymentsPage() {
                   <div className="flex shrink-0 items-center gap-2">
                     {paid > 0 && (
                       <a
-                        href={`/api/invoice/${b.id}`}
+                        href={`/invoice/${b.invoiceToken}/pdf`}
                         className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--color-brass)]"
                       >
                         <FileDown size={13} /> Invoice
@@ -107,6 +111,30 @@ export default async function DashboardPaymentsPage() {
                     )}
                   </div>
                 </div>
+
+                {b.payments.length > 0 && (
+                  <div className="mt-4 space-y-1.5 border-t border-[var(--color-line)] pt-4">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-slate)]">Receipts</p>
+                    {b.payments.map((p) => (
+                      <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span>
+                          <span className="font-[family-name:var(--font-mono)] font-semibold">{receiptCode(p.receiptNumber)}</span>
+                          <span className="ml-2 text-[var(--color-slate)]">
+                            {p.createdAt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} · {formatNaira(p.amount)}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <a href={`/receipt/${p.receiptToken}/pdf`} className="inline-flex items-center gap-1 rounded-full border border-[var(--color-line)] px-2.5 py-1 transition hover:border-[var(--color-brass)]">
+                            <FileDown size={11} /> PDF
+                          </a>
+                          <Link href={`/receipt/${p.receiptToken}`} target="_blank" className="inline-flex items-center gap-1 rounded-full border border-[var(--color-line)] px-2.5 py-1 transition hover:border-[var(--color-brass)]">
+                            <ExternalLink size={11} /> Open
+                          </Link>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           }

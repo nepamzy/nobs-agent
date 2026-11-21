@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
+import { verifyRevenuePin } from "@/lib/revenue-pin";
+import { PAYMENTS_COOKIE, isPaymentsUnlocked, makeUnlockValue } from "@/lib/payments-unlock";
+import { authorizeBookingPayment, confirmBookingWithDeposit } from "@/app/admin/bookings/actions";
 
 export async function clearAllPaymentData() {
   const session = await auth();
@@ -11,6 +16,9 @@ export async function clearAllPaymentData() {
   // app has for any single action.
   if (!session || session.user.role !== "ADMIN") {
     throw new Error("Not authorized.");
+  }
+  if (!(await isPaymentsUnlocked(session.user.id))) {
+    throw new Error("Payments are locked. Unlock them with your PIN first.");
   }
 
   await prisma.$transaction([
@@ -56,4 +64,127 @@ export async function clearAllPaymentData() {
   revalidatePath("/dashboard/payments");
   revalidatePath("/admin/partners");
   revalidatePath("/partner");
+}
+
+// ---------- Forms on the Payments page ----------
+// Each returns { ok, message } or { error } instead of throwing, so a wrong
+// number shows up as a message on the card instead of a crash page.
+
+export type PaymentFormState = { ok: true; message: string } | { ok: false; error: string } | undefined;
+
+async function requireStaff() {
+  const session = await auth();
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {
+    throw new Error("Not authorized.");
+  }
+  // Money actions need the PIN to have been entered (see payments-unlock.ts).
+  if (!(await isPaymentsUnlocked(session.user.id))) {
+    throw new Error("Payments are locked. Unlock them with your PIN first.");
+  }
+  return session;
+}
+
+// ---------- The privacy eye ----------
+export type UnlockResult = { ok: true } | { ok: false; error: string };
+
+export async function unlockPaymentsAction(formData: FormData): Promise<UnlockResult> {
+  const session = await auth();
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "STAFF")) {
+    return { ok: false, error: "Not authorized." };
+  }
+  // Shares the analytics PIN's attempt budget so the PIN can't be guessed
+  // twice as fast by switching pages.
+  const { success } = rateLimit(`revenue-pin:${session.user.id}`, 5, 5 * 60_000);
+  if (!success) return { ok: false, error: "Too many attempts, try again in a few minutes." };
+
+  const pin = formData.get("pin");
+  if (typeof pin !== "string") return { ok: false, error: "Invalid input." };
+  if (!(await verifyRevenuePin(pin))) return { ok: false, error: "Incorrect PIN." };
+
+  const { value, maxAge } = makeUnlockValue(session.user.id);
+  (await cookies()).set(PAYMENTS_COOKIE, value, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/admin",
+    maxAge,
+  });
+  revalidatePath("/admin/payments");
+  return { ok: true };
+}
+
+export async function lockPaymentsAction(): Promise<void> {
+  (await cookies()).delete({ name: PAYMENTS_COOKIE, path: "/admin" });
+  revalidatePath("/admin/payments");
+}
+
+function fail(err: unknown, fallback: string): PaymentFormState {
+  return { ok: false, error: err instanceof Error ? err.message : fallback };
+}
+
+export async function approvePaymentAction(_prev: PaymentFormState, formData: FormData): Promise<PaymentFormState> {
+  try {
+    await requireStaff();
+    const amount = Number(formData.get("amountNaira"));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { ok: false, error: "Enter the amount received, greater than zero." };
+    }
+    const form = new FormData();
+    form.set("id", String(formData.get("id") ?? ""));
+    form.set("mode", "amount");
+    form.set("value", String(amount));
+    const price = String(formData.get("agreedAmountNaira") ?? "").trim();
+    if (price) form.set("agreedAmountNaira", price);
+    form.set("note", String(formData.get("note") ?? ""));
+    await authorizeBookingPayment(form);
+    return { ok: true, message: "Payment approved. The receipt is ready below and the client has been emailed." };
+  } catch (err) {
+    return fail(err, "Could not approve that payment.");
+  }
+}
+
+export async function setPriceAction(_prev: PaymentFormState, formData: FormData): Promise<PaymentFormState> {
+  try {
+    await requireStaff();
+    const price = Number(formData.get("agreedAmountNaira"));
+    if (!Number.isFinite(price) || price <= 0) return { ok: false, error: "Enter the agreed price, greater than zero." };
+    const form = new FormData();
+    form.set("id", String(formData.get("id") ?? ""));
+    form.set("agreedAmountNaira", String(price));
+    form.set("depositPercentage", String(formData.get("depositPercentage") || 45));
+    await confirmBookingWithDeposit(form);
+    revalidatePath("/admin/payments");
+    return { ok: true, message: "Price saved and the client has been sent the payment link." };
+  } catch (err) {
+    return fail(err, "Could not save that price.");
+  }
+}
+
+export async function linkClientAction(_prev: PaymentFormState, formData: FormData): Promise<PaymentFormState> {
+  try {
+    await requireStaff();
+    const id = String(formData.get("id") ?? "");
+    const clientId = String(formData.get("clientId") ?? "");
+    if (!id) return { ok: false, error: "Missing booking." };
+
+    if (!clientId) {
+      await prisma.booking.update({ where: { id }, data: { clientId: null } });
+    } else {
+      const client = await prisma.client.findUnique({ where: { id: clientId } });
+      if (!client) return { ok: false, error: "That client no longer exists." };
+      // If the client has an account, link it too so the booking, its
+      // invoice and receipts show up in their own dashboard.
+      await prisma.booking.update({
+        where: { id },
+        data: { clientId: client.id, ...(client.userId ? { userId: client.userId } : {}) },
+      });
+    }
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin/bookings");
+    revalidatePath("/admin/clients");
+    revalidatePath("/dashboard/payments");
+    return { ok: true, message: clientId ? "Booking linked to the client." : "Booking unlinked." };
+  } catch (err) {
+    return fail(err, "Could not link that booking.");
+  }
 }

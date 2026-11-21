@@ -1,33 +1,85 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { isRevenuePinSet } from "@/lib/revenue-pin";
+import { isPaymentsUnlocked } from "@/lib/payments-unlock";
+import { HidePaymentsButton, PaymentsLockedCard } from "@/components/admin/payments-lock";
 import { clearAllPaymentData } from "./actions";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
-import { CheckCircle2, CreditCard, Banknote, FileDown } from "lucide-react";
+import { CreditCard, Banknote } from "lucide-react";
+import { PaymentsBoard, type BoardBooking, type BoardClient } from "@/components/admin/payments-board";
 
 function formatNaira(kobo: number) {
   return `₦${(kobo / 100).toLocaleString("en-NG")}`;
 }
 
-async function getBookingsWithDeposits() {
+async function getData() {
   try {
-    const rows = await prisma.booking.findMany({
-      where: { agreedAmount: { not: null } },
-      orderBy: { scheduledFor: "desc" },
-    });
-    return { rows, connected: true };
+    const [rows, clients] = await Promise.all([
+      prisma.booking.findMany({
+        where: { status: { notIn: ["CANCELLED", "REJECTED"] } },
+        orderBy: { createdAt: "desc" },
+        take: 300,
+        include: { client: { select: { name: true } }, payments: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] } },
+      }),
+      prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, organization: true } }),
+    ]);
+    return { rows, clients, connected: true };
   } catch {
-    return { rows: [] as Awaited<ReturnType<typeof prisma.booking.findMany>>, connected: false };
+    return { rows: [], clients: [] as BoardClient[], connected: false };
   }
 }
 
 export default async function AdminPaymentsPage() {
-  const { rows, connected } = await getBookingsWithDeposits();
+  const session = await auth();
+  const unlocked = session ? await isPaymentsUnlocked(session.user.id) : false;
 
-  const totalCollected = rows.reduce((sum, r) => sum + r.amountPaid, 0);
-  const totalOutstanding = rows.reduce(
+  // Locked: build nothing from the database. The only thing sent to the
+  // browser is the locked card.
+  if (!unlocked) {
+    const pinIsSet = await isRevenuePinSet();
+    return (
+      <div>
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-medium">Payments</h1>
+        <PaymentsLockedCard pinIsSet={pinIsSet} />
+      </div>
+    );
+  }
+
+  const { rows, clients, connected } = await getData();
+
+  // Naira bookings only: the headline totals add up one currency.
+  const ngn = rows.filter((r) => r.currency === "NGN");
+  const totalCollected = ngn.reduce((sum, r) => sum + r.amountPaid, 0);
+  const totalOutstanding = ngn.reduce(
     (sum, r) => sum + Math.max(0, (r.agreedAmount ?? 0) - r.amountPaid),
     0
   );
+
+  const board: BoardBooking[] = rows
+    .map((r) => ({
+      id: r.id,
+      fullName: r.fullName,
+      email: r.email,
+      service: r.serviceInterest,
+      currency: r.currency,
+      agreedTotal: r.currency === "NGN" ? r.agreedAmount : r.internationalAgreedAmount,
+      paid: r.payments.reduce((sum, p) => sum + p.amount, 0),
+      clientId: r.clientId,
+      clientName: r.client?.name ?? null,
+      invoiceNumber: r.invoiceNumber,
+      invoiceToken: r.invoiceToken,
+      payments: r.payments.map((p) => ({
+        id: p.id,
+        number: p.receiptNumber,
+        token: p.receiptToken,
+        date: p.createdAt.toISOString(),
+        method: p.provider,
+        amount: p.amount,
+        note: p.note,
+      })),
+    }))
+    // Bookings that still need attention first: no price, then part paid.
+    .sort((a, b) => Number(a.agreedTotal !== null) - Number(b.agreedTotal !== null));
 
   return (
     <div>
@@ -37,10 +89,12 @@ export default async function AdminPaymentsPage() {
             Payments
           </h1>
           <p className="mt-2 max-w-xl text-sm text-[var(--color-slate)]">
-            Every payment, deposit and installments alike, collected via Paystack. Clients
-            can pay in parts, this reflects the running total across all of them.
+            Agree a price, approve money you have received, link a booking to a client, and
+            download a numbered receipt or invoice with a QR code for any payment, past or new.
           </p>
         </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <HidePaymentsButton />
         <form action={clearAllPaymentData}>
           <ConfirmSubmit
             message='This permanently deletes every payment record and resets every "amount paid" figure across the entire site back to zero, including analytics revenue, client totals, and invoices. This cannot be undone. Only do this if every payment currently on file is test data. Continue?'
@@ -50,6 +104,7 @@ export default async function AdminPaymentsPage() {
             Clear all payment data
           </ConfirmSubmit>
         </form>
+        </div>
       </div>
 
       {!connected && (
@@ -77,60 +132,7 @@ export default async function AdminPaymentsPage() {
         </div>
       </div>
 
-      {connected && rows.length === 0 && (
-        <p className="mt-8 text-sm text-[var(--color-slate)]">
-          No confirmed bookings with a price yet, set one in{" "}
-          <Link href="/admin/bookings" className="text-[var(--color-brass)] underline underline-offset-4">
-            Bookings
-          </Link>
-          .
-        </p>
-      )}
-
-      <div className="mt-6 space-y-2">
-        {rows.map((row) => {
-          const total = row.agreedAmount ?? 0;
-          const percent = total > 0 ? Math.round((row.amountPaid / total) * 100) : 0;
-          const fullyPaid = total > 0 && row.amountPaid >= total;
-          return (
-            <div key={row.id} className="glass rounded-xl p-4 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1">
-                  <p className="font-medium">{row.fullName}</p>
-                  <p className="text-xs text-[var(--color-slate)]">
-                    {row.serviceInterest} · {formatNaira(row.amountPaid)} of {formatNaira(total)} ({percent}%)
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {row.amountPaid > 0 && (
-                    <a
-                      href={`/api/invoice/${row.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 py-1.5 text-xs transition hover:border-[var(--color-brass)]"
-                    >
-                      <FileDown size={12} /> Invoice
-                    </a>
-                  )}
-                  {fullyPaid ? (
-                    <span className="inline-flex items-center gap-1.5 text-emerald-400">
-                      <CheckCircle2 size={14} /> Paid in full
-                    </span>
-                  ) : row.amountPaid > 0 ? (
-                    <span className="text-[var(--color-brass)]">In progress</span>
-                  ) : (
-                    <span className="text-[var(--color-slate)]">Awaiting first payment</span>
-                  )}
-                </div>
-              </div>
-              <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-[var(--color-brass)] transition-all"
-                  style={{ width: `${Math.min(100, percent)}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <PaymentsBoard bookings={board} clients={clients} />
     </div>
   );
 }

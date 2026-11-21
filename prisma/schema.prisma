@@ -325,6 +325,10 @@ enum BookingStatus {
 
 model Booking {
   id            String        @id @default(cuid())
+  // Printed on the invoice (INV-000001) and the secret its QR code points
+  // at (/invoice/<token>); same approach as BookingPayment.receiptToken.
+  invoiceNumber Int           @unique @default(autoincrement())
+  invoiceToken  String        @unique @default(dbgenerated("(replace((gen_random_uuid())::text, '-'::text, ''::text) || replace((gen_random_uuid())::text, '-'::text, ''::text))"))
   userId        String?
   user          User?         @relation(fields: [userId], references: [id])
   clientId      String?
@@ -412,6 +416,12 @@ model Booking {
 
 model BookingPayment {
   id                String        @id @default(cuid())
+  // Printed on the receipt (RCT-000001) and the secret the receipt's QR code
+  // points at (/receipt/<token>). The token is 64 random hex characters made
+  // by the database itself, so every row, including payments recorded
+  // before receipts existed, always has a working one.
+  receiptNumber     Int           @unique @default(autoincrement())
+  receiptToken      String        @unique @default(dbgenerated("(replace((gen_random_uuid())::text, '-'::text, ''::text) || replace((gen_random_uuid())::text, '-'::text, ''::text))"))
   bookingId         String
   booking           Booking       @relation(fields: [bookingId], references: [id])
   amount            Int           // this specific installment, in kobo

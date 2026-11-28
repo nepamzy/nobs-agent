@@ -50,7 +50,6 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
     stat_clients: "Clients served",
     stat_success: "Reported project success rate",
     stat_success_note: "measured using a combination of delivery factors",
-    hero_team_note: "The 19+ referral partners refer clients to us; they are not NOBS AGENT employees or engineers.",
 
     services_eyebrow: "What we build",
     services_title: "One studio, the full stack",
@@ -212,7 +211,6 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
     stat_clients: "Clients accompagnés",
     stat_success: "Taux de réussite des projets (déclaré)",
     stat_success_note: "mesuré selon plusieurs facteurs de livraison",
-    hero_team_note: "Les plus de 19 partenaires de recommandation nous adressent des clients ; ce ne sont ni des employés ni des ingénieurs de NOBS AGENT.",
 
     services_eyebrow: "Ce que nous construisons",
     services_title: "Un studio, toute la chaîne technique",
@@ -368,7 +366,6 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
     stat_clients: "Clientes atendidos",
     stat_success: "Tasa de éxito de proyectos (reportada)",
     stat_success_note: "medida con una combinación de factores de entrega",
-    hero_team_note: "Los más de 19 socios de referidos nos recomiendan clientes; no son empleados ni ingenieros de NOBS AGENT.",
 
     services_eyebrow: "Lo que construimos",
     services_title: "Un estudio, toda la pila tecnológica",
@@ -524,7 +521,6 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
     stat_clients: "Clientes atendidos",
     stat_success: "Taxa de sucesso dos projetos (reportada)",
     stat_success_note: "medida com uma combinação de fatores de entrega",
-    hero_team_note: "Os mais de 19 parceiros de indicação nos indicam clientes; não são funcionários nem engenheiros da NOBS AGENT.",
 
     services_eyebrow: "O que construímos",
     services_title: "Um estúdio, toda a stack",
@@ -680,7 +676,6 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
     stat_clients: "عملاء تمت خدمتهم",
     stat_success: "معدل نجاح المشاريع (المُعلن)",
     stat_success_note: "يُقاس بمجموعة من عوامل التسليم",
-    hero_team_note: "أكثر من 19 شريك إحالة يرشّحون لنا العملاء، وهم ليسوا موظفين أو مهندسين لدى NOBS AGENT.",
 
     services_eyebrow: "ما الذي نبنيه",
     services_title: "استوديو واحد، وكل ما تحتاجه تقنيًا",
@@ -836,7 +831,6 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
     stat_clients: "服务客户数",
     stat_success: "项目成功率（自报）",
     stat_success_note: "按多项交付因素综合衡量",
-    hero_team_note: "19 位以上的推荐合作伙伴负责向我们推荐客户，他们不是 NOBS AGENT 的员工或工程师。",
 
     services_eyebrow: "我们构建的内容",
     services_title: "一个工作室，完整的技术栈",

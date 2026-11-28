@@ -164,7 +164,6 @@ export function Hero({ clientCount }: { clientCount: number }) {
                   note={t("stat_success_note")}
                 />
               </div>
-              <p className="mt-5 text-xs leading-relaxed text-[var(--color-slate)]">{t("hero_team_note")}</p>
             </motion.div>
           </div>
 
